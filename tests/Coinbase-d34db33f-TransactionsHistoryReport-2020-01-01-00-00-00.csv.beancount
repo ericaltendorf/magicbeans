@@ -1,0 +1,31 @@
+;; Account: Assets:Coinbase
+;; Date: 2020-01-01
+;; Name: coinbase.Coinbase-d34db33f-TransactionsHistoryReport-2020-01-01-00-00-00.csv
+
+2020-01-08 * "CB: Bought 0.1000 BTC for $810.40 USD (reported 8000.40 computed 8000.4 USD)"
+  Assets:Coinbase:BTC          0.1 BTC {8000.4 USD}
+  Assets:Coinbase:USD      -810.04 USD
+  Expenses:Financial:Fees    10.00 USD
+
+2020-02-20 * "CB: Sent 0.01BTC to adh547SDFhs7SDKJFkdfh4KS95hsdkfs6s"
+  Assets:Coinbase:BTC     -0.01 BTC {}
+  Assets:ALLEXTERNAL:BTC   0.01 BTC {}
+
+2020-03-23 * "CB: Received 0.0050 BTC from an external account"
+  Assets:Coinbase:BTC      0.005 BTC {}
+  Assets:ALLEXTERNAL:BTC  -0.005 BTC {}
+
+2020-04-25 * "CB: Bought 0.5000 BTC for $4,500.00 USD (reported 9000.00 computed 9000.0 USD)"
+  Assets:Coinbase:BTC           0.5 BTC {9000.0 USD}
+  Assets:Coinbase:USD      -4500.00 USD
+  Expenses:Financial:Fees      0.00 USD
+
+2020-05-22 * "CB: Sold 0.2000 BTC for $1,900.00 USD (reported 10000.00 computed 10000.0 USD)"
+  Assets:Coinbase:BTC         -0.2 BTC @ 10000.0 USD
+  Assets:Coinbase:USD      1900.00 USD
+  Expenses:Financial:Fees   100.00 USD
+
+2020-06-23 * "CB: Sold 0.01 BTC for $110.00 USD on BTC-USD (reported 12000.00 computed 12000 USD)"
+  Assets:Coinbase:BTC       -0.01 BTC @ 12000 USD
+  Assets:Coinbase:USD      110.00 USD
+  Expenses:Financial:Fees   10.00 USD

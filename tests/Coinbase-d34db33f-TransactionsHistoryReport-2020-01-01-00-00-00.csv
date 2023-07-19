@@ -1,0 +1,14 @@
+"You can use this transaction report to inform your likely tax obligations. For US customers, Sells, Converts, Rewards Income, Learning Rewards, and Donations are taxable events. For final tax obligations, please consult your tax advisor."
+
+
+
+Transactions
+User,someone@email.addr,01234567abcdef01234567ab
+
+Timestamp,Transaction Type,Asset,Quantity Transacted,Spot Price Currency,Spot Price at Transaction,Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes
+2020-01-08T00:51:12Z,Buy,BTC,0.1,USD,8000.40,800.04,810.04,10.00,Bought 0.1000 BTC for $810.40 USD
+2020-02-20T03:20:45Z,Send,BTC,0.01,USD,8800.00,"","","",Sent 0.01BTC to adh547SDFhs7SDKJFkdfh4KS95hsdkfs6s
+2020-03-23T03:49:33Z,Receive,BTC,0.005,USD,8900.00,"","","",Received 0.0050 BTC from an external account
+2020-04-25T16:20:34Z,Buy,BTC,0.5,USD,9000.00,4500.00,4500.00,0.00,"Bought 0.5000 BTC for $4,500.00 USD"
+2020-05-22T17:09:23Z,Sell,BTC,0.2,USD,10000.00,2000.00,1900.00,100.00,"Sold 0.2000 BTC for $1,900.00 USD"
+2020-06-23T11:12:52Z,Advanced Trade Sell,BTC,0.01,USD,12000.00,120.00,110.00,10.00,Sold 0.01 BTC for $110.00 USD on BTC-USD

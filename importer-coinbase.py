@@ -155,7 +155,6 @@ class CoinbaseImporter(beangulp.Importer):
                 else:
                     logging.error("Unknown row type: %s; skipping", rtype)
                     continue
-                print(txn)
                 entries.append(txn)
 
         return entries

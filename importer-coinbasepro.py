@@ -44,7 +44,7 @@ class CoinbaseProImporter(beangulp.Importer):
         return 'Coinbase Pro'
 
     def identify(self, filepath) -> bool:
-        if not re.match("account.csv", path.basename(filepath)):
+        if not re.match("account.csv$", path.basename(filepath)):
             return False
         
         with open(filepath, "r") as file:

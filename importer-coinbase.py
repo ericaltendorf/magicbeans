@@ -51,7 +51,7 @@ class CoinbaseImporter(beangulp.Importer):
 
     def identify(self, filepath):
         filename_re = r"Coinbase-.*TransactionsHistoryReport-" \
-                      r"\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d.csv"
+                      r"\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d.csv$"
         if not re.match(filename_re, path.basename(filepath)):
             return False
         
@@ -155,7 +155,7 @@ class CoinbaseImporter(beangulp.Importer):
                 else:
                     logging.error("Unknown row type: %s; skipping", rtype)
                     continue
-
+                print(txn)
                 entries.append(txn)
 
         return entries

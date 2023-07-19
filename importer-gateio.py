@@ -51,6 +51,8 @@ def DecDict():
 def StrDict():
     return defaultdict(lambda: '')
 
+# TODO: rename to imputed?  And/or look at using tripod.py
+
 def ComputeRcvdCost(rcvd_cur: str, rcvd_amt: Decimal, sent_cur: str, sent_amt: Decimal):
     """Compute cost basis per item recieved, if appropriate"""
     # TODO: Replace these price estimates and assumptions with a data feed

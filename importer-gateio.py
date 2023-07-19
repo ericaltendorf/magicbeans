@@ -1,4 +1,5 @@
-"""Importer for csv's of processed data from GateIO.
+"""Importer for csv's of processed data from GateIO, currently hard-coded
+   to handle USD, USDT, and XCH.
 """
 __copyright__ = "Copyright (C) 2023  Eric Altendorf"
 __license__ = "GNU GPLv2"
@@ -14,6 +15,7 @@ import sys
 
 from os import path
 from beancount.core.data import Posting
+from beancount.core.position import Cost
 from dateutil.parser import parse
 
 from beancount.core import account
@@ -27,6 +29,8 @@ from beancount.core.number import ZERO
 import beangulp
 from beangulp.testing import main
 import pytz
+
+from common import usd_cost_spec
 
 gateio_headers = 'no,time,action_desc,action_data,type,change_amount,amount,total'
 inreader = csv.DictReader(sys.stdin, delimiter=',', quotechar='"')
@@ -46,6 +50,46 @@ def DecDict():
     return defaultdict(lambda: decimal.Decimal(0))
 def StrDict():
     return defaultdict(lambda: '')
+
+def ComputeRcvdCost(rcvd_cur: str, rcvd_amt: Decimal, sent_cur: str, sent_amt: Decimal):
+    """Compute cost basis per item recieved, if appropriate"""
+    # TODO: Replace these price estimates and assumptions with a data feed
+
+    # We bought XCH using USD or USDT, so we are establishing a cost basis.
+    if rcvd_cur == "XCH" and (sent_cur == "USDT" or sent_cur == "USD"):
+        xch_usd = Decimal(sent_amt / rcvd_amt)
+        return Cost(xch_usd, "USD", None, None)
+
+    # We sold XCH for USDT, and we assume cost basis of 1 USDT is 1.0 USD.
+    elif (rcvd_cur == "USDT" and sent_cur == "XCH"):
+        return Cost(Decimal("1.0"), "USD", None, None)
+    
+    # We didn't send anything to get this, so it was a transfer in; no cost basis.
+    elif not sent_cur:
+        return None
+    
+    else:
+        assert False
+
+def ComputeSentPrice(rcvd_cur: str, rcvd_amt: Decimal, sent_cur: str, sent_amt: Decimal):
+    """Compute price for items disposed of, if appropriate"""
+    # TODO: Replace these price estimates and assumptions with a data feed
+
+    # Disposed of XCH to obtain USD or USDT; compute price.
+    if sent_cur == "XCH" and (rcvd_cur == "USDT" or rcvd_cur == "USD"):
+        xch_usd = Decimal(rcvd_amt / sent_amt)
+        return amount.Amount(xch_usd, "USD")
+    
+    # If we sent something but didn't recieve anything, it was a transfer not a disposal.
+    elif not rcvd_cur:
+        return None
+    
+    # Disposed of USDT; price is always 1.0 USD.
+    elif sent_cur == "USDT":
+        return amount.Amount(Decimal("1.0"), "USD")
+    
+    else:
+        assert False, f"rcvd {rcvd_cur} sent {sent_cur}"
 
 class GateIOImporter(beangulp.Importer):
     """An importer for GateIO csv files."""
@@ -77,6 +121,7 @@ class GateIOImporter(beangulp.Importer):
 
     def account(self, filepath):
         return self.account_root
+
 
     def extract(self, filepath, existing):
         order_ids = set()
@@ -142,7 +187,7 @@ class GateIOImporter(beangulp.Importer):
                         CheckOrSet(label, oid, "Sell (to USDT)")
 
                 # TODO: GateIO charges fees in crypto units.  We may want to
-                # implicitly convert those to 
+                # implicitly convert those to USD
                 elif action == 'Trade Fee':
                     CheckOrSet(fees_cur, oid, currency)
                     fees_amt[oid] -= ch_amt  # Fees are neg. in input
@@ -161,7 +206,7 @@ class GateIOImporter(beangulp.Importer):
                     assert not oid in sent_amt
                     sent_amt[oid] = ch_amt
                     sent_cur[oid] = currency
-                    ext_amt[oid] = -ch_amt
+                    ext_amt[oid] = ch_amt
                     ext_cur[oid] = currency
                     label[oid] = "Withdraw"
 
@@ -175,12 +220,16 @@ class GateIOImporter(beangulp.Importer):
                 desc = f"{label[oid]} (tx id {oid})"
                 links = set()
 
+                # TODO: need to set cost for transfers properly; see usd_cost_spec(),
+                # may be cleaner to deal specifically with exchanges vs. transfers here.
+
                 postings = []
                 if rcvd_amt[oid] or rcvd_cur[oid]:
                     postings.append(
                         Posting(account.join(self.account_root, rcvd_cur[oid]),
                                 amount.Amount(rcvd_amt[oid], rcvd_cur[oid]),
-                                None, # cost???
+                                ComputeRcvdCost(rcvd_cur[oid], rcvd_amt[oid],
+                                            sent_cur[oid], sent_amt[oid]),
                                 None, # price?
                                 None, None))
 
@@ -189,23 +238,30 @@ class GateIOImporter(beangulp.Importer):
                         Posting(account.join(self.account_root, sent_cur[oid]),
                                 amount.Amount(-sent_amt[oid], sent_cur[oid]),
                                 None, # cost???
-                                None, # price?
+                                ComputeSentPrice(rcvd_cur[oid], rcvd_amt[oid],
+                                             sent_cur[oid], sent_amt[oid]),
                                 None, None))
 
                 if ext_amt[oid] or ext_cur[oid]:
                     postings.append(
                         Posting(account.join(self.account_external_root, ext_cur[oid]),
                                 amount.Amount(ext_amt[oid], ext_cur[oid]),
-                                None, # cost???
-                                None, # price?
+                                None,
+                                None,
                                 None, None))
                     
                 if fees_amt[oid] or fees_cur[oid]:
                     postings.append(
                         Posting(account.join(self.account_fees, fees_cur[oid]),
                                 amount.Amount(fees_amt[oid], fees_cur[oid]),
-                                None, # cost???
-                                None, # price?
+                                None,
+                                None,
+                                None, None))
+                    postings.append(
+                        Posting(account.join(self.account_root, fees_cur[oid]),
+                                amount.Amount(-fees_amt[oid], fees_cur[oid]),
+                                None,
+                                None,
                                 None, None))
 
                 txn = data.Transaction(meta, date, flags.FLAG_OKAY,

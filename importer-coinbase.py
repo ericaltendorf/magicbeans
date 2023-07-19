@@ -25,6 +25,8 @@ from beancount.core.number import ZERO
 import beangulp
 from beangulp.testing import main
 
+from common import usd_cost_spec
+
 def coinbase_data_reader(reader):
     """A wrapper for a FileReader which will skip Coinbase CSV header cruft"""
     found_content = False
@@ -70,10 +72,10 @@ class CoinbaseImporter(beangulp.Importer):
 
     def date(self, filepath):
         # Extract the statement date from the filename.
-        return datetime.datetime.strptime(
-            path.basename(filepath),
-            "Coinbase-.*TransactionHistoryReport-%Y-%m-%d-.*.csv",
-        ).date()
+        date_re = r"Coinbase-.*TransactionsHistoryReport-" \
+                  r"(\d\d\d\d-\d\d-\d\d)-\d\d-\d\d-\d\d.csv"
+        m = re.match(date_re, path.basename(filepath))
+        return datetime.datetime.strptime(m.group(1), "%Y-%m-%d").date()
 
     def extract(self, filepath, existing):
         # Open the CSV file and create directives.
@@ -101,11 +103,9 @@ class CoinbaseImporter(beangulp.Importer):
                 account_cash = account.join(self.account_root, asset_price_currency)
                 account_inst = account.join(self.account_root, instrument)
 
-                desc = row["Notes"]
+                desc = "CB: " + row["Notes"]
                 links = set()  # { "ut{0[REF #]}".format(row) }
 
-                # TODO: need to mark transactions to CoinbasePro differently from
-                # transactions to wallet addresses?
                 if rtype in ("Send", "Receive"):
                     assert fees.number == ZERO
                     account_external = account.join(
@@ -116,9 +116,9 @@ class CoinbaseImporter(beangulp.Importer):
                                            None, desc, data.EMPTY_SET, links,
                         [
                             data.Posting(account_inst, amount.mul(units, sign),
-                                         None, None, None, None),
+                                         usd_cost_spec(), None, None, None),
                             data.Posting(account_external, amount.mul(units, -sign),
-                                         None, None, None, None),
+                                         usd_cost_spec(), None, None, None),
                         ],
                     )
 

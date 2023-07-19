@@ -29,6 +29,8 @@ from beancount.core.number import D, round_to
 import beangulp
 from beangulp.testing import main
 
+from common import usd_cost_spec
+
 class CoinbaseProImporter(beangulp.Importer):
 
     def __init__(self, account_root, account_external_root,
@@ -79,13 +81,15 @@ class CoinbaseProImporter(beangulp.Importer):
                     remote_account = account.join(self.account_external_root, currency)
 
                     # value appears to be negated for withdrawals already
-                    posting1 = Posting(local_account, Amount(value, currency), None, None, None, None)
-                    posting2 = Posting(remote_account, Amount(-value, currency), None, None, None, None,)
+                    posting1 = Posting(local_account, Amount(value, currency),
+                                       usd_cost_spec(), None, None, None)
+                    posting2 = Posting(remote_account, Amount(-value, currency),
+                                       usd_cost_spec(), None, None, None)
 
                     if transfer['type'] == 'deposit':
-                        title = f"Deposit {currency}"
+                        title = f"CBP: Deposit {currency}"
                     if transfer['type'] == 'withdrawal':
-                        title = f"Withdraw {currency}"
+                        title = f"CBP: Withdraw {currency}"
 
                     metadata = {'transferid': transfer['transfer id']}
                     entry = Transaction(
@@ -203,7 +207,7 @@ class CoinbaseProImporter(beangulp.Importer):
                     tx_date.date(),
                     flags.FLAG_OKAY,
                     None,
-                    f'{trade_type}{title}',
+                    f'CBP: {trade_type}{title}',
                     EMPTY_SET,
                     EMPTY_SET,
                     postings,
@@ -215,7 +219,7 @@ class CoinbaseProImporter(beangulp.Importer):
 
 if __name__ == "__main__":
     importer = CoinbaseProImporter(
-        account_root="Assets:CoinbasePro",
+        account_root="Assets:Coinbase",
         account_external_root="Assets:ALLEXTERNAL",
         account_gains="Income:PnL",
         account_fees="Expenses:Financial:Fees",

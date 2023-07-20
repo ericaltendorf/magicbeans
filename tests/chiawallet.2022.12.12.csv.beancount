@@ -1,0 +1,39 @@
+;; Account: Assets:Wallet
+;; Date: 2022-12-12
+;; Name: coinbase.chiawallet.2022.12.12.csv
+
+2022-05-02 * "Mining reward of 2.00 XCH"
+  Assets:Wallet:XCH  2.00 XCH {1.0 USD}
+  Income:Mining:USD
+
+2022-05-06 * "Transfer of 1.74 XCH"
+  Assets:Wallet:XCH   1.74 XCH {USD}
+  Assets:GateIO:XCH  -1.74 XCH {USD}
+
+2022-05-11 * "Transfer of 1 XCH"
+  Assets:Wallet:XCH  -1 XCH {USD}
+  Assets:GateIO:XCH   1 XCH {USD}
+
+2022-05-13 * "Mining reward of 8.83 XCH"
+  Assets:Wallet:XCH  8.83 XCH {1.0 USD}
+  Income:Mining:USD
+
+2022-06-01 * "Transfer of 5.11 XCH"
+  Assets:Wallet:XCH   5.11 XCH {USD}
+  Assets:GateIO:XCH  -5.11 XCH {USD}
+
+2022-07-01 * "Mining reward of 2.42 XCH"
+  Assets:Wallet:XCH  2.42 XCH {1.0 USD}
+  Income:Mining:USD
+
+2022-08-01 * "Transfer of 4 XCH"
+  Assets:Wallet:XCH  -4 XCH {USD}
+  Assets:GateIO:XCH   4 XCH {USD}
+
+2022-09-01 * "Transfer of 20 XCH"
+  Assets:Wallet:XCH  -20 XCH {USD}
+  Assets:GateIO:XCH   20 XCH {USD}
+
+2022-10-01 * "Mining reward of 2.22 XCH"
+  Assets:Wallet:XCH  2.22 XCH {1.0 USD}
+  Income:Mining:USD

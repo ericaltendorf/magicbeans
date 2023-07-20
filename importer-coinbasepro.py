@@ -31,6 +31,10 @@ from beangulp.testing import main
 
 from common import usd_cost_spec
 
+# TODO: create a better way of encapsulating personal logic
+from config import cbp_filter_entry
+from config import cbp_compute_remote_account
+
 class CoinbaseProImporter(beangulp.Importer):
 
     def __init__(self, account_root, account_external_root,
@@ -78,14 +82,16 @@ class CoinbaseProImporter(beangulp.Importer):
                     value = D(transfer['amount'])
                     currency = transfer['amount/balance unit']
                     local_account = account.join(self.account_root, currency)
-                    remote_account = account.join(self.account_external_root, currency)
+                    
+                    remote_account = cbp_compute_remote_account(currency)
 
                     # value appears to be negated for withdrawals already
                     posting1 = Posting(local_account, Amount(value, currency),
-                                       usd_cost_spec(), None, None, None)
+                                       usd_cost_spec(currency), None, None, None)
                     posting2 = Posting(remote_account, Amount(-value, currency),
-                                       usd_cost_spec(), None, None, None)
+                                       usd_cost_spec(currency), None, None, None)
 
+                    title = ""
                     if transfer['type'] == 'deposit':
                         title = f"CBP: Deposit {currency}"
                     if transfer['type'] == 'withdrawal':
@@ -99,6 +105,9 @@ class CoinbaseProImporter(beangulp.Importer):
                         [posting1, posting2]
                         # [withdrawal, deposit],
                     )
+
+                    if cbp_filter_entry(entry):
+                        continue
 
                     entries.append(entry)
 
@@ -177,12 +186,17 @@ class CoinbaseProImporter(beangulp.Importer):
                     postings.append(
                         Posting(f'{self.account_root}:{reduce_currency}',
                                 Amount(-reduce_amount, reduce_currency),
-                                None, price, None, None),
+                                Cost(None, None, None, None),
+                                price, None, None),
                     )
+                    increase_currency_cost_entry = None
+                    # if increase_currency == "USD":
+                    #     increase_currency_cost_entry = Cost(None, None, None, None)
+
                     postings.append(
                         Posting(f'{self.account_root}:{increase_currency}',
                                 Amount(increase_amount, increase_currency),
-                                None, None, None, None),
+                                increase_currency_cost_entry, None, None, None),
                     )
                     if fee_currency:
                         # Fees don't show up in the reduce amount for some reason,
@@ -212,6 +226,7 @@ class CoinbaseProImporter(beangulp.Importer):
                     EMPTY_SET,
                     postings,
                 )
+
                 entries.append(entry)
 
         return entries

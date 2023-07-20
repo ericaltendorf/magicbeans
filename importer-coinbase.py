@@ -26,6 +26,7 @@ import beangulp
 from beangulp.testing import main
 
 from common import usd_cost_spec
+from config import cb_compute_remote_account
 
 def coinbase_data_reader(reader):
     """A wrapper for a FileReader which will skip Coinbase CSV header cruft"""
@@ -108,17 +109,17 @@ class CoinbaseImporter(beangulp.Importer):
 
                 if rtype in ("Send", "Receive"):
                     assert fees.number == ZERO
-                    account_external = account.join(
-                        self.account_external_root, instrument
-                    )
+
+                    account_external = cb_compute_remote_account(instrument)
+
                     sign = Decimal(1 if (rtype == "Receive") else -1)
                     txn = data.Transaction(meta, date, flags.FLAG_OKAY,
                                            None, desc, data.EMPTY_SET, links,
                         [
                             data.Posting(account_inst, amount.mul(units, sign),
-                                         usd_cost_spec(), None, None, None),
+                                         usd_cost_spec(instrument), None, None, None),
                             data.Posting(account_external, amount.mul(units, -sign),
-                                         usd_cost_spec(), None, None, None),
+                                         usd_cost_spec(instrument), None, None, None),
                         ],
                     )
 
@@ -130,27 +131,33 @@ class CoinbaseImporter(beangulp.Importer):
 
                     sign = Decimal(1 if (rtype == "Buy") else -1)
 
-                    cost = None
+                    asset_cost = None
+                    proceeds_cost = None
                     asset_price_amount = None
                     if rtype == "Buy":
-                        cost = position.Cost(
+                        asset_cost = position.Cost(
                             computed_asset_price, asset_price_currency, None, None
                         )
                     else:
+                        proceeds_cost = position.Cost(None, None, None, None)
                         asset_price_amount = amount.Amount(
                             computed_asset_price, asset_price_currency)
 
+                    postings = [
+                        data.Posting(account_inst, amount.mul(units, sign),
+                                     asset_cost, asset_price_amount, None, None),
+                        data.Posting(account_cash, amount.mul(total_amount, -sign),
+                                     proceeds_cost, None, None, None),
+                        data.Posting(self.account_fees, fees, None, None, None, None),
+                        ]
+                    if rtype == "Sell":
+                        postings.append(
+                            data.Posting(self.account_gains,
+                                         None, None, None, None, None),
+                        )
 
-                    txn = data.Transaction(meta, date, flags.FLAG_OKAY,
-                                           None, desc, data.EMPTY_SET, links,
-                        [
-                            data.Posting(account_inst, amount.mul(units, sign),
-                                         cost, asset_price_amount, None, None),
-                            data.Posting(account_cash, amount.mul(total_amount, -sign),
-                                         None, None, None, None),
-                            data.Posting(self.account_fees, fees, None, None, None, None),
-                        ],
-                    )
+                    txn = data.Transaction(meta, date, flags.FLAG_OKAY, None,
+                                           desc, data.EMPTY_SET, links, postings)
 
                 else:
                     logging.error("Unknown row type: %s; skipping", rtype)

@@ -13,6 +13,7 @@ from decimal import Decimal
 from typing import NamedTuple
 import re
 import logging
+import pytz
 
 from os import path
 from dateutil.parser import parse
@@ -30,6 +31,11 @@ from beangulp.testing import main
 
 from common import usd_cost_spec
 from tripod import Tripod
+
+# Surprisingly the Chia wallet dumps seem to be in local (PST) time.
+# For now, we'll convert to UTC.  TODO: fix the Chia wallet dumper to
+# report in UTC?
+rendered_tz = 'US/Pacific'
 
 class ChiaWalletImporter(beangulp.Importer):
     """An importer for Coinbase CSV files."""
@@ -75,12 +81,19 @@ class ChiaWalletImporter(beangulp.Importer):
         # Open the CSV file and create directives.
         entries = []
         index = 0
+
+        # TODO: aggregate mining income from the same day?
+
         with open(filepath) as infile:
             for index, row in enumerate(csv.DictReader(infile)):
                 meta = data.new_metadata(filepath, index)
 
-                date = parse(row["Date"]).date()
-
+                # date = parse(row["Date"]).date()
+                # Translate timestamps and record timestamp windows
+                naive_dt = datetime.datetime.strptime(row['Date'], '%m/%d/%Y %H:%M:%S')
+                local_dt = pytz.timezone(rendered_tz).localize(naive_dt)
+                utc_dt = local_dt.astimezone(pytz.timezone('UTC'))
+ 
                 tripod = Tripod(row["Received Quantity"],
                                 row["Received Currency"],
                                 row["Sent Quantity"],
@@ -104,24 +117,35 @@ class ChiaWalletImporter(beangulp.Importer):
 
                 if tripod.is_transfer():
                     account_int = account.join(self.account_root, tripod.currency())
+
                     if tag == "mined":
                         account_ext = account.join(self.account_mining_income,
-                                                   tripod.currency())
+                                                   "USD")  # TODO
                     else:
-                        account_ext = account.join(self.account_external_root,
+                        # TODO: hardcoded account
+                        account_ext = account.join("Assets:GateIO",
                                                    tripod.currency())
 
                     units = amount.Amount(tripod.amount(), tripod.currency())
                     sign = Decimal(1 if tripod.rcvd else -1)
-                    txn = data.Transaction(meta, date, flags.FLAG_OKAY,
+
+                    # Just to get things running, assign all XCH a cost basis of 1 USD
+                    # TODO: fix
+                    mined_cost_basis = position.Cost(D("1.0"), "USD", None, None)
+
+                    # TODO: on this and other importers, include the full 
+                    # datetime as a comment or metadata
+                    txn = data.Transaction(meta, utc_dt.date(), flags.FLAG_OKAY,
                                            None, desc, data.EMPTY_SET, links,
                         [
                             data.Posting(account_int,
                                          amount.mul(units, sign),
-                                         usd_cost_spec(), None, None, None),
+                                         mined_cost_basis if (tag == "mined") else usd_cost_spec(tripod.currency()),
+                                         None, None, None),
                             data.Posting(account_ext,
-                                         amount.mul(units, -sign),
-                                         usd_cost_spec(), None, None, None),
+                                         None if (tag == "mined") else amount.mul(units, -sign),
+                                         None if (tag == "mined") else usd_cost_spec(tripod.currency()),
+                                         None, None, None),
                         ],
                     )
 

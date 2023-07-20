@@ -18,7 +18,7 @@
   Assets:Wallet:XCH  8.83 XCH {1.0 USD}
   Income:Mining:USD
 
-2022-06-01 * "Transfer of 5.11 XCH"
+2022-06-02 * "Transfer of 5.11 XCH"
   Assets:Wallet:XCH   5.11 XCH {USD}
   Assets:GateIO:XCH  -5.11 XCH {USD}
 
@@ -34,6 +34,6 @@
   Assets:Wallet:XCH  -20 XCH {USD}
   Assets:GateIO:XCH   20 XCH {USD}
 
-2022-10-01 * "Mining reward of 2.22 XCH"
+2022-10-02 * "Mining reward of 2.22 XCH"
   Assets:Wallet:XCH  2.22 XCH {1.0 USD}
   Income:Mining:USD

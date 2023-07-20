@@ -17,6 +17,7 @@ from os import path
 from beancount.core.data import Posting
 from beancount.core.position import Cost
 from dateutil.parser import parse
+import pytz
 
 from beancount.core import account
 from beancount.core import amount
@@ -28,9 +29,9 @@ from beancount.core.number import ZERO
 
 import beangulp
 from beangulp.testing import main
-import pytz
 
 from common import usd_cost_spec
+from config import gio_compute_remote_account
 
 gateio_headers = 'no,time,action_desc,action_data,type,change_amount,amount,total'
 inreader = csv.DictReader(sys.stdin, delimiter=',', quotechar='"')
@@ -245,8 +246,10 @@ class GateIOImporter(beangulp.Importer):
                                 None, None))
 
                 if ext_amt[oid] or ext_cur[oid]:
+                    remote_account = gio_compute_remote_account(ext_cur[oid])
+
                     postings.append(
-                        Posting(account.join(self.account_external_root, ext_cur[oid]),
+                        Posting(remote_account,
                                 amount.Amount(ext_amt[oid], ext_cur[oid]),
                                 None,
                                 None,

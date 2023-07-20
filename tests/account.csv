@@ -1,0 +1,13 @@
+portfolio,type,time,amount,balance,amount/balance unit,transfer id,trade id,order id
+default,deposit,2020-01-03T12:46:23.422Z,100000.0,100000.0,USD,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa,,
+default,deposit,2020-01-18T16:53:36.471Z,1.000000,1.000000,BTC,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaa111111,,
+default,match,2020-02-14T17:45:33.335Z,-10000.00,90000.00,USD,,10023462,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaa222222
+default,match,2020-02-19T20:52:24.365Z,0.8000000,1.800000,BTC,,10023462,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaa222222
+default,fee,2020-02-19T21:49:24.356Z,-100.0,89900.00,USD,,10023462,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaa222222
+default,withdrawal,2020-04-12T05:55:24.629Z,-0.5000,1.30000,BTC,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaa333333,,
+default,deposit,2020-06-20T11:43:53.465Z,0.40000,1.70000,BTC,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaa44444,,
+default,match,2020-08-03T10:08:30.419Z,-0.60000,1.100000,BTC,,20056248,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaa555555
+default,match,2020-08-03T10:08:30.629Z,12000.000,101900.0000,USD,,20056248,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaa555555
+default,match,2020-08-03T10:08:34.583Z,-0.40000,0.700000,BTC,,20056248,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaa555555
+default,match,2020-08-03T10:08:34.664Z,8000.000,101900.00000,USD,,20056248,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaa555555
+default,fee,2020-08-03T10:08:36.781Z,-100.00,101800.000,USD,,20056248,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaa555555

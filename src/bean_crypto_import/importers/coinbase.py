@@ -25,8 +25,8 @@ from beancount.core.number import ZERO
 import beangulp
 from beangulp.testing import main
 
-from common import usd_cost_spec
-from config import cb_compute_remote_account
+from bean_crypto_import.common import usd_cost_spec
+from bean_crypto_import.config import cb_compute_remote_account
 
 def coinbase_data_reader(reader):
     """A wrapper for a FileReader which will skip Coinbase CSV header cruft"""

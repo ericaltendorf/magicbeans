@@ -1,2 +1,26 @@
-__pycache__
-config.py
+# Project-specific
+src/bean_crypto_import/config.py
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*~
+\#*
+.#*
+
+# Distribution / packaging
+.Python
+/build/
+/develop-eggs/
+/dist/
+/eggs/
+/lib/
+/lib64/
+/parts/
+/sdist/
+/var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Installer logs
+pip-log.txt

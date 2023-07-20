@@ -29,11 +29,11 @@ from beancount.core.number import D, round_to
 import beangulp
 from beangulp.testing import main
 
-from common import usd_cost_spec
+from bean_crypto_import.common import usd_cost_spec
 
 # TODO: create a better way of encapsulating personal logic
-from config import cbp_filter_entry
-from config import cbp_compute_remote_account
+from bean_crypto_import.config import cbp_filter_entry
+from bean_crypto_import.config import cbp_compute_remote_account
 
 class CoinbaseProImporter(beangulp.Importer):
 

@@ -30,8 +30,8 @@ from beancount.core.number import ZERO
 import beangulp
 from beangulp.testing import main
 
-from common import usd_cost_spec
-from config import gio_compute_remote_account
+from bean_crypto_import.common import usd_cost_spec
+from bean_crypto_import.config import gio_compute_remote_account
 
 gateio_headers = 'no,time,action_desc,action_data,type,change_amount,amount,total'
 inreader = csv.DictReader(sys.stdin, delimiter=',', quotechar='"')

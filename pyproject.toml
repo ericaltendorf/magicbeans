@@ -1,9 +1,9 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
 
 [project]
-name = "beaan_crypto_import"
+name = "bean_crypto_import"
 version = "0.0.1"
 authors = [
   { name="Eric Altendorf", email="ericaltendorf@gmail.com" },

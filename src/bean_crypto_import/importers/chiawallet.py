@@ -29,8 +29,8 @@ from beancount.core.number import ZERO
 import beangulp
 from beangulp.testing import main
 
-from common import usd_cost_spec
-from tripod import Tripod
+from bean_crypto_import.common import usd_cost_spec
+from bean_crypto_import.tripod import Tripod
 
 # Surprisingly the Chia wallet dumps seem to be in local (PST) time.
 # For now, we'll convert to UTC.  TODO: fix the Chia wallet dumper to

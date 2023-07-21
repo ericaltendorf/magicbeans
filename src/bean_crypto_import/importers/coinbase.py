@@ -137,14 +137,13 @@ class CoinbaseImporter(beangulp.Importer):
                     sign = Decimal(1 if (rtype == "Buy") else -1)
 
                     asset_cost = None
-                    proceeds_cost = None
                     asset_price_amount = None
                     if rtype == "Buy":
                         asset_cost = position.Cost(
                             computed_asset_price, asset_price_currency, None, None
                         )
                     else:
-                        proceeds_cost = position.Cost(None, None, None, None)
+                        asset_cost = position.Cost(None, None, None, None)
                         asset_price_amount = amount.Amount(
                             computed_asset_price, asset_price_currency)
 
@@ -152,7 +151,7 @@ class CoinbaseImporter(beangulp.Importer):
                         data.Posting(account_inst, amount.mul(units, sign),
                                      asset_cost, asset_price_amount, None, None),
                         data.Posting(account_cash, amount.mul(total_amount, -sign),
-                                     proceeds_cost, None, None, None),
+                                     None, None, None, None),
                         data.Posting(self.account_fees, fees, None, None, None, None),
                         ]
                     if rtype == "Sell":

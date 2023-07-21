@@ -32,7 +32,7 @@ from beangulp.testing import main
 from bean_crypto_import.common import usd_cost_spec
 
 # TODO: create a better way of encapsulating personal logic
-from bean_crypto_import.config import cbp_filter_entry
+from bean_crypto_import.config import Config, cbp_filter_entry
 from bean_crypto_import.config import cbp_compute_remote_account
 
 class CoinbaseProImporter(beangulp.Importer):
@@ -82,20 +82,21 @@ class CoinbaseProImporter(beangulp.Importer):
                     value = D(transfer['amount'])
                     currency = transfer['amount/balance unit']
                     local_account = account.join(self.account_root, currency)
-                    
-                    remote_account = cbp_compute_remote_account(currency)
+
+                    title = ""
+                    remote_account = "UNDETERMINED"
+                    if transfer['type'] == 'deposit':
+                        title = f"CBP: Deposit {currency}"
+                        remote_account = Config.network.source(local_account, currency)
+                    if transfer['type'] == 'withdrawal':
+                        title = f"CBP: Withdraw {currency}"
+                        remote_account = Config.network.route(local_account, currency)
 
                     # value appears to be negated for withdrawals already
                     posting1 = Posting(local_account, Amount(value, currency),
                                        usd_cost_spec(currency), None, None, None)
                     posting2 = Posting(remote_account, Amount(-value, currency),
                                        usd_cost_spec(currency), None, None, None)
-
-                    title = ""
-                    if transfer['type'] == 'deposit':
-                        title = f"CBP: Deposit {currency}"
-                    if transfer['type'] == 'withdrawal':
-                        title = f"CBP: Withdraw {currency}"
 
                     metadata = {'transferid': transfer['transfer id']}
                     entry = Transaction(

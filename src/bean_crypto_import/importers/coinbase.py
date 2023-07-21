@@ -26,7 +26,8 @@ import beangulp
 from beangulp.testing import main
 
 from bean_crypto_import.common import usd_cost_spec
-from bean_crypto_import.config import cb_compute_remote_account
+from bean_crypto_import.config import Config, cb_compute_remote_account, get_network
+
 
 def coinbase_data_reader(reader):
     """A wrapper for a FileReader which will skip Coinbase CSV header cruft"""
@@ -110,7 +111,11 @@ class CoinbaseImporter(beangulp.Importer):
                 if rtype in ("Send", "Receive"):
                     assert fees.number == ZERO
 
-                    account_external = cb_compute_remote_account(instrument)
+                    account_external = "UNDETERMINED"
+                    if rtype == "Send":
+                        account_external = Config.network.route(account_inst, instrument)
+                    else:
+                        account_external = Config.network.source(account_inst, instrument)
 
                     sign = Decimal(1 if (rtype == "Receive") else -1)
                     txn = data.Transaction(meta, date, flags.FLAG_OKAY,

@@ -13,6 +13,7 @@ from decimal import Decimal
 from typing import NamedTuple
 import re
 import logging
+from bean_crypto_import.config import Config
 import pytz
 
 from os import path
@@ -122,9 +123,10 @@ class ChiaWalletImporter(beangulp.Importer):
                         account_ext = account.join(self.account_mining_income,
                                                    "USD")  # TODO
                     else:
-                        # TODO: hardcoded account
-                        account_ext = account.join("Assets:GateIO",
-                                                   tripod.currency())
+                        if tripod.rcvd:
+                            account_ext = Config.network.source(account_int, tripod.currency())
+                        else:
+                            account_ext = Config.network.route(account_int, tripod.currency())
 
                     units = amount.Amount(tripod.amount(), tripod.currency())
                     sign = Decimal(1 if tripod.rcvd else -1)
@@ -162,7 +164,7 @@ class ChiaWalletImporter(beangulp.Importer):
 
 if __name__ == "__main__":
     importer = ChiaWalletImporter(
-        account_root="Assets:Wallet",
+        account_root="Assets:ChiaWallet",
         account_external_root="Assets:ALLEXTERNAL",
         account_mining_income="Income:Mining",
         account_gains="Income:PnL",

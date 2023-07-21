@@ -13,5 +13,3 @@ For context, see:
 - Get deduping working
 - Sort transactions in output
 - Rename package and github repo
-
-NOCOMMIT

@@ -31,7 +31,7 @@ import beangulp
 from beangulp.testing import main
 
 from bean_crypto_import.common import usd_cost_spec
-from bean_crypto_import.config import gio_compute_remote_account
+from bean_crypto_import.config import Config, gio_compute_remote_account
 
 gateio_headers = 'no,time,action_desc,action_data,type,change_amount,amount,total'
 inreader = csv.DictReader(sys.stdin, delimiter=',', quotechar='"')
@@ -142,6 +142,7 @@ class GateIOImporter(beangulp.Importer):
 
         entries = []
         with open(filepath) as infile:
+            # Phase one: accumulate amounts on order IDs
             for index, row in enumerate(csv.DictReader(infile)):
                 meta = data.new_metadata(filepath, index)
 
@@ -207,15 +208,16 @@ class GateIOImporter(beangulp.Importer):
                 elif action == 'Withdraw':
                     # Actually shouldn't be in any of the dicts
                     assert not oid in sent_amt
-                    sent_amt[oid] = ch_amt
+                    sent_amt[oid] = -ch_amt
                     sent_cur[oid] = currency
-                    ext_amt[oid] = ch_amt
+                    ext_amt[oid] = -ch_amt
                     ext_cur[oid] = currency
                     label[oid] = "Withdraw"
 
                 else:
                     assert False, f"Unknown action {action}"
 
+            # Phase 2: process totals for each order ID
             for oid in sorted(order_ids, key=tx_ts_min.get):
                 date = tx_ts_min[oid].date() #strftime('%m/%d/%Y %H:%M:%S').date()
                 
@@ -246,8 +248,19 @@ class GateIOImporter(beangulp.Importer):
                                 None, None))
 
                 if ext_amt[oid] or ext_cur[oid]:
-                    remote_account = gio_compute_remote_account(ext_cur[oid])
-
+                    remote_account = "UNDETERMINED"
+                    # TODO: this is absolutely hideous; use Tripod
+                    if rcvd_amt[oid] > 0:
+                        assert rcvd_cur[oid] == ext_cur[oid]
+                        remote_account = Config.network.source(
+                            account.join(self.account_root, rcvd_cur[oid]), rcvd_cur[oid])
+                    elif sent_amt[oid] > 0:
+                        assert sent_cur[oid] == ext_cur[oid]
+                        remote_account = Config.network.route(
+                            account.join(self.account_root, sent_cur[oid]), sent_cur[oid])
+                    else:
+                        remote_account = f"rcvd {rcvd_amt[oid]} sent {sent_amt[oid]}"
+                    
                     postings.append(
                         Posting(remote_account,
                                 amount.Amount(ext_amt[oid], ext_cur[oid]),

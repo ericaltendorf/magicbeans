@@ -44,64 +44,6 @@ def get_importers() -> List[Importer]:
 
    return importers
 
-# def extract():
-# def _extract(ctx, src, output, existing, reverse, failfast, quiet):
-#     """Extract transactions from documents.
-
-#     Similar to beagulp._extract() but designed to be driven
-#     programmatically, returning the list of entries for further
-#     processing.
-#     """
-#     verbosity = -quiet
-#     log = utils.logger(verbosity, err=True)
-#     errors = exceptions.ExceptionsTrap(log)
-
-#     # Load the ledger, if one is specified.
-#     existing_entries = loader.load_file(existing)[0] if existing else []
-
-#     extracted = []
-#     for filename in _walk(src, log):
-#         with errors:
-#             importer = identify.identify(ctx.importers, filename)
-#             if not importer:
-#                 log('') # Newline.
-#                 continue
-
-#             # Signal processing of this document.
-#             log(' ...', nl=False)
-
-#             # Extract entries.
-#             entries = extract.extract_from_file(importer, filename, existing_entries)
-#             extracted.append((filename, entries))
-#             log(' OK', fg='green')
-
-#         if failfast and errors:
-#             break
-
-#     for func in ctx.hooks:
-#         extracted = func(extracted, existing_entries)
-
-#     # Reverse sort order, if requested.
-#     if reverse:
-#         for filename, entries in extracted:
-#             entries.reverse()
-
-#     # Serialize entries.
-#     extract.print_extracted_entries(extracted, output)
-
-#     if errors:
-#         sys.exit(1)
-
-# def add_preamble(extracted, existing):
-   # result = []
-   # entry = #Transaction()
-   # for filepath, entries, account, importer in extracted:
-      # for entry in entries:
-         # None
-# 
-   # return result
-   #  
-
 if __name__ == '__main__':
     importers = get_importers()
     hooks = []

@@ -4,6 +4,10 @@
 __copyright__ = "Copyright (C) 2023  Eric Altendorf"
 __license__ = "GNU GPLv2"
 
+# TODO: throughout, replace hardcoded checks against "USD" with calls
+# to a function that determines if disposals of the asset are subject
+# to capital gains.
+
 from collections import defaultdict
 import csv
 import datetime
@@ -15,6 +19,7 @@ import sys
 
 from os import path
 from bean_crypto_import import common
+from bean_crypto_import.tripod import Tripod
 from beancount.core.data import Posting
 from beancount.core.position import Cost
 from dateutil.parser import parse
@@ -99,10 +104,10 @@ class GateIOImporter(beangulp.Importer):
     """An importer for GateIO csv files."""
 
     def __init__(self, account_root, account_external_root,
-                 account_gains, account_fees):
+                 account_pnl, account_fees):
         self.account_root = account_root
         self.account_external_root = account_external_root
-        self.account_gains = account_gains
+        self.account_pnl = account_pnl
         self.account_fees = account_fees
 
     def name(self) -> str:
@@ -128,6 +133,7 @@ class GateIOImporter(beangulp.Importer):
 
 
     def extract(self, filepath, existing):
+        # Might be worth pulling this out into tripod.py as a Tripod-set builder.
         order_ids = set()
         rcvd_amt = DecDict()
         rcvd_cur = StrDict()
@@ -191,8 +197,6 @@ class GateIOImporter(beangulp.Importer):
                         # TODO: this might break if we trade USD-USDT
                         CheckOrSet(label, oid, "Sell (to USDT)")
 
-                # TODO: GateIO charges fees in crypto units.  We may want to
-                # implicitly convert those to USD
                 elif action == 'Trade Fee':
                     CheckOrSet(fees_cur, oid, currency)
                     fees_amt[oid] -= ch_amt  # Fees are neg. in input
@@ -222,67 +226,92 @@ class GateIOImporter(beangulp.Importer):
             for oid in sorted(order_ids, key=tx_ts_min.get):
                 timestamp = tx_ts_min[oid]
                 date = timestamp.date()
+
+                tripod = Tripod(rcvd_amt=rcvd_amt[oid],
+                                rcvd_cur=rcvd_cur[oid],
+                                sent_amt=sent_amt[oid],
+                                sent_cur=sent_cur[oid],
+                                fees_amt=fees_amt[oid],
+                                fees_cur=fees_cur[oid])
                 
-                # TODO
-                desc = f"{label[oid]} (tx id {oid})"
+                desc = f'{tripod.tx_class()} ({label[oid]}): tx id {oid}'
                 links = set()
 
-                # TODO: need to set cost for transfers properly; see usd_cost_spec(),
-                # may be cleaner to deal specifically with exchanges vs. transfers here.
-
                 postings = []
-                if rcvd_amt[oid] or rcvd_cur[oid]:
+                if tripod.is_transfer():
+                    local_acct = account.join(self.account_root, tripod.xfer_cur())
+                    remote_acct = Config.network.route(
+                        tripod.is_send(), local_acct, tripod.xfer_cur())
+                    xfer_amt = amount.Amount(tripod.xfer_amt(), tripod.xfer_cur())
+                    xfer_amt_neg = amount.Amount(-tripod.xfer_amt(), tripod.xfer_cur())
+                    xfer_cost = common.usd_cost_spec(tripod.xfer_cur())
+
+                    # Attach cost basis to the neg outgoing leg.
+                    if tripod.is_receive():
+                        postings.append(
+                            Posting(local_acct, xfer_amt, None, None, None, None))
+                        postings.append(
+                            Posting(remote_acct, xfer_amt_neg, xfer_cost, None, None, None))
+                    elif tripod.is_send():
+                        postings.append(
+                            Posting(local_acct, xfer_amt_neg, xfer_cost, None, None, None))
+                        postings.append(
+                            Posting(remote_acct, xfer_amt, xfer_cost, None, None, None))
+
+                elif tripod.is_transaction():
+                    credit_acct = account.join(self.account_root, tripod.rcvd_cur)
+                    debit_acct = account.join(self.account_root, tripod.sent_cur)
+
                     postings.append(
-                        Posting(account.join(self.account_root, rcvd_cur[oid]),
-                                amount.Amount(rcvd_amt[oid], rcvd_cur[oid]),
+                        Posting(credit_acct, 
+                                amount.Amount(tripod.rcvd_amt, tripod.rcvd_cur),
                                 ComputeRcvdCost(rcvd_cur[oid], rcvd_amt[oid],
                                             sent_cur[oid], sent_amt[oid]),
-                                None, # price?
-                                None, None))
-
-                if sent_amt[oid] or sent_cur[oid]:
+                                None, None, None))
                     postings.append(
-                        Posting(account.join(self.account_root, sent_cur[oid]),
-                                amount.Amount(-sent_amt[oid], sent_cur[oid]),
-                                None, # cost???
+                        Posting(debit_acct,
+                                amount.Amount(-tripod.sent_amt, tripod.sent_cur),
+                                Cost(None, None, None, None),
                                 ComputeSentPrice(rcvd_cur[oid], rcvd_amt[oid],
                                              sent_cur[oid], sent_amt[oid]),
                                 None, None))
 
-                if ext_amt[oid] or ext_cur[oid]:
-                    remote_account = "UNDETERMINED"
-                    # TODO: this is absolutely hideous; use Tripod
-                    if rcvd_amt[oid] > 0:
-                        assert rcvd_cur[oid] == ext_cur[oid]
-                        remote_account = Config.network.source(
-                            account.join(self.account_root, rcvd_cur[oid]), rcvd_cur[oid])
-                    elif sent_amt[oid] > 0:
-                        assert sent_cur[oid] == ext_cur[oid]
-                        remote_account = Config.network.route(
-                            account.join(self.account_root, sent_cur[oid]), sent_cur[oid])
-                    else:
-                        remote_account = f"rcvd {rcvd_amt[oid]} sent {sent_amt[oid]}"
-                    
+                else:
+                    assert False, "Unexpected tripod type"
+
+                # Gate.io charges fees in crypto.  So what we need to do is take
+                # the crypto fee amount, book it as a "sale" at current FMV, and
+                # the book a fee expense for that amount of USD.
+                if tripod.fees_amt:
+                    if tripod.fees_cur == "USD":
+                        raise Exception("not expecting USD feeds in GateIO")
+
+                    # Price to use for the virtual exchange.  TODO: get real prices.
+                    asset_price_in_usd = Decimal('1.0')
+                    fees_in_usd = tripod.fees_amt * asset_price_in_usd
+
+                    # Book the sale
                     postings.append(
-                        Posting(remote_account,
-                                amount.Amount(ext_amt[oid], ext_cur[oid]),
+                        Posting(account.join(self.account_root, tripod.fees_cur),
+                                amount.Amount(-fees_amt[oid], tripod.fees_cur),
+                                Cost(None, None, None, None),
+                                amount.Amount(asset_price_in_usd, "USD"),
+                                None, None))
+
+                    # Book the fee
+                    postings.append(
+                        Posting(account.join(self.account_fees, "USD"),
+                                amount.Amount(fees_in_usd, "USD"),
                                 None,
                                 None,
                                 None, None))
-                    
-                if fees_amt[oid] or fees_cur[oid]:
+
+                # PnL
+                if tripod.sent:
+                    if tripod.sent_cur == "USD":
+                        raise Exception("not expecting USD disposals in GateIO")
                     postings.append(
-                        Posting(account.join(self.account_fees, fees_cur[oid]),
-                                amount.Amount(fees_amt[oid], fees_cur[oid]),
-                                None,
-                                None,
-                                None, None))
-                    postings.append(
-                        Posting(account.join(self.account_root, fees_cur[oid]),
-                                amount.Amount(-fees_amt[oid], fees_cur[oid]),
-                                None,
-                                None,
-                                None, None))
+                        Posting(self.account_pnl, None, None, None, None, None))
 
                 txn = data.Transaction(meta, date, flags.FLAG_OKAY,
                                        None, desc, data.EMPTY_SET, links,
@@ -293,13 +322,11 @@ class GateIOImporter(beangulp.Importer):
 
         return entries
 
-
-
 if __name__ == "__main__":
     importer = GateIOImporter(
         account_root="Assets:GateIO",
         account_external_root="Assets:ALLEXTERNAL",
-        account_gains="Income:PnL",
+        account_pnl="Income:PnL",
         account_fees="Expenses:Financial:Fees",
     )
     main(importer)

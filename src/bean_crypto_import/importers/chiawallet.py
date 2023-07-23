@@ -126,7 +126,7 @@ class ChiaWalletImporter(beangulp.Importer):
                         if tripod.rcvd:
                             account_ext = Config.network.source(account_int, tripod.currency())
                         else:
-                            account_ext = Config.network.route(account_int, tripod.currency())
+                            account_ext = Config.network.target(account_int, tripod.currency())
 
                     units = amount.Amount(tripod.amount(), tripod.currency())
                     sign = Decimal(1 if tripod.rcvd else -1)

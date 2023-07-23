@@ -92,7 +92,7 @@ class CoinbaseProImporter(beangulp.Importer):
                         remote_account = Config.network.source(local_account, currency)
                     if transfer['type'] == 'withdrawal':
                         title = f"CBP: Withdraw {currency}"
-                        remote_account = Config.network.route(local_account, currency)
+                        remote_account = Config.network.target(local_account, currency)
 
                     # value appears to be negated for withdrawals already
                     posting1 = Posting(local_account, Amount(value, currency),

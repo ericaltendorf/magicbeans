@@ -114,7 +114,7 @@ class CoinbaseImporter(beangulp.Importer):
 
                     account_external = "UNDETERMINED"
                     if rtype == "Send":
-                        account_external = Config.network.route(account_inst, instrument)
+                        account_external = Config.network.target(account_inst, instrument)
                     else:
                         account_external = Config.network.source(account_inst, instrument)
 

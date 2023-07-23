@@ -115,14 +115,16 @@ def test_is_receive():
     assert not tripod.is_send()
     assert tripod.tx_class() == "Receive"
 
-def test_xfer_cur():
+def test_xfer_accessors():
     tripod = Tripod(rcvd_amt="", rcvd_cur="",
                     sent_amt="100.0", sent_cur="USDT",
                     fees_amt="1.0", fees_cur="USD")
+    assert tripod.xfer_amt() == Decimal("100.0")
     assert tripod.xfer_cur() == "USDT"
     tripod = Tripod(rcvd_amt="1.0", rcvd_cur="BTC",
                     sent_amt="", sent_cur="",
                     fees_amt="1.0", fees_cur="USD")
+    assert tripod.xfer_amt() == Decimal("1.0")
     assert tripod.xfer_cur() == "BTC"
 
 # TODO

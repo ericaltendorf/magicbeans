@@ -66,6 +66,14 @@ class Tripod():
     def is_receive(self) -> bool:
         return self.is_transfer() and self.rcvd
 
+    def xfer_amt(self) -> str:
+        if not self.is_transfer():
+            raise Exception("Can't get transfer currency on non transfer")
+        if self.is_send():
+            return self.sent_amt
+        else:
+            return self.rcvd_amt
+
     def xfer_cur(self) -> str:
         if not self.is_transfer():
             raise Exception("Can't get transfer currency on non transfer")

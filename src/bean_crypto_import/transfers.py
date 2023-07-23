@@ -69,13 +69,19 @@ class Network():
             raise Exception(f"Route already exists for {key}")
         self.rev_routes[key] = target
 
-    def route(self, account: str, currency: str) -> str:
+    def target(self, account: str, currency: str) -> str:
         """From this account, where do transfers in this currency go?"""
         return self.fwd_routes[(account, currency)]
 
     def source(self, account: str, currency: str) -> str:
         """For this account, where did transfers in this currency come from?"""
         return self.rev_routes[(account, currency)]
+
+    def route(self, is_outgoing: bool, account: str, currency: str) -> str:
+        if is_outgoing:
+            return self.target(account, currency)
+        else:
+            return self.source(account, currency)
 
     def buffer_accounts(self):
         return self.buffer_accts

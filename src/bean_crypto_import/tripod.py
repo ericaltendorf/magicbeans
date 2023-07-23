@@ -1,7 +1,10 @@
-"""Represents the common class of transaction with a received and/or 
-   sent leg, and an optional fees leg.  Enforces internal consistency
-   and offers higher-level views of the data, e.g. as a buy/sell
-   transaction or an account transfer."""
+"""Represents the common class of transaction with a received and/or sent leg,
+and an optional fees leg.  Enforces internal consistency and offers higher-level
+views of the data, e.g. as a transaction or an account transfer.  Does not
+classify between "buy" and "sell" transactions, since those labels only make
+sense in the context of a leg in the operating currency (e.g., BTC for USD), and
+conversely, in the context of taxation, events that don't seem to be sales need
+to be treated as sales (e.g. payment of transaction fees in non-USD assets)."""
 
 # TODO: add tests
 
@@ -15,8 +18,8 @@ def check_booleq_and_return(val1, val2):
     return bool(val1)
 
 class Tripod():
-    """A tripod represents a transfer with up to three legs (received, sent, and
-    fees), from the perspective of one account.  Therefore, each amount is
+    """A tripod represents a transaction with up to three legs (received, sent,
+    and fees), from the perspective of one account.  Therefore, each amount is
     represented as a positive value.  At least one of {received, sent} is
     required, and if both are present, then their currencies must differ."""
     def __init__(self,
@@ -37,9 +40,9 @@ class Tripod():
         if self.rcvd_amt < 0:
             raise Exception("Negative received amount")
         if self.sent_amt < 0:
-            raise Exception("Negative received amount")
+            raise Exception("Negative sent amount")
         if self.fees_amt < 0:
-            raise Exception("Negative received amount")
+            raise Exception("Negative fees amount")
 
         # This is here because we currently have no fee-only transactions,
         # but it could be removed, e.g., for account maintenance fees.
@@ -62,6 +65,14 @@ class Tripod():
 
     def is_receive(self) -> bool:
         return self.is_transfer() and self.rcvd
+
+    def xfer_cur(self) -> str:
+        if not self.is_transfer():
+            raise Exception("Can't get transfer currency on non transfer")
+        if self.is_send():
+            return self.sent_cur
+        else:
+            return self.rcvd_cur
 
     # TODO: maybe need a flag to say whether to subtract out fee amounts or not
     def imputed_price(self, target_currency) -> Decimal:

@@ -14,6 +14,7 @@ import re
 import sys
 
 from os import path
+from bean_crypto_import import common
 from beancount.core.data import Posting
 from beancount.core.position import Cost
 from dateutil.parser import parse
@@ -219,7 +220,8 @@ class GateIOImporter(beangulp.Importer):
 
             # Phase 2: process totals for each order ID
             for oid in sorted(order_ids, key=tx_ts_min.get):
-                date = tx_ts_min[oid].date() #strftime('%m/%d/%Y %H:%M:%S').date()
+                timestamp = tx_ts_min[oid]
+                date = timestamp.date()
                 
                 # TODO
                 desc = f"{label[oid]} (tx id {oid})"
@@ -285,6 +287,7 @@ class GateIOImporter(beangulp.Importer):
                 txn = data.Transaction(meta, date, flags.FLAG_OKAY,
                                        None, desc, data.EMPTY_SET, links,
                                        postings)
+                common.attach_timestamp(txn, timestamp)
 
                 entries.append(txn)
 

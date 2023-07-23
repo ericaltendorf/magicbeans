@@ -30,7 +30,7 @@ from beancount.core.number import ZERO
 import beangulp
 from beangulp.testing import main
 
-from bean_crypto_import.common import usd_cost_spec
+from bean_crypto_import import common
 from bean_crypto_import.tripod import Tripod
 
 # Surprisingly the Chia wallet dumps seem to be in local (PST) time.
@@ -142,14 +142,15 @@ class ChiaWalletImporter(beangulp.Importer):
                         [
                             data.Posting(account_int,
                                          amount.mul(units, sign),
-                                         mined_cost_basis if (tag == "mined") else usd_cost_spec(tripod.currency()),
+                                         mined_cost_basis if (tag == "mined") else common.usd_cost_spec(tripod.currency()),
                                          None, None, None),
                             data.Posting(account_ext,
                                          None if (tag == "mined") else amount.mul(units, -sign),
-                                         None if (tag == "mined") else usd_cost_spec(tripod.currency()),
+                                         None if (tag == "mined") else common.usd_cost_spec(tripod.currency()),
                                          None, None, None),
                         ],
                     )
+                    common.attach_timestamp(txn, utc_dt)
 
                 elif tripod.is_transaction():
                     assert False, "Unexpected transaction in wallet (expect transfers only)"

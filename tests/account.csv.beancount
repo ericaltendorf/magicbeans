@@ -3,33 +3,39 @@
 ;; Name: 
 
 2020-01-03 * "CBP: Deposit USD"
+  timestamp: "2020-01-03T12:46:23.422Z"
   transferid: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
   Assets:Coinbase:USD   100000.0 USD
   Assets:Bank:USD      -100000.0 USD
 
 2020-01-18 * "CBP: Deposit BTC"
+  timestamp: "2020-01-18T16:53:36.471Z"
   transferid: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaa111111"
   Assets:Coinbase:BTC   1.000000 BTC {USD}
   Assets:Ledger:BTC    -1.000000 BTC {USD}
 
 2020-02-14 * "CBP: Buy 0.8000000 BTC"
   orderid: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaa222222"
+  timestamp: "2020-02-14T17:45:33.335Z"
   Assets:Coinbase:BTC      0.8000000 BTC {12500 USD}
   Assets:Coinbase:USD      -10100.00 USD
   Expenses:Financial:Fees      100.0 USD
 
 2020-04-12 * "CBP: Withdraw BTC"
+  timestamp: "2020-04-12T05:55:24.629Z"
   transferid: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaa333333"
   Assets:Coinbase:BTC  -0.5000 BTC {USD}
   Assets:Ledger:BTC     0.5000 BTC {USD}
 
 2020-06-20 * "CBP: Deposit BTC"
+  timestamp: "2020-06-20T11:43:53.465Z"
   transferid: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaa44444"
   Assets:Coinbase:BTC   0.40000 BTC {USD}
   Assets:Ledger:BTC    -0.40000 BTC {USD}
 
 2020-08-03 * "CBP: Sell 1.00000 BTC"
   orderid: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaa555555"
+  timestamp: "2020-08-03T10:08:30.419Z"
   Assets:Coinbase:BTC       -1.00000 BTC {} @ 20000 USD
   Assets:Coinbase:USD      20000.000 USD
   Assets:Coinbase:USD        -100.00 USD

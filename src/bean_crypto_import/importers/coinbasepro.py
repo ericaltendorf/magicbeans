@@ -19,6 +19,8 @@ import os
 import re
 from itertools import groupby
 from os import path
+from bean_crypto_import import common
+import dateutil.parser
 
 from beancount.core import account
 from beancount.core.amount import Amount
@@ -62,7 +64,7 @@ class CoinbaseProImporter(beangulp.Importer):
 
     def account(self, filepath):
         return self.account_root
-    
+
     def extract(self, file, existing_entries=None) -> list:
         with open(file, 'r') as _file:
             transactions = list(csv.DictReader(_file))
@@ -78,7 +80,7 @@ class CoinbaseProImporter(beangulp.Importer):
         for order_id, transfers in transactions_by_order:
             if order_id == '':
                 for transfer in transfers:
-                    tx_date = datetime.datetime.strptime(transfer['time'], "%Y-%m-%dT%H:%M:%S.%fZ")
+                    tx_ts = dateutil.parser.parse(transfer["time"])
                     value = D(transfer['amount'])
                     currency = transfer['amount/balance unit']
                     local_account = account.join(self.account_root, currency)
@@ -100,12 +102,13 @@ class CoinbaseProImporter(beangulp.Importer):
 
                     metadata = {'transferid': transfer['transfer id']}
                     entry = Transaction(
-                        new_metadata(file, 0, metadata), tx_date.date(),
+                        new_metadata(file, 0, metadata), tx_ts.date(),
                         flags.FLAG_OKAY, None, title,
                         EMPTY_SET, EMPTY_SET,
                         [posting1, posting2]
                         # [withdrawal, deposit],
                     )
+                    common.attach_timestamp(entry, tx_ts)
 
                     if cbp_filter_entry(entry):
                         continue
@@ -122,11 +125,11 @@ class CoinbaseProImporter(beangulp.Importer):
                 postings = []
                 title = ' '
                 trade_type = None
-                tx_date = None
+                tx_ts = None
 
                 for transfer in transfers:
-                    if tx_date is None:
-                        tx_date = datetime.datetime.strptime(transfer['time'], "%Y-%m-%dT%H:%M:%S.%fZ")
+                    if tx_ts is None:
+                        tx_ts = dateutil.parser.parse(transfer["time"])
                     metadata = {'orderid': transfer['order id']}
                     currency = transfer['amount/balance unit']
                     value = D(transfer['amount'])
@@ -219,7 +222,7 @@ class CoinbaseProImporter(beangulp.Importer):
 
                 entry = Transaction(
                     new_metadata(file, 0, metadata),
-                    tx_date.date(),
+                    tx_ts.date(),
                     flags.FLAG_OKAY,
                     None,
                     f'CBP: {trade_type}{title}',
@@ -227,6 +230,7 @@ class CoinbaseProImporter(beangulp.Importer):
                     EMPTY_SET,
                     postings,
                 )
+                common.attach_timestamp(entry, tx_ts)
 
                 entries.append(entry)
 

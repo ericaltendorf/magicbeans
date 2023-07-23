@@ -1,4 +1,15 @@
+from datetime import datetime
+import re
 from beancount.core import position
+from beancount.core.data import Transaction
+
+def attach_timestamp(entry: Transaction, ts: datetime):
+    if ts.tzinfo is None or ts.tzinfo.utcoffset(ts) is None:
+        raise Exception("Timestamps must be timezone aware")
+
+    # This is so dumb.
+    entry.meta['timestamp'] = re.sub(r'0*\+00:00', 'Z', ts.isoformat())
+    None
 
 # Need to add a USD cost spec on transfers, see
 #   https://github.com/beancount/beancount/issues/476

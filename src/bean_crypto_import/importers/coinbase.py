@@ -12,7 +12,8 @@ import re
 import logging
 
 from os import path
-from dateutil.parser import parse
+from bean_crypto_import import common
+import dateutil.parser
 
 from beancount.core import account
 from beancount.core import amount
@@ -25,7 +26,6 @@ from beancount.core.number import ZERO
 import beangulp
 from beangulp.testing import main
 
-from bean_crypto_import.common import usd_cost_spec
 from bean_crypto_import.config import Config, cb_compute_remote_account, get_network
 
 
@@ -89,7 +89,8 @@ class CoinbaseImporter(beangulp.Importer):
             for index, row in enumerate(csv.DictReader(reader)):
                 meta = data.new_metadata(filepath, index)
 
-                date = parse(row["Timestamp"]).date()
+                timestamp = dateutil.parser.parse(row["Timestamp"])
+                date = timestamp.date()
                 rtype = row["Transaction Type"].lstrip("Advanced Trade ")
                 instrument = row["Asset"]
                 quantity = D(row["Quantity Transacted"])
@@ -122,9 +123,9 @@ class CoinbaseImporter(beangulp.Importer):
                                            None, desc, data.EMPTY_SET, links,
                         [
                             data.Posting(account_inst, amount.mul(units, sign),
-                                         usd_cost_spec(instrument), None, None, None),
+                                         common.usd_cost_spec(instrument), None, None, None),
                             data.Posting(account_external, amount.mul(units, -sign),
-                                         usd_cost_spec(instrument), None, None, None),
+                                         common.usd_cost_spec(instrument), None, None, None),
                         ],
                     )
 
@@ -166,6 +167,7 @@ class CoinbaseImporter(beangulp.Importer):
                 else:
                     logging.error("Unknown row type: %s; skipping", rtype)
                     continue
+                common.attach_timestamp(txn, timestamp)
                 entries.append(txn)
 
         return entries

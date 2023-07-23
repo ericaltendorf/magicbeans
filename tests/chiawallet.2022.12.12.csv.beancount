@@ -3,37 +3,46 @@
 ;; Name: coinbase.chiawallet.2022.12.12.csv
 
 2022-05-02 * "Mining reward of 2.00 XCH"
+  timestamp: "2022-05-02T21:51:14Z"
   Assets:ChiaWallet:XCH  2.00 XCH {1.0 USD}
   Income:Mining:USD
 
 2022-05-06 * "Transfer of 1.74 XCH"
+  timestamp: "2022-05-06T16:40:27Z"
   Assets:ChiaWallet:XCH                            1.74 XCH {USD}
   Assets:ZeroSumAccount:GateIO-To-ChiaWallet:XCH  -1.74 XCH {USD}
 
 2022-05-11 * "Transfer of 1 XCH"
+  timestamp: "2022-05-11T23:55:19Z"
   Assets:ChiaWallet:XCH                           -1 XCH {USD}
   Assets:ZeroSumAccount:ChiaWallet-To-GateIO:XCH   1 XCH {USD}
 
 2022-05-13 * "Mining reward of 8.83 XCH"
+  timestamp: "2022-05-13T14:21:28Z"
   Assets:ChiaWallet:XCH  8.83 XCH {1.0 USD}
   Income:Mining:USD
 
 2022-06-02 * "Transfer of 5.11 XCH"
+  timestamp: "2022-06-02T01:41:58Z"
   Assets:ChiaWallet:XCH                            5.11 XCH {USD}
   Assets:ZeroSumAccount:GateIO-To-ChiaWallet:XCH  -5.11 XCH {USD}
 
 2022-07-01 * "Mining reward of 2.42 XCH"
+  timestamp: "2022-07-01T21:42:27Z"
   Assets:ChiaWallet:XCH  2.42 XCH {1.0 USD}
   Income:Mining:USD
 
 2022-08-01 * "Transfer of 4 XCH"
+  timestamp: "2022-08-01T21:53:48Z"
   Assets:ChiaWallet:XCH                           -4 XCH {USD}
   Assets:ZeroSumAccount:ChiaWallet-To-GateIO:XCH   4 XCH {USD}
 
 2022-09-01 * "Transfer of 20 XCH"
+  timestamp: "2022-09-01T20:01:53Z"
   Assets:ChiaWallet:XCH                           -20 XCH {USD}
   Assets:ZeroSumAccount:ChiaWallet-To-GateIO:XCH   20 XCH {USD}
 
 2022-10-02 * "Mining reward of 2.22 XCH"
+  timestamp: "2022-10-02T05:57:46Z"
   Assets:ChiaWallet:XCH  2.22 XCH {1.0 USD}
   Income:Mining:USD

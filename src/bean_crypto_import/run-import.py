@@ -5,45 +5,105 @@ import glob
 import os
 import json
 import sys
-
+from typing import List
+from bean_crypto_import.importers.chiawallet import ChiaWalletImporter
 from bean_crypto_import.importers.coinbase import CoinbaseImporter
+from bean_crypto_import.importers.coinbasepro import CoinbaseProImporter
+from bean_crypto_import.importers.gateio import GateIOImporter
+import beangulp
+from beangulp.importer import Importer
 
-# TODO: factor this out
-cb_importer = CoinbaseImporter(
-   account_root="Assets:Coinbase",
-   account_external_root="Assets:ALLEXTERNAL",
-   account_gains="Income:PnL",
-   account_fees="Expenses:Financial:Fees",
-)
+def get_importers() -> List[Importer]:
+   importers = []
 
-def run_reconcile(extra_args):
-   import beancount_import.webserver
+   # TODO: move these arguments to a config file
+   importers.append(CoinbaseImporter(
+      account_root="Assets:Coinbase",
+      account_external_root="Assets:ALLEXTERNAL",
+      account_gains="Income:PnL",
+      account_fees="Expenses:Financial:Fees",))
 
-   journal_dir = os.path.dirname(__file__)
-   data_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
+   importers.append(ChiaWalletImporter(
+      account_root="Assets:ChiaWallet",
+      account_external_root="Assets:ALLEXTERNAL",
+      account_mining_income="Income:Mining",
+      account_gains="Income:PnL",
+      account_fees="Expenses:Financial:Fees",))
 
-   data_sources = [ 
-       dict(
-         module='beancount_import.source.generic_importer_source',
-         importer=cb_importer,
-         directory='/home/eric/crypto-taxes/downloads/Coinbase',
-       )
-   ]
+   importers.append(GateIOImporter(
+      account_root="Assets:GateIO",
+      account_external_root="Assets:ALLEXTERNAL",
+      account_gains="Income:PnL",
+      account_fees="Expenses:Financial:Fees",))
 
-   beancount_import.webserver.main(
-      extra_args,
-      journal_input=os.path.join(journal_dir, 'journal.beancount'),
-      ignored_journal=os.path.join(journal_dir, 'ignored.beancount'),
-      default_output=os.path.join(journal_dir, 'transactions.beancount'),
-      open_account_output_map=[
-         ('.*', os.path.join(journal_dir, 'accounts.beancount')),
-      ],
-      balance_account_output_map=[
-         ('.*', os.path.join(journal_dir, 'accounts.beancount')),
-      ],
-      price_output=os.path.join(journal_dir, 'prices.beancount'),
-      data_sources=data_sources,
-   )
+   importers.append(CoinbaseProImporter(
+      account_root="Assets:Coinbase",
+      account_external_root="Assets:ALLEXTERNAL",
+      account_gains="Income:PnL",
+      account_fees="Expenses:Financial:Fees",))
+
+   return importers
+
+# def extract():
+# def _extract(ctx, src, output, existing, reverse, failfast, quiet):
+#     """Extract transactions from documents.
+
+#     Similar to beagulp._extract() but designed to be driven
+#     programmatically, returning the list of entries for further
+#     processing.
+#     """
+#     verbosity = -quiet
+#     log = utils.logger(verbosity, err=True)
+#     errors = exceptions.ExceptionsTrap(log)
+
+#     # Load the ledger, if one is specified.
+#     existing_entries = loader.load_file(existing)[0] if existing else []
+
+#     extracted = []
+#     for filename in _walk(src, log):
+#         with errors:
+#             importer = identify.identify(ctx.importers, filename)
+#             if not importer:
+#                 log('') # Newline.
+#                 continue
+
+#             # Signal processing of this document.
+#             log(' ...', nl=False)
+
+#             # Extract entries.
+#             entries = extract.extract_from_file(importer, filename, existing_entries)
+#             extracted.append((filename, entries))
+#             log(' OK', fg='green')
+
+#         if failfast and errors:
+#             break
+
+#     for func in ctx.hooks:
+#         extracted = func(extracted, existing_entries)
+
+#     # Reverse sort order, if requested.
+#     if reverse:
+#         for filename, entries in extracted:
+#             entries.reverse()
+
+#     # Serialize entries.
+#     extract.print_extracted_entries(extracted, output)
+
+#     if errors:
+#         sys.exit(1)
+
+# def add_preamble(extracted, existing):
+   # result = []
+   # entry = #Transaction()
+   # for filepath, entries, account, importer in extracted:
+      # for entry in entries:
+         # None
+# 
+   # return result
+   #  
 
 if __name__ == '__main__':
-    run_reconcile(sys.argv[1:])
+    importers = get_importers()
+    hooks = []
+    cli = beangulp.Ingest(importers, hooks).cli
+    cli()

@@ -4,9 +4,10 @@ import sys
 from typing import List
 from beancount.parser import parser
 from beancount.parser import printer
+import dateutil.parser
 
 def key(entry):
-     return (entry.date, entry.meta['timestamp'])
+     return (entry.date, dateutil.parser.parse(entry.meta['timestamp']))
 
 if __name__ == '__main__':
    entries, errors, options = parser.parse_file(sys.argv[1])

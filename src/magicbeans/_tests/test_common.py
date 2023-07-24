@@ -33,3 +33,10 @@ def test_attach_timestamp() -> None:
 
     assert tx.meta["timestamp"] == iso_ts
 
+def test_attach_timestamp_ends_in_zeros() -> None:
+    tx: Transaction = get_test_tx()
+    iso_ts = "2020-01-05T16:12:00Z"
+    timestamp = dateutil.parser.isoparse(iso_ts)
+    common.attach_timestamp(tx, timestamp)
+
+    assert tx.meta["timestamp"] == iso_ts

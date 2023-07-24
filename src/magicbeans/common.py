@@ -8,7 +8,10 @@ def attach_timestamp(entry: Transaction, ts: datetime):
         raise Exception("Timestamps must be timezone aware")
 
     # This is so dumb.
-    entry.meta['timestamp'] = re.sub(r'0*\+00:00', 'Z', ts.isoformat())
+    fmt1 = ts.isoformat(timespec='milliseconds')
+    fmt2 = fmt1.removesuffix('+00:00')
+    fmt3 = fmt2.removesuffix('.000') + 'Z'
+    entry.meta['timestamp'] = fmt3
     None
 
 # Need to add a USD cost spec on transfers, see

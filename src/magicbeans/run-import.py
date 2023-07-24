@@ -6,10 +6,10 @@ import os
 import json
 import sys
 from typing import List
-from bean_crypto_import.importers.chiawallet import ChiaWalletImporter
-from bean_crypto_import.importers.coinbase import CoinbaseImporter
-from bean_crypto_import.importers.coinbasepro import CoinbaseProImporter
-from bean_crypto_import.importers.gateio import GateIOImporter
+from magicbeans.importers.chiawallet import ChiaWalletImporter
+from magicbeans.importers.coinbase import CoinbaseImporter
+from magicbeans.importers.coinbasepro import CoinbaseProImporter
+from magicbeans.importers.gateio import GateIOImporter
 import beangulp
 from beangulp.importer import Importer
 

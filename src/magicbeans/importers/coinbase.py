@@ -12,7 +12,7 @@ import re
 import logging
 
 from os import path
-from bean_crypto_import import common
+from magicbeans import common
 import dateutil.parser
 
 from beancount.core import account
@@ -26,7 +26,7 @@ from beancount.core.number import ZERO
 import beangulp
 from beangulp.testing import main
 
-from bean_crypto_import.config import Config, cb_compute_remote_account, get_network
+from magicbeans.config import Config, cb_compute_remote_account, get_network
 
 
 def coinbase_data_reader(reader):

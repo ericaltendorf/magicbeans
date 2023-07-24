@@ -19,7 +19,7 @@ import os
 import re
 from itertools import groupby
 from os import path
-from bean_crypto_import import common
+from magicbeans import common
 import dateutil.parser
 
 from beancount.core import account
@@ -31,11 +31,11 @@ from beancount.core.number import D, round_to
 import beangulp
 from beangulp.testing import main
 
-from bean_crypto_import.common import usd_cost_spec
+from magicbeans.common import usd_cost_spec
 
 # TODO: create a better way of encapsulating personal logic
-from bean_crypto_import.config import Config, cbp_filter_entry
-from bean_crypto_import.config import cbp_compute_remote_account
+from magicbeans.config import Config, cbp_filter_entry
+from magicbeans.config import cbp_compute_remote_account
 
 class CoinbaseProImporter(beangulp.Importer):
 

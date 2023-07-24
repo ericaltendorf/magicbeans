@@ -13,7 +13,7 @@ from decimal import Decimal
 from typing import NamedTuple
 import re
 import logging
-from bean_crypto_import.config import Config
+from magicbeans.config import Config
 import pytz
 
 from os import path
@@ -30,8 +30,8 @@ from beancount.core.number import ZERO
 import beangulp
 from beangulp.testing import main
 
-from bean_crypto_import import common
-from bean_crypto_import.tripod import Tripod
+from magicbeans import common
+from magicbeans.tripod import Tripod
 
 # Surprisingly the Chia wallet dumps seem to be in local (PST) time.
 # For now, we'll convert to UTC.  TODO: fix the Chia wallet dumper to

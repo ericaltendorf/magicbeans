@@ -2,7 +2,7 @@ import sys
 
 import pytest
 
-from bean_crypto_import.transfers import Network, Link
+from magicbeans.transfers import Network, Link
 
 def test_network() -> None:
     net = Network([

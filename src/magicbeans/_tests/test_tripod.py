@@ -1,6 +1,6 @@
 from decimal import Decimal
 import sys
-from bean_crypto_import.tripod import Tripod
+from magicbeans.tripod import Tripod
 
 import pytest
 

@@ -1,12 +1,12 @@
 from datetime import datetime
 import sys
-from bean_crypto_import import common
+from magicbeans import common
 from beancount.parser import parser
 from beancount.core.data import Transaction
 import dateutil.parser
 import pytest
 
-from bean_crypto_import.transfers import Network, Link
+from magicbeans.transfers import Network, Link
 
 def get_test_tx() -> Transaction:
     entries, errors, options = parser.parse_string("""

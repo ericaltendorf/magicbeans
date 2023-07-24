@@ -18,8 +18,8 @@ import re
 import sys
 
 from os import path
-from bean_crypto_import import common
-from bean_crypto_import.tripod import Tripod
+from magicbeans import common
+from magicbeans.tripod import Tripod
 from beancount.core.data import Posting
 from beancount.core.position import Cost
 from dateutil.parser import parse
@@ -36,8 +36,8 @@ from beancount.core.number import ZERO
 import beangulp
 from beangulp.testing import main
 
-from bean_crypto_import.common import usd_cost_spec
-from bean_crypto_import.config import Config, gio_compute_remote_account
+from magicbeans.common import usd_cost_spec
+from magicbeans.config import Config, gio_compute_remote_account
 
 gateio_headers = 'no,time,action_desc,action_data,type,change_amount,amount,total'
 inreader = csv.DictReader(sys.stdin, delimiter=',', quotechar='"')

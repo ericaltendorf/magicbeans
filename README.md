@@ -6,6 +6,7 @@ For context, see:
 - https://github.com/beancount/beangulp
 
 ## TODO
+- Set up continuous integration w/ typechecking and unit tests
 - Integrate [beancount-coinmarketcap](https://github.com/aamerabbas/beancount-coinmarketcap) plugin for prices
 - Create a canonical way to automatically apply registered fix-ups on imported data
 - Create a canonical way to apply a set of fixed booking decisions to imported data

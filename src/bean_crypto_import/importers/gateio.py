@@ -180,22 +180,12 @@ class GateIOImporter(beangulp.Importer):
                 if action == 'Order Placed':
                     CheckOrSet(sent_cur, oid, currency)
                     sent_amt[oid] -= ch_amt
-
-                    if currency == "USD":
-                        CheckOrSet(label, oid, "Buy")
-                    elif currency == "USDT":
-                        # TODO: this might break if we trade USD-USDT
-                        CheckOrSet(label, oid, "Buy (from USDT)")
+                    CheckOrSet(label, oid, "Buy (from USDT)")
 
                 elif action == 'Order Fullfilled':
                     CheckOrSet(rcvd_cur, oid, currency)
                     rcvd_amt[oid] += ch_amt
-
-                    if currency == "USD":
-                        CheckOrSet(label, oid, "Sell")
-                    elif currency == "USDT":
-                        # TODO: this might break if we trade USD-USDT
-                        CheckOrSet(label, oid, "Sell (to USDT)")
+                    CheckOrSet(label, oid, "Sell (to USDT)")
 
                 elif action == 'Trade Fee':
                     CheckOrSet(fees_cur, oid, currency)
@@ -247,9 +237,10 @@ class GateIOImporter(beangulp.Importer):
                     xfer_cost = common.usd_cost_spec(tripod.xfer_cur())
 
                     # Attach cost basis to the neg outgoing leg.
+                    # TODO: or to both???
                     if tripod.is_receive():
                         postings.append(
-                            Posting(local_acct, xfer_amt, None, None, None, None))
+                            Posting(local_acct, xfer_amt, xfer_cost, None, None, None))
                         postings.append(
                             Posting(remote_acct, xfer_amt_neg, xfer_cost, None, None, None))
                     elif tripod.is_send():

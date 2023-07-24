@@ -311,8 +311,12 @@ class GateIOImporter(beangulp.Importer):
                                 None,
                                 None, None))
 
+                    # "sale" of the asset may accrue PnL
+                    fees_postings.append(
+                        Posting(self.account_pnl, None, None, None, None, None))
+
                 # PnL
-                if tripod.sent:
+                if tripod.is_transaction():
                     if tripod.sent_cur == "USD":
                         raise Exception("not expecting USD disposals in GateIO")
                     postings.append(

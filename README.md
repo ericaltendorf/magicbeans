@@ -1,4 +1,4 @@
-# beancount-crypto-importers
+# magicbeans
 Beancount importers for crypto data.
 
 For context, see:

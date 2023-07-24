@@ -49,7 +49,8 @@ rendered_tz = 'Asia/Singapore'   # 'US/Pacific'
 
 def CheckOrSet(d, k, v):
     if k in d:
-        assert d[k] == v
+        if d[k] != v:
+            raise Exception(f"Can't set {k}={v}; key already set to {d[k]}")
     else:
         d[k] = v
 
@@ -146,17 +147,20 @@ class GateIOImporter(beangulp.Importer):
         label = StrDict()
         tx_ts_min = {}  # Transaction timestamp range
         tx_ts_max = {}
+        metadata_dict = {}
 
         entries = []
         with open(filepath) as infile:
             # Phase one: accumulate amounts on order IDs
             for index, row in enumerate(csv.DictReader(infile)):
-                meta = data.new_metadata(filepath, index)
-
                 # Order ID identifies the user-initiated action that led to the
                 # transactions in order execution.
                 oid = row['action_data']
                 order_ids.add(oid)
+
+                meta = data.new_metadata(filepath, index)
+                if oid not in metadata_dict:
+                    metadata_dict[oid] = meta
 
                 # Translate timestamps and record timestamp windows
                 naive_dt = datetime.datetime.strptime(row['time'], '%Y-%m-%d %H:%M:%S')
@@ -180,12 +184,14 @@ class GateIOImporter(beangulp.Importer):
                 if action == 'Order Placed':
                     CheckOrSet(sent_cur, oid, currency)
                     sent_amt[oid] -= ch_amt
-                    CheckOrSet(label, oid, "Buy (from USDT)")
+                    if currency == "USDT":
+                        CheckOrSet(label, oid, "Buy (from USDT)")
 
                 elif action == 'Order Fullfilled':
                     CheckOrSet(rcvd_cur, oid, currency)
                     rcvd_amt[oid] += ch_amt
-                    CheckOrSet(label, oid, "Sell (to USDT)")
+                    if currency == "USDT":
+                        CheckOrSet(label, oid, "Sell (to USDT)")
 
                 elif action == 'Trade Fee':
                     CheckOrSet(fees_cur, oid, currency)
@@ -216,6 +222,7 @@ class GateIOImporter(beangulp.Importer):
             for oid in sorted(order_ids, key=tx_ts_min.get):
                 timestamp = tx_ts_min[oid]
                 date = timestamp.date()
+                meta = metadata_dict[oid]
 
                 tripod = Tripod(rcvd_amt=rcvd_amt[oid],
                                 rcvd_cur=rcvd_cur[oid],
@@ -273,6 +280,13 @@ class GateIOImporter(beangulp.Importer):
                 # Gate.io charges fees in crypto.  So what we need to do is take
                 # the crypto fee amount, book it as a "sale" at current FMV, and
                 # the book a fee expense for that amount of USD.
+                # 
+                # Because this may be a "sale" of an asset also purchased in the
+                # same transaction, and this breaks beancount accounting, as a
+                # workaround we currently split out the fees as a separate
+                # transaction that happens immediately after the primary
+                # transaction -- hence, a secondary list of postings.
+                fees_postings = []
                 if tripod.fees_amt:
                     if tripod.fees_cur == "USD":
                         raise Exception("not expecting USD feeds in GateIO")
@@ -282,7 +296,7 @@ class GateIOImporter(beangulp.Importer):
                     fees_in_usd = tripod.fees_amt * asset_price_in_usd
 
                     # Book the sale
-                    postings.append(
+                    fees_postings.append(
                         Posting(account.join(self.account_root, tripod.fees_cur),
                                 amount.Amount(-fees_amt[oid], tripod.fees_cur),
                                 Cost(None, None, None, None),
@@ -290,7 +304,7 @@ class GateIOImporter(beangulp.Importer):
                                 None, None))
 
                     # Book the fee
-                    postings.append(
+                    fees_postings.append(
                         Posting(account.join(self.account_fees, "USD"),
                                 amount.Amount(fees_in_usd, "USD"),
                                 None,
@@ -308,8 +322,16 @@ class GateIOImporter(beangulp.Importer):
                                        None, desc, data.EMPTY_SET, links,
                                        postings)
                 common.attach_timestamp(txn, timestamp)
-
                 entries.append(txn)
+
+                # Warning: if you need to change anything in here (like the metadata)
+                # you need to make a copy
+                if (fees_postings):
+                    fee_txn = data.Transaction(dict(meta), date, flags.FLAG_OKAY,
+                                            None, f"Fees for {desc}", data.EMPTY_SET, links,
+                                            fees_postings)
+                    common.attach_timestamp(fee_txn, timestamp + datetime.timedelta(milliseconds=1))
+                    entries.append(fee_txn)
 
         return entries
 

@@ -1,5 +1,5 @@
 # Project-specific
-src/bean_crypto_import/config.py
+src/magicbeans/config.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

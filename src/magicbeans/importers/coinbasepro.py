@@ -40,10 +40,10 @@ from magicbeans.config import cbp_compute_remote_account
 class CoinbaseProImporter(beangulp.Importer):
 
     def __init__(self, account_root, account_external_root,
-                 account_gains, account_fees):
+                 account_pnl, account_fees):
         self.account_root = account_root
         self.account_external_root = account_external_root
-        self.account_gains = account_gains
+        self.account_pnl = account_pnl
         self.account_fees = account_fees
 
     def name(self) -> str:
@@ -101,19 +101,23 @@ class CoinbaseProImporter(beangulp.Importer):
                                        usd_cost_spec(currency), None, None, None)
 
                     metadata = {'transferid': transfer['transfer id']}
-                    entry = Transaction(
+                    tx = Transaction(
                         new_metadata(file, 0, metadata), tx_ts.date(),
                         flags.FLAG_OKAY, None, title,
                         EMPTY_SET, EMPTY_SET,
                         [posting1, posting2]
                         # [withdrawal, deposit],
                     )
-                    common.attach_timestamp(entry, tx_ts)
+                    common.attach_timestamp(tx, tx_ts)
 
-                    if cbp_filter_entry(entry):
+                    if cbp_filter_entry(tx):
                         continue
+                    
+                    # If transfers have fees, then here we should use
+                    # split_out_marked_fees(), but apparently coinbase pro
+                    # transfers don't have fees?  TODO: check.
 
-                    entries.append(entry)
+                    entries.append(tx)
 
             else:
                 fee_amount = D("0")
@@ -173,6 +177,8 @@ class CoinbaseProImporter(beangulp.Importer):
                                 None, None, None, None)
                     )
                     if fee_currency:
+                        if fee_currency != "USD":
+                            raise Exception("Haven't implemented non-USD fee disposal here yet")
                         postings.append(
                             Posting(self.account_fees,
                                     Amount(-fee_amount, fee_currency),
@@ -203,24 +209,30 @@ class CoinbaseProImporter(beangulp.Importer):
                                 increase_currency_cost_entry, None, None, None),
                     )
                     if fee_currency:
+                        # TODO: clarify this comment:
                         # Fees don't show up in the reduce amount for some reason,
                         # so we add an extra posting to cover the debiting of fees.
+                        fee_metadata = None if fee_currency == "USD" else {'is_fee': True}
                         postings.append(
                             Posting(account.join(self.account_root, fee_currency),
                                     Amount(fee_amount, fee_currency),
-                                    None, None, None, None)
+                                    None, None, None, fee_metadata)
                         )
                         postings.append(
                             Posting(self.account_fees,
                                     Amount(-fee_amount, fee_currency),
-                                    None, None, None, None)
+                                    None, None, None, fee_metadata)
                         )
+                        if fee_metadata:
+                            postings.append(
+                                Posting(self.account_pnl, None, None, None, None, fee_metadata)
+                            )
                         
                     postings.append(
-                        Posting(self.account_gains, None, None, None, None, None)
+                        Posting(self.account_pnl, None, None, None, None, None)
                     )
 
-                entry = Transaction(
+                tx = Transaction(
                     new_metadata(file, 0, metadata),
                     tx_ts.date(),
                     flags.FLAG_OKAY,
@@ -230,9 +242,14 @@ class CoinbaseProImporter(beangulp.Importer):
                     EMPTY_SET,
                     postings,
                 )
-                common.attach_timestamp(entry, tx_ts)
+                common.attach_timestamp(tx, tx_ts)
 
-                entries.append(entry)
+                (reg_tx, fee_tx) = common.split_out_marked_fees(tx, self.account_pnl)
+                if reg_tx and fee_tx:
+                    entries.append(reg_tx)
+                    entries.append(fee_tx)
+                else:
+                    entries.append(tx)
 
         return entries
     
@@ -241,7 +258,7 @@ if __name__ == "__main__":
     importer = CoinbaseProImporter(
         account_root="Assets:Coinbase",
         account_external_root="Assets:ALLEXTERNAL",
-        account_gains="Income:PnL",
+        account_pnl="Income:PnL",
         account_fees="Expenses:Financial:Fees",
     )
     main(importer)

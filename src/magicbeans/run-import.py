@@ -39,7 +39,7 @@ def get_importers() -> List[Importer]:
    importers.append(CoinbaseProImporter(
       account_root="Assets:Coinbase",
       account_external_root="Assets:ALLEXTERNAL",
-      account_gains="Income:PnL",
+      account_pnl="Income:PnL",
       account_fees="Expenses:Financial:Fees",))
 
    return importers

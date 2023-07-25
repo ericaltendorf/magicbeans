@@ -34,8 +34,7 @@ from beangulp.testing import main
 from magicbeans.common import usd_cost_spec
 
 # TODO: create a better way of encapsulating personal logic
-from magicbeans.config import Config, cbp_filter_entry
-from magicbeans.config import cbp_compute_remote_account
+from magicbeans.config import Config, cbp_filter_deposit, cbp_tweak_xfer_timestamp
 
 class CoinbaseProImporter(beangulp.Importer):
 
@@ -110,8 +109,10 @@ class CoinbaseProImporter(beangulp.Importer):
                     )
                     common.attach_timestamp(tx, tx_ts)
 
-                    if cbp_filter_entry(tx):
+                    # Some personal-specific tweaks and overrides
+                    if cbp_filter_deposit(tx):
                         continue
+                    cbp_tweak_xfer_timestamp(tx)
                     
                     # If transfers have fees, then here we should use
                     # split_out_marked_fees(), but apparently coinbase pro
@@ -199,9 +200,11 @@ class CoinbaseProImporter(beangulp.Importer):
                                 Cost(None, None, None, None),
                                 price, None, None),
                     )
+
                     increase_currency_cost_entry = None
-                    # if increase_currency == "USD":
-                    #     increase_currency_cost_entry = Cost(None, None, None, None)
+                    if increase_currency != "USD":
+                        # TODO: get real price of currency
+                        increase_currency_cost_entry = Cost(D('1.0'), "USD", None, None)
 
                     postings.append(
                         Posting(f'{self.account_root}:{increase_currency}',
@@ -212,15 +215,29 @@ class CoinbaseProImporter(beangulp.Importer):
                         # TODO: clarify this comment:
                         # Fees don't show up in the reduce amount for some reason,
                         # so we add an extra posting to cover the debiting of fees.
+
                         fee_metadata = None if fee_currency == "USD" else {'is_fee': True}
+                        
+                        # This is the decrease in the account which paid the fee.  If not
+                        # in USD, we must supply a cost.
                         postings.append(
                             Posting(account.join(self.account_root, fee_currency),
                                     Amount(fee_amount, fee_currency),
-                                    None, None, None, fee_metadata)
+                                    None if fee_currency == "USD" else Cost(None, None, None, None),
+                                    None, None, fee_metadata)
                         )
+                        
+                        # TODO: generalize and use real prices
+                        assert fee_currency in ["USD", "USDT"]
+                        fee_currency_price_in_usd = D('1.0')
+
+                        usd_fee_amount = fee_amount * fee_currency_price_in_usd
+
+                        # This is the increase in the account that accumulates all fees,
+                        # and must be recorded in USD.
                         postings.append(
                             Posting(self.account_fees,
-                                    Amount(-fee_amount, fee_currency),
+                                    Amount(-usd_fee_amount, "USD"),
                                     None, None, None, fee_metadata)
                         )
                         if fee_metadata:

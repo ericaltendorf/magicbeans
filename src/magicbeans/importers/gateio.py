@@ -277,16 +277,15 @@ class GateIOImporter(beangulp.Importer):
                 else:
                     assert False, "Unexpected tripod type"
 
+                # We'll set this to true if we dispose of an asset, either by a
+                # sale or an implicit sale by paying fees in non-USD.
+                has_disposal = False
+
                 # Gate.io charges fees in crypto.  So what we need to do is take
                 # the crypto fee amount, book it as a "sale" at current FMV, and
-                # the book a fee expense for that amount of USD.
-                # 
-                # Because this may be a "sale" of an asset also purchased in the
-                # same transaction, and this breaks beancount accounting, as a
-                # workaround we currently split out the fees as a separate
-                # transaction that happens immediately after the primary
-                # transaction -- hence, a secondary list of postings.
-                fees_postings = []
+                # the book a fee expense for that amount of USD.  We attach
+                # metadata to mark these transactions because as a workaround
+                # for now we need to split them out (see below).
                 if tripod.fees_amt:
                     if tripod.fees_cur == "USD":
                         raise Exception("not expecting USD feeds in GateIO")
@@ -296,24 +295,24 @@ class GateIOImporter(beangulp.Importer):
                     fees_in_usd = tripod.fees_amt * asset_price_in_usd
 
                     # Book the sale
-                    fees_postings.append(
+                    postings.append(
                         Posting(account.join(self.account_root, tripod.fees_cur),
                                 amount.Amount(-fees_amt[oid], tripod.fees_cur),
                                 Cost(None, None, None, None),
                                 amount.Amount(asset_price_in_usd, "USD"),
-                                None, None))
+                                None, {'is_fee': True}))
 
                     # Book the fee
-                    fees_postings.append(
+                    postings.append(
                         Posting(account.join(self.account_fees, "USD"),
                                 amount.Amount(fees_in_usd, "USD"),
                                 None,
                                 None,
-                                None, None))
+                                None, {'is_fee': True}))
 
                     # "sale" of the asset may accrue PnL
-                    fees_postings.append(
-                        Posting(self.account_pnl, None, None, None, None, None))
+                    postings.append(
+                        Posting(self.account_pnl, None, None, None, None, {'is_fee': True}))
 
                 # PnL
                 if tripod.is_transaction():
@@ -326,16 +325,18 @@ class GateIOImporter(beangulp.Importer):
                                        None, desc, data.EMPTY_SET, links,
                                        postings)
                 common.attach_timestamp(txn, timestamp)
-                entries.append(txn)
 
-                # Warning: if you need to change anything in here (like the metadata)
-                # you need to make a copy
-                if (fees_postings):
-                    fee_txn = data.Transaction(dict(meta), date, flags.FLAG_OKAY,
-                                            None, f"Fees for {desc}", data.EMPTY_SET, links,
-                                            fees_postings)
-                    common.attach_timestamp(fee_txn, timestamp + datetime.timedelta(milliseconds=1))
-                    entries.append(fee_txn)
+                # Because this may be a "sale" of an asset also purchased in the
+                # same transaction, and this breaks beancount accounting, as a
+                # workaround we currently split out the fees as a separate
+                # transaction that happens immediately after the primary
+                # transaction.
+                (reg_tx, fee_tx) = common.split_out_marked_fees(txn, self.account_pnl)
+                if reg_tx and fee_tx:
+                    entries.append(reg_tx)
+                    entries.append(fee_tx)
+                else:
+                    entries.append(txn)
 
         return entries
 

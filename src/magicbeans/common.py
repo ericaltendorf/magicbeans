@@ -42,8 +42,8 @@ def split_out_marked_fees(entry: Transaction, pnl_account) -> Tuple[Transaction,
                                                narration="Fees for " + entry.narration))
 
         # Increment the timestamp so it comes after the original transaction.
-        orig_tx = dateutil.parser.parse(fee_txn.meta['timestamp'])
-        attach_timestamp(fee_txn, orig_tx + datetime.timedelta(milliseconds=1))
+        orig_ts = dateutil.parser.parse(fee_txn.meta['timestamp'])
+        attach_timestamp(fee_txn, orig_ts + datetime.timedelta(milliseconds=1))
 
         return (new_txn, fee_txn)
 

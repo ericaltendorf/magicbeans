@@ -72,6 +72,8 @@ def get_tx_wtimestamp_wfees() -> Transaction:
         is_fee: TRUE
       Expenses:Fees                10.0 USD
         is_fee: TRUE
+      Income:PnL
+        is_fee: TRUE                                                    
     """)
     return entries[0]
 
@@ -99,5 +101,6 @@ def test_split_out_marked_fees_dosplit() -> None:
             '    is_fee: TRUE\n'
             '  Expenses:Fees                10.0 USD\n'
             '    is_fee: TRUE\n'
-            '  Income:PnL\n')
+            '  Income:PnL\n'
+            '    is_fee: TRUE\n')
 

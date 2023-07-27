@@ -6,6 +6,7 @@ For context, see:
 - https://github.com/beancount/beangulp
 
 ## TODO
+- Make all importers fill out narration field with a human readable description of the transaction, with amounts and ID when possible (helps a lot when inspecting with bean-query)
 - Set up continuous integration w/ typechecking and unit tests
 - Integrate [beancount-coinmarketcap](https://github.com/aamerabbas/beancount-coinmarketcap) plugin for prices
 - Create a canonical way to automatically apply registered fix-ups on imported data

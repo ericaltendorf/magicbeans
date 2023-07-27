@@ -95,7 +95,7 @@ def test_is_transaction():
                     fees_amt="10.0", fees_cur="USD")
     assert tripod.is_transaction()
     assert not tripod.is_transfer()
-    assert tripod.tx_class() == "Transaction"
+    assert tripod.tx_class() == "Buy (from USDT)"
 
 def test_is_send():
     tripod = Tripod(rcvd_amt="", rcvd_cur="",
@@ -114,6 +114,32 @@ def test_is_receive():
     assert tripod.is_receive()
     assert not tripod.is_send()
     assert tripod.tx_class() == "Receive"
+
+def test_narration():
+    tripod = Tripod(rcvd_amt="1.0", rcvd_cur="BTC",
+                    sent_amt="1000.0", sent_cur="USD",
+                    fees_amt="", fees_cur="")
+    assert tripod.tx_class() == "Buy"
+
+    tripod = Tripod(rcvd_amt="1.0", rcvd_cur="BTC",
+                    sent_amt="1000.0", sent_cur="USDT",
+                    fees_amt="", fees_cur="")
+    assert tripod.tx_class() == "Buy (from USDT)"
+
+    tripod = Tripod(rcvd_amt="1000.0", rcvd_cur="USD",
+                    sent_amt="1.0", sent_cur="BTC",
+                    fees_amt="", fees_cur="")
+    assert tripod.tx_class() == "Sell"
+
+    tripod = Tripod(rcvd_amt="1000.0", rcvd_cur="USDT",
+                    sent_amt="1.0", sent_cur="BTC",
+                    fees_amt="", fees_cur="")
+    assert tripod.tx_class() == "Sell (for USDT)"
+
+    tripod = Tripod(sent_amt="10.0", sent_cur="ETH",
+                    rcvd_amt="1.0", rcvd_cur="BTC",
+                    fees_amt="", fees_cur="")
+    assert tripod.tx_class() == "Exchange"
 
 def test_xfer_accessors():
     tripod = Tripod(rcvd_amt="", rcvd_cur="",

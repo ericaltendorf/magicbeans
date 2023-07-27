@@ -110,7 +110,7 @@ class ChiaWalletImporter(beangulp.Importer):
                 if tag == "mined":
                     desc = f"Mining reward of {tripod.amount()} {tripod.currency()}"
                 elif tripod.is_transfer():
-                    desc = f"Transfer of {tripod.amount()} {tripod.currency()}"
+                    desc = f"{tripod.tx_class()} {tripod.amount()} {tripod.currency()}"
                 else:
                     desc = "Unexpected transaction??"
 

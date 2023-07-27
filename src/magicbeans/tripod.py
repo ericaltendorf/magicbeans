@@ -108,7 +108,16 @@ class Tripod():
 
     def tx_class(self) -> str:
         if self.is_transaction():
-            return "Transaction"
+            if self.sent_cur == "USD":
+                return "Buy"
+            elif self.sent_cur == "USDT":
+                return "Buy (from USDT)"
+            elif self.rcvd_cur == "USD":
+                return "Sell"
+            elif self.rcvd_cur == "USDT":
+                return "Sell (for USDT)"
+            else:
+                return "Exchange"
         elif self.is_transfer():
             if self.sent_amt:
                 return "Send"

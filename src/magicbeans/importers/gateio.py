@@ -15,8 +15,8 @@ import sys
 
 from os import path
 from magicbeans import common
+from magicbeans.transfers import Network
 from magicbeans.tripod import Tripod
-from magicbeans.config import Config
 from beancount.core.data import Posting
 from beancount.core.position import Cost
 from dateutil.parser import parse
@@ -98,10 +98,11 @@ def ComputeSentPrice(rcvd_cur: str, rcvd_amt: Decimal, sent_cur: str, sent_amt: 
 class GateIOImporter(beangulp.Importer):
     """An importer for GateIO csv files."""
 
-    def __init__(self, account_root, account_pnl, account_fees):
+    def __init__(self, account_root, account_pnl, account_fees, network: Network):
         self.account_root = account_root
         self.account_pnl = account_pnl
         self.account_fees = account_fees
+        self.network = network
 
     def name(self) -> str:
         return 'GateIO'
@@ -234,7 +235,7 @@ class GateIOImporter(beangulp.Importer):
                 postings = []
                 if tripod.is_transfer():
                     local_acct = account.join(self.account_root, tripod.xfer_cur())
-                    remote_acct = Config.network.route(
+                    remote_acct = self.network.route(
                         tripod.is_send(), local_acct, tripod.xfer_cur())
                     xfer_amt = amount.Amount(tripod.xfer_amt(), tripod.xfer_cur())
                     xfer_amt_neg = amount.Amount(-tripod.xfer_amt(), tripod.xfer_cur())

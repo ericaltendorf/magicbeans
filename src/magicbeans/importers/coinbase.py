@@ -26,7 +26,7 @@ from beancount.core.number import ZERO
 import beangulp
 from beangulp.testing import main
 
-from magicbeans.config import Config
+from magicbeans.transfers import Network
 
 
 def coinbase_data_reader(reader):
@@ -41,10 +41,11 @@ def coinbase_data_reader(reader):
 class CoinbaseImporter(beangulp.Importer):
     """An importer for Coinbase CSV files."""
 
-    def __init__(self, account_root, account_gains, account_fees):
+    def __init__(self, account_root, account_gains, account_fees, network: Network):
         self.account_root = account_root
         self.account_gains = account_gains
         self.account_fees = account_fees
+        self.network = network
 
     def name(self) -> str:
         return 'Coinbase'
@@ -110,9 +111,9 @@ class CoinbaseImporter(beangulp.Importer):
 
                     account_external = "UNDETERMINED"
                     if rtype == "Send":
-                        account_external = Config.network.target(account_inst, instrument)
+                        account_external = self.network.target(account_inst, instrument)
                     else:
-                        account_external = Config.network.source(account_inst, instrument)
+                        account_external = self.network.source(account_inst, instrument)
 
                     sign = Decimal(1 if (rtype == "Receive") else -1)
                     txn = data.Transaction(meta, date, flags.FLAG_OKAY,

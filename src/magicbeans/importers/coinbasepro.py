@@ -33,15 +33,15 @@ from beangulp.testing import main
 
 from magicbeans.common import usd_cost_spec
 
-# TODO: create a better way of encapsulating personal logic
-from magicbeans.config import Config
+from magicbeans.transfers import Network
 
 class CoinbaseProImporter(beangulp.Importer):
 
-    def __init__(self, account_root, account_pnl, account_fees):
+    def __init__(self, account_root, account_pnl, account_fees, network: Network):
         self.account_root = account_root
         self.account_pnl = account_pnl
         self.account_fees = account_fees
+        self.network = network
 
     def name(self) -> str:
         return 'Coinbase Pro'
@@ -84,10 +84,10 @@ class CoinbaseProImporter(beangulp.Importer):
                     remote_account = "UNDETERMINED"
                     if transfer['type'] == 'deposit':
                         title = f"CBP: Deposit {currency}"
-                        remote_account = Config.network.source(local_account, currency)
+                        remote_account = self.network.source(local_account, currency)
                     if transfer['type'] == 'withdrawal':
                         title = f"CBP: Withdraw {currency}"
-                        remote_account = Config.network.target(local_account, currency)
+                        remote_account = self.network.target(local_account, currency)
 
                     # value appears to be negated for withdrawals already
                     posting1 = Posting(local_account, Amount(value, currency),

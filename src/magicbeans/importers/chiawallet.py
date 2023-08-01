@@ -13,8 +13,8 @@ from decimal import Decimal
 from typing import NamedTuple
 import re
 import logging
-from magicbeans.config import Config
 from magicbeans import config
+from magicbeans.transfers import Network
 import pytz
 
 from os import path
@@ -43,11 +43,12 @@ class ChiaWalletImporter(beangulp.Importer):
     """An importer for Coinbase CSV files."""
 
     def __init__(self, account_root, account_mining_income,
-                 account_gains, account_fees):
+                 account_gains, account_fees, network: Network):
         self.account_root = account_root
         self.account_mining_income = account_mining_income
         self.account_gains = account_gains
         self.account_fees = account_fees
+        self.network = network
 
     def name(self) -> str:
         return 'ChiaWallet'
@@ -119,9 +120,9 @@ class ChiaWalletImporter(beangulp.Importer):
                                                    "USD")  # TODO
                     else:
                         if tripod.rcvd:
-                            account_ext = Config.network.source(account_int, tripod.currency())
+                            account_ext = self.network.source(account_int, tripod.currency())
                         else:
-                            account_ext = Config.network.target(account_int, tripod.currency())
+                            account_ext = self.network.target(account_int, tripod.currency())
 
                     units = amount.Amount(tripod.amount(), tripod.currency())
                     sign = Decimal(1 if tripod.rcvd else -1)

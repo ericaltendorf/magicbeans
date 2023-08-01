@@ -19,26 +19,22 @@ def get_importers() -> List[Importer]:
    # TODO: move these arguments to a config file
    importers.append(CoinbaseImporter(
       account_root="Assets:Coinbase",
-      account_external_root="Assets:ALLEXTERNAL",
       account_gains="Income:PnL",
       account_fees="Expenses:Financial:Fees",))
 
    importers.append(ChiaWalletImporter(
       account_root="Assets:ChiaWallet",
-      account_external_root="Assets:ALLEXTERNAL",
       account_mining_income="Income:Mining",
       account_gains="Income:PnL",
       account_fees="Expenses:Financial:Fees",))
 
    importers.append(GateIOImporter(
       account_root="Assets:GateIO",
-      account_external_root="Assets:ALLEXTERNAL",
       account_pnl="Income:PnL",
       account_fees="Expenses:Financial:Fees",))
 
    importers.append(CoinbaseProImporter(
       account_root="Assets:Coinbase",
-      account_external_root="Assets:ALLEXTERNAL",
       account_pnl="Income:PnL",
       account_fees="Expenses:Financial:Fees",))
 

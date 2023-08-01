@@ -42,10 +42,9 @@ rendered_tz = 'US/Pacific'
 class ChiaWalletImporter(beangulp.Importer):
     """An importer for Coinbase CSV files."""
 
-    def __init__(self, account_root, account_external_root,
-                 account_mining_income, account_gains, account_fees):
+    def __init__(self, account_root, account_mining_income,
+                 account_gains, account_fees):
         self.account_root = account_root
-        self.account_external_root = account_external_root
         self.account_mining_income = account_mining_income
         self.account_gains = account_gains
         self.account_fees = account_fees
@@ -163,7 +162,6 @@ class ChiaWalletImporter(beangulp.Importer):
 if __name__ == "__main__":
     importer = ChiaWalletImporter(
         account_root="Assets:ChiaWallet",
-        account_external_root="Assets:ALLEXTERNAL",
         account_mining_income="Income:Mining",
         account_gains="Income:PnL",
         account_fees="Expenses:Financial:Fees",

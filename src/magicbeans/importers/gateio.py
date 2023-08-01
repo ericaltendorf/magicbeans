@@ -98,10 +98,8 @@ def ComputeSentPrice(rcvd_cur: str, rcvd_amt: Decimal, sent_cur: str, sent_amt: 
 class GateIOImporter(beangulp.Importer):
     """An importer for GateIO csv files."""
 
-    def __init__(self, account_root, account_external_root,
-                 account_pnl, account_fees):
+    def __init__(self, account_root, account_pnl, account_fees):
         self.account_root = account_root
-        self.account_external_root = account_external_root
         self.account_pnl = account_pnl
         self.account_fees = account_fees
 
@@ -342,7 +340,6 @@ class GateIOImporter(beangulp.Importer):
 if __name__ == "__main__":
     importer = GateIOImporter(
         account_root="Assets:GateIO",
-        account_external_root="Assets:ALLEXTERNAL",
         account_pnl="Income:PnL",
         account_fees="Expenses:Financial:Fees",
     )

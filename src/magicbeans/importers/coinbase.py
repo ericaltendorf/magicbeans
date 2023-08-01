@@ -41,10 +41,8 @@ def coinbase_data_reader(reader):
 class CoinbaseImporter(beangulp.Importer):
     """An importer for Coinbase CSV files."""
 
-    def __init__(self, account_root, account_external_root,
-                 account_gains, account_fees):
+    def __init__(self, account_root, account_gains, account_fees):
         self.account_root = account_root
-        self.account_external_root = account_external_root
         self.account_gains = account_gains
         self.account_fees = account_fees
 
@@ -174,7 +172,6 @@ class CoinbaseImporter(beangulp.Importer):
 if __name__ == "__main__":
     importer = CoinbaseImporter(
         account_root="Assets:Coinbase",
-        account_external_root="Assets:ALLEXTERNAL",
         account_gains="Income:PnL",
         account_fees="Expenses:Financial:Fees",
     )

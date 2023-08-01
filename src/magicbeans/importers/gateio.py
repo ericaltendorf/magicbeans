@@ -4,10 +4,6 @@
 __copyright__ = "Copyright (C) 2023  Eric Altendorf"
 __license__ = "GNU GPLv2"
 
-# TODO: throughout, replace hardcoded checks against "USD" with calls
-# to a function that determines if disposals of the asset are subject
-# to capital gains.
-
 from collections import defaultdict
 import csv
 import datetime
@@ -37,7 +33,6 @@ from beancount.core.number import ZERO
 import beangulp
 from beangulp.testing import main
 
-
 gateio_headers = 'no,time,action_desc,action_data,type,change_amount,amount,total'
 inreader = csv.DictReader(sys.stdin, delimiter=',', quotechar='"')
 
@@ -65,7 +60,7 @@ def ComputeRcvdCost(rcvd_cur: str, rcvd_amt: Decimal, sent_cur: str, sent_amt: D
     # TODO: Replace these price estimates and assumptions with a data feed
 
     # We bought XCH using USD or USDT, so we are establishing a cost basis.
-    if rcvd_cur == "XCH" and (sent_cur == "USDT" or sent_cur == "USD"):
+    if rcvd_cur == "XCH" and common.is_like_operating_currency(sent_cur):
         xch_usd = Decimal(sent_amt / rcvd_amt)
         return Cost(xch_usd, "USD", None, None)
 
@@ -85,7 +80,7 @@ def ComputeSentPrice(rcvd_cur: str, rcvd_amt: Decimal, sent_cur: str, sent_amt: 
     # TODO: Replace these price estimates and assumptions with a data feed
 
     # Disposed of XCH to obtain USD or USDT; compute price.
-    if sent_cur == "XCH" and (rcvd_cur == "USDT" or rcvd_cur == "USD"):
+    if sent_cur == "XCH" and common.is_like_operating_currency(rcvd_cur):
         xch_usd = Decimal(rcvd_amt / sent_amt)
         return amount.Amount(xch_usd, "USD")
     

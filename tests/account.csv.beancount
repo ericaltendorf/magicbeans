@@ -39,5 +39,5 @@
   Assets:Coinbase:BTC       -1.00000 BTC {} @ 20000 USD
   Assets:Coinbase:USD      20000.000 USD
   Assets:Coinbase:USD        -100.00 USD
-  Expenses:Financial:Fees     100.00 USD
+  Expenses:Financial:Fees    100.000 USD
   Income:PnL

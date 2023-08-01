@@ -7,11 +7,25 @@ from beancount.core import data
 from beancount.core.data import Posting, Transaction
 import dateutil
 
+def is_exempt_currency(currency: str) -> bool:
+    """Return True if the provided currency is exempt from capital gains"""
+    # TODO: This is a hack, we should be able to get this from the config.
+    return currency in ["USD"]
+
+def is_like_operating_currency(currency: str) -> bool:
+    """Return True if the provided currency is an operating currency or
+    a stablecoin pegged to one.  This can be used to mark transactions
+    which are nominally a "buy" or "sell"."""
+    return currency in ["USD", "USDC", "USDT"]
+
 def attach_timestamp(entry: Transaction, ts: datetime.datetime):
+    """Attach a timestamp to the metadata of the provided transaction, formatted
+    as a string in the standard ISO 8601 format using Z notation for UTC.  If a
+    timestamp is already present, it will be overwritten."""
     if ts.tzinfo is None or ts.tzinfo.utcoffset(ts) is None:
         raise Exception("Timestamps must be timezone aware")
 
-    # This is so dumb.
+    # Python offers no reasonable way of producing "Z" notation.
     fmt1 = ts.isoformat(timespec='milliseconds')
     fmt2 = fmt1.removesuffix('+00:00')
     fmt3 = fmt2.removesuffix('.000') + 'Z'
@@ -54,5 +68,3 @@ def usd_cost_spec(transferred_currency):
         return None  # No cost basis needed to track
     
     return position.CostSpec(None, None, "USD", None, None, None)
-    # return position.Cost(None, "USD", None, None)
-    # return None

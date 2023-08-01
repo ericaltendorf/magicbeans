@@ -322,22 +322,22 @@ class GateIOImporter(beangulp.Importer):
                     postings.append(
                         Posting(self.account_pnl, None, None, None, None, None))
 
-                txn = data.Transaction(meta, date, flags.FLAG_OKAY,
-                                       None, desc, data.EMPTY_SET, links,
-                                       postings)
-                common.attach_timestamp(txn, timestamp)
+                tx = data.Transaction(meta, date, flags.FLAG_OKAY,
+                                      None, desc, data.EMPTY_SET, links,
+                                      postings)
+                common.attach_timestamp(tx, timestamp)
 
                 # Because this may be a "sale" of an asset also purchased in the
                 # same transaction, and this breaks beancount accounting, as a
                 # workaround we currently split out the fees as a separate
                 # transaction that happens immediately after the primary
                 # transaction.
-                (reg_tx, fee_tx) = common.split_out_marked_fees(txn, self.account_pnl)
+                (reg_tx, fee_tx) = common.split_out_marked_fees(tx, self.account_pnl)
                 if reg_tx and fee_tx:
                     entries.append(reg_tx)
                     entries.append(fee_tx)
                 else:
-                    entries.append(txn)
+                    entries.append(tx)
 
         return entries
 

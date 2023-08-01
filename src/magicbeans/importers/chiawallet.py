@@ -14,6 +14,7 @@ from typing import NamedTuple
 import re
 import logging
 from magicbeans.config import Config
+from magicbeans import config
 import pytz
 
 from os import path
@@ -157,6 +158,9 @@ class ChiaWalletImporter(beangulp.Importer):
 
                 else:
                     assert False, "not handled yet"
+
+                if config.chiawallet_filter_transfer(txn):
+                    continue
 
                 entries.append(txn)
 

@@ -6,6 +6,7 @@ import os
 import json
 import sys
 from typing import List
+from magicbeans import config
 from magicbeans.importers.chiawallet import ChiaWalletImporter
 from magicbeans.importers.coinbase import CoinbaseImporter
 from magicbeans.importers.coinbasepro import CoinbaseProImporter
@@ -42,6 +43,9 @@ def get_importers() -> List[Importer]:
 
 if __name__ == '__main__':
     importers = get_importers()
-    hooks = []
+    hooks = [config.cbp_filter_xfer_hook,
+             config.chiawallet_filter_xfer_hook,
+             config.cbp_tweak_xfer_timestamp_hook,
+             ]
     cli = beangulp.Ingest(importers, hooks).cli
     cli()

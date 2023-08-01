@@ -34,7 +34,7 @@ from beangulp.testing import main
 from magicbeans.common import usd_cost_spec
 
 # TODO: create a better way of encapsulating personal logic
-from magicbeans.config import Config, cbp_filter_transfer, cbp_tweak_xfer_timestamp
+from magicbeans.config import Config
 
 class CoinbaseProImporter(beangulp.Importer):
 
@@ -105,11 +105,6 @@ class CoinbaseProImporter(beangulp.Importer):
                     )
                     common.attach_timestamp(tx, tx_ts)
 
-                    # Some personal-specific tweaks and overrides
-                    if cbp_filter_transfer(tx):
-                        continue
-                    cbp_tweak_xfer_timestamp(tx)
-                    
                     # If transfers have fees, then here we should use
                     # split_out_marked_fees(), but apparently coinbase pro
                     # transfers don't have fees?  TODO: check.

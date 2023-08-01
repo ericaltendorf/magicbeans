@@ -151,9 +151,6 @@ class ChiaWalletImporter(beangulp.Importer):
                 else:
                     assert False, "not handled yet"
 
-                if config.chiawallet_filter_transfer(txn):
-                    continue
-
                 entries.append(txn)
 
         return entries

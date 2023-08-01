@@ -124,7 +124,6 @@ class GateIOImporter(beangulp.Importer):
     def account(self, filepath):
         return self.account_root
 
-
     def extract(self, filepath, existing):
         # Might be worth pulling this out into tripod.py as a Tripod-set builder.
         order_ids = set()

@@ -62,13 +62,6 @@ class ChiaWalletImporter(beangulp.Importer):
                           'Sent Currency,Fee Amount,Fee Currency,Tag'
         if not common.file_begins_with(filepath, expected_header):
             return False
-        
-        # TODO: factor this common header pattern out into commom.py
-        # with open(filepath, "r") as file:
-        #     expected = 'Date,Received Quantity,Received Currency,Sent Quantity,Sent Currency,Fee Amount,Fee Currency,Tag'
-        #     head = file.read(len(expected))
-        #     if (head != expected):
-        #         return False
 
         return True
 
@@ -87,8 +80,6 @@ class ChiaWalletImporter(beangulp.Importer):
         # Open the CSV file and create directives.
         entries = []
         index = 0
-
-        # TODO: aggregate mining income from the same day?
 
         with open(filepath) as infile:
             for index, row in enumerate(csv.DictReader(infile)):
@@ -140,8 +131,6 @@ class ChiaWalletImporter(beangulp.Importer):
                     # TODO: fix
                     mined_cost_basis = position.Cost(D("1.0"), "USD", None, None)
 
-                    # TODO: on this and other importers, include the full 
-                    # datetime as a comment or metadata
                     txn = data.Transaction(meta, utc_dt.date(), flags.FLAG_OKAY,
                                            None, desc, data.EMPTY_SET, links,
                         [

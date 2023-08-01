@@ -26,7 +26,7 @@ from beancount.core.number import ZERO
 import beangulp
 from beangulp.testing import main
 
-from magicbeans.config import Config, cb_compute_remote_account, get_network
+from magicbeans.config import Config
 
 
 def coinbase_data_reader(reader):

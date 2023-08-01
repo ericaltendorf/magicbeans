@@ -2,23 +2,23 @@
 ;; Date: 
 ;; Name: gateio.joined.csv
 
-2021-01-31 * "Receive (Deposit): tx id 2467345"
+2021-01-31 * "Receive tx:2467345"
   timestamp: "2021-01-31T20:35:10Z"
   Assets:GateIO:XCH                                5.0000000000000000 XCH {USD}
   Assets:ZeroSumAccount:ChiaWallet-To-GateIO:XCH  -5.0000000000000000 XCH {USD}
 
-2021-02-02 * "Receive (Deposit): tx id 2645835"
+2021-02-02 * "Receive tx:2645835"
   timestamp: "2021-02-02T09:47:27Z"
   Assets:GateIO:USDT                              1000.0000000000000000 USDT {USD}
   Assets:ZeroSumAccount:Coinbase-To-GateIO:USDT  -1000.0000000000000000 USDT {USD}
 
-2021-03-01 * "Transaction (Buy (from USDT)): tx id 462845726"
+2021-03-01 * "Buy (from USDT) tx:462845726"
   timestamp: "2021-03-01T06:52:23Z"
   Assets:GateIO:XCH     20.0000000000000000 XCH {20 USD}
   Assets:GateIO:USDT  -400.0000000000000000 USDT {} @ 1.0 USD
   Income:PnL
 
-2021-03-01 * "Fees for Transaction (Buy (from USDT)): tx id 462845726"
+2021-03-01 * "Fees for Buy (from USDT) tx:462845726"
   timestamp: "2021-03-01T06:52:23.001Z"
   Assets:GateIO:XCH            -0.2000000000 XCH {} @ 1.0 USD
     is_fee: TRUE
@@ -27,18 +27,18 @@
   Income:PnL
     is_fee: TRUE
 
-2021-04-01 * "Send (Withdraw): tx id 24567229"
+2021-04-01 * "Send tx:24567229"
   timestamp: "2021-04-01T07:44:08Z"
   Assets:GateIO:XCH                               -8.0000000000000000 XCH {USD}
   Assets:ZeroSumAccount:GateIO-To-ChiaWallet:XCH   8.0000000000000000 XCH {USD}
 
-2021-04-30 * "Transaction (Buy (from USDT)): tx id 32475432626"
+2021-04-30 * "Buy (from USDT) tx:32475432626"
   timestamp: "2021-04-30T16:18:55Z"
   Assets:GateIO:XCH     10.0000000000000000 XCH {25 USD}
   Assets:GateIO:USDT  -250.0000000000000000 USDT {} @ 1.0 USD
   Income:PnL
 
-2021-04-30 * "Fees for Transaction (Buy (from USDT)): tx id 32475432626"
+2021-04-30 * "Fees for Buy (from USDT) tx:32475432626"
   timestamp: "2021-04-30T16:18:55.001Z"
   Assets:GateIO:XCH            -0.2000000000000000 XCH {} @ 1.0 USD
     is_fee: TRUE
@@ -47,18 +47,18 @@
   Income:PnL
     is_fee: TRUE
 
-2021-05-31 * "Receive (Deposit): tx id 2456237"
+2021-05-31 * "Receive tx:2456237"
   timestamp: "2021-05-31T21:46:20Z"
   Assets:GateIO:XCH                                5.0000000000000000 XCH {USD}
   Assets:ZeroSumAccount:ChiaWallet-To-GateIO:XCH  -5.0000000000000000 XCH {USD}
 
-2021-07-01 * "Transaction (Sell (to USDT)): tx id 234765643"
+2021-07-01 * "Sell (for USDT) tx:234765643"
   timestamp: "2021-07-01T10:46:21Z"
   Assets:GateIO:USDT  600.0000000000000000 USDT {1.0 USD}
   Assets:GateIO:XCH   -20.0000000000000000 XCH {} @ 30 USD
   Income:PnL
 
-2021-07-01 * "Fees for Transaction (Sell (to USDT)): tx id 234765643"
+2021-07-01 * "Fees for Sell (for USDT) tx:234765643"
   timestamp: "2021-07-01T10:46:21.001Z"
   Assets:GateIO:USDT           -0.5000000000000000 USDT {} @ 1.0 USD
     is_fee: TRUE
@@ -67,7 +67,7 @@
   Income:PnL
     is_fee: TRUE
 
-2021-08-01 * "Send (Withdraw): tx id 26435237"
+2021-08-01 * "Send tx:26435237"
   timestamp: "2021-08-01T06:07:42Z"
   Assets:GateIO:USDT                             -100.0000000000000000 USDT {USD}
   Assets:ZeroSumAccount:GateIO-To-Coinbase:USDT   100.0000000000000000 USDT {USD}

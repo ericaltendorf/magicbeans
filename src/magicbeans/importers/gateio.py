@@ -20,6 +20,7 @@ import sys
 from os import path
 from magicbeans import common
 from magicbeans.tripod import Tripod
+from magicbeans.config import Config
 from beancount.core.data import Posting
 from beancount.core.position import Cost
 from dateutil.parser import parse
@@ -36,8 +37,6 @@ from beancount.core.number import ZERO
 import beangulp
 from beangulp.testing import main
 
-from magicbeans.common import usd_cost_spec
-from magicbeans.config import Config, gio_compute_remote_account
 
 gateio_headers = 'no,time,action_desc,action_data,type,change_amount,amount,total'
 inreader = csv.DictReader(sys.stdin, delimiter=',', quotechar='"')
@@ -115,7 +114,7 @@ class GateIOImporter(beangulp.Importer):
         return 'GateIO'
 
     def identify(self, filepath):
-        filename_re = r"joined.csv"
+        filename_re = r"^joined.csv$"
         if not re.match(filename_re, path.basename(filepath)):
             return False
         
@@ -176,6 +175,8 @@ class GateIOImporter(beangulp.Importer):
                 currency = row['type']
                 assert currency in ["XCH", "USDT"]
 
+                # The CSV also contains 'amount' and 'total' 
+
                 # TODO: row also contains an 'amount' field which should be
                 # a running total which could be used for balance directives.
 
@@ -231,7 +232,7 @@ class GateIOImporter(beangulp.Importer):
                                 fees_amt=fees_amt[oid],
                                 fees_cur=fees_cur[oid])
                 
-                desc = f'{tripod.tx_class()} ({label[oid]}): tx id {oid}'
+                desc = f'{tripod.tx_class()} tx:{oid}'
                 links = set()
 
                 postings = []

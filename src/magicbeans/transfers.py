@@ -27,10 +27,14 @@ class Network():
         self.links = links
         self.fwd_routes = {}
         self.rev_routes = {}
+        self.regular_accts = set()
         self.buffer_accts = []
         for link in links:
             account_a = account.join("Assets", link.institution_a, link.currency)
             account_b = account.join("Assets", link.institution_b, link.currency)
+
+            self.regular_accts.add(account_a)
+            self.regular_accts.add(account_b)
 
             if link.institution_a in untracked_institutions or link.institution_b in untracked_institutions:
                 self._add_fwd_route(account_a, link.currency, account_b)
@@ -85,3 +89,12 @@ class Network():
 
     def buffer_accounts(self):
         return self.buffer_accts
+
+    def generate_account_directives(self, opening_date: str) -> str:
+        directives = []
+        for acct in self.regular_accts:
+            directives.append(f"{opening_date} open {acct}")        
+        for acct in self.buffer_accts:
+            directives.append(f"{opening_date} open {acct}")
+        directives.sort()
+        return "\n".join(directives) + "\n"

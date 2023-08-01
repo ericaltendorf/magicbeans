@@ -52,17 +52,15 @@ class CoinbaseImporter(beangulp.Importer):
         return 'Coinbase'
 
     def identify(self, filepath):
-        filename_re = r"Coinbase-.*TransactionsHistoryReport-" \
+        filename_re = r"^Coinbase-.*TransactionsHistoryReport-" \
                       r"\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d.csv$"
         if not re.match(filename_re, path.basename(filepath)):
             return False
         
-        with open(filepath, "r") as file:
-            expected = '"You can use this transaction report to inform ' \
-                       'your likely tax obligations.'
-            head = file.read(len(expected))
-            if (head != expected):
-                return False
+        expected_header = '"You can use this transaction report to inform ' \
+                          'your likely tax obligations.'
+        if not common.file_begins_with(filepath, expected_header):
+            return False
             
         return True
 

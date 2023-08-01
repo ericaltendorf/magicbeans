@@ -16,7 +16,14 @@ def is_like_operating_currency(currency: str) -> bool:
     """Return True if the provided currency is an operating currency or
     a stablecoin pegged to one.  This can be used to mark transactions
     which are nominally a "buy" or "sell"."""
+    # TODO: This is a hack, we should be able to get this from the config.
     return currency in ["USD", "USDC", "USDT"]
+
+def file_begins_with(filepath: str, expected: str) -> bool:
+    """Return True if the provided file begins with the provided string."""
+    with open(filepath, "r") as file:
+        head = file.read(len(expected))
+        return head == expected
 
 def attach_timestamp(entry: Transaction, ts: datetime.datetime):
     """Attach a timestamp to the metadata of the provided transaction, formatted

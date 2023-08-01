@@ -6,8 +6,6 @@ sense in the context of a leg in the operating currency (e.g., BTC for USD), and
 conversely, in the context of taxation, events that don't seem to be sales need
 to be treated as sales (e.g. payment of transaction fees in non-USD assets)."""
 
-# TODO: add tests
-
 from decimal import Decimal
 from beancount.core.number import D
 

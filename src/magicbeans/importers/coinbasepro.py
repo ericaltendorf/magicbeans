@@ -49,15 +49,13 @@ class CoinbaseProImporter(beangulp.Importer):
         return 'Coinbase Pro'
 
     def identify(self, filepath) -> bool:
-        if not re.match("account.csv$", path.basename(filepath)):
+        if not re.match("^account.csv$", path.basename(filepath)):
             return False
-        
-        with open(filepath, "r") as file:
-            expected = "portfolio,type,time,amount,balance,amount/balance unit,"\
-                       "transfer id,trade id,order id"
-            head = file.read(len(expected))               
-            if (head != expected):
-                return False
+
+        expected_header = "portfolio,type,time,amount,balance,amount/balance " \
+                          "unit,transfer id,trade id,order id"
+        if not common.file_begins_with(filepath, expected_header):
+            return False 
             
         return True
 

@@ -113,10 +113,8 @@ class GateIOImporter(beangulp.Importer):
         if not re.match(filename_re, path.basename(filepath)):
             return False
         
-        with open(filepath, "r") as file:
-            head = file.read(len(gateio_headers))
-            if (head != gateio_headers):
-                return False
+        if not common.file_begins_with(filepath, gateio_headers):
+            return False
             
         return True
 
@@ -169,11 +167,17 @@ class GateIOImporter(beangulp.Importer):
                 ch_amt = decimal.Decimal(row['change_amount'])
                 currency = row['type']
                 assert currency in ["XCH", "USDT"]
-
-                # The CSV also contains 'amount' and 'total' 
-
-                # TODO: row also contains an 'amount' field which should be
-                # a running total which could be used for balance directives.
+                
+                # Note: The CSV also contains 'amount' and 'total'.  In theory
+                # these could be used for creating balance directives, but they
+                # are fairly difficult to interpret automatically.  It's not
+                # clear what exactly they represent, or how/when they differ
+                # from each other; the only one we can use for a balance
+                # directive is the final one of the group, but they're not
+                # always ordered, and we could only use it when there's enough
+                # of a break between transactions that we can clearly insert a
+                # balance directive at the right point given Beancount's lack of
+                # sub-day resolution timestamps.
 
                 # Now process 
                 action = row['action_desc']

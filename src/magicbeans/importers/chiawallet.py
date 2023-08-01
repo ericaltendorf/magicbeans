@@ -54,17 +54,21 @@ class ChiaWalletImporter(beangulp.Importer):
         return 'ChiaWallet'
 
     def identify(self, filepath):
-        # TODO: make sure all importers use begin & end regexes
-        filename_re = r"chiawallet.\d\d\d\d.\d\d.\d\d.csv$"
+        filename_re = r"^chiawallet.\d\d\d\d.\d\d.\d\d.csv$"
         if not re.match(filename_re, path.basename(filepath)):
+            return False
+            
+        expected_header = 'Date,Received Quantity,Received Currency,Sent Quantity,' \
+                          'Sent Currency,Fee Amount,Fee Currency,Tag'
+        if not common.file_begins_with(filepath, expected_header):
             return False
         
         # TODO: factor this common header pattern out into commom.py
-        with open(filepath, "r") as file:
-            expected = 'Date,Received Quantity,Received Currency,Sent Quantity,Sent Currency,Fee Amount,Fee Currency,Tag'
-            head = file.read(len(expected))
-            if (head != expected):
-                return False
+        # with open(filepath, "r") as file:
+        #     expected = 'Date,Received Quantity,Received Currency,Sent Quantity,Sent Currency,Fee Amount,Fee Currency,Tag'
+        #     head = file.read(len(expected))
+        #     if (head != expected):
+        #         return False
 
         return True
 

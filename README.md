@@ -11,7 +11,7 @@ For context, see:
 - Integrate [beancount-coinmarketcap](https://github.com/aamerabbas/beancount-coinmarketcap) plugin for prices
 - Create a canonical way to automatically apply registered fix-ups on imported data
 - check out https://github.com/redstreet/beancount_reds_plugins/tree/main/beancount_reds_plugins/capital_gains_classifier
-- Create a canonical way to apply a set of fixed booking decisions to imported data, or look into https://github.com/redstreet/fava_investor/tree/main/fava_investor/modules/minimizegains
+- Create a canonical way to apply a set of fixed booking decisions to imported data, or look into https://github.com/redstreet/fava_investor/tree/main/fava_investor/modules/minimizegains or https://github.com/beancount/beanlabs/blob/master/beanlabs/trades/match_trades.py
 - Set up a config framework for local/private stuff (account info, specific transaction overrides)
 - Get zerosum plugin working, if needed
 - Integrate the Chia wallet preprocessing code into this repository

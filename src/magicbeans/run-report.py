@@ -1,9 +1,3 @@
-# TODOS:
-# - figure out how to issue `set expand true` to bean-query
-# - Figure out how to generate PDFs.  The following generates large font text.
-#   more research is needed to produce good pdfs
-#       soffice --convert-to pdf $REPORT_TXT --outdir $BUILD_DIR
-
 from enum import Enum
 import subprocess
 from beancount.core.amount import Amount
@@ -18,8 +12,6 @@ from tabulate import tabulate
 ledger = "build/final.beancount"
 build_dir = "build"
 report_txt = f"{build_dir}/report.txt"
-
-qheader = "=" * 140
 
 class BeanDB:
 	"""Simple wrapper around a beancount database facilitating bean-query queries"""

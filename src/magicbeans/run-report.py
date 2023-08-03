@@ -1,5 +1,6 @@
 from enum import Enum
 import subprocess
+import sys
 from beancount.core.amount import Amount
 from beanquery.query_render import render_text
 from pyfiglet import Figlet
@@ -9,14 +10,12 @@ from beancount.parser import parser
 from beanquery.query import run_query
 from tabulate import tabulate
 
-ledger = "build/final.beancount"
-build_dir = "build"
-report_txt = f"{build_dir}/report.txt"
-
 class BeanDB:
 	"""Simple wrapper around a beancount database facilitating bean-query queries"""
 
-	def __init__(self, entries, options) -> None:
+	def __init__(self, ledger_path: str) -> None:
+		"""Load the beancount file at the given path and parse it for queries.	"""
+		entries, _errors, options = loader.load_file(ledger_path)
 		self.entries = entries
 		self.options = options
 	
@@ -24,7 +23,7 @@ class BeanDB:
 		"""Run a bean-query query on the entries in this database.  Returns a
 		list of (name, dtype) tuples describing the results set table and a list
 		of ResultRow tuples with the data.item pairs."""
-		return run_query(entries, options, query)
+		return run_query(self.entries, self.options, query)
 
 	def render(self, rtypes, rrows, out):
 		render_text(rtypes, rrows, self.options['dcontext'], out,
@@ -105,12 +104,13 @@ def quarter_report(year: int, quarter_n: int, db, out):
 
 
 if __name__ == '__main__':
+	ledger_path = sys.argv[1]   # "build/final.beancount"
+	out_path = sys.argv[2]   # "build/report.txt"
 
-	# entries, errors, options = parser.parse_file(ledger)
-	entries, errors, options = loader.load_file(ledger)
-	db = BeanDB(entries, options)
+	print(f"Generating report for beancount file {ledger_path} and writing to {out_path}")
+	db = BeanDB(ledger_path)
 
-	with open(report_txt, 'w') as out:
+	with open(out_path, 'w') as out:
 		f = Figlet(width=120)
 					
 		for ty in range(2018, 2022 + 1):

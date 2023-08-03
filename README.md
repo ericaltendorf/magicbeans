@@ -9,8 +9,12 @@ Goals:
 
 This is not standalone software, it consists of modules, extensions, and tools
 that operate on the Beancount platform.  For more information see:
+- https://github.com/beancount
+
+Especially:
 - https://github.com/beancount/beancount
 - https://github.com/beancount/beangulp
+- https://github.com/beancount/beanquery
 
 ## TODO
 - Write some introductory documentation

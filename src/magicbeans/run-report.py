@@ -1,6 +1,7 @@
 from enum import Enum
 import subprocess
 import sys
+from typing import List
 from beancount.core.amount import Amount
 from beanquery.query_render import render_text
 from pyfiglet import Figlet
@@ -35,7 +36,11 @@ class ReportDriver:
 
 	def query_and_render(self, query: str):
 		(rtypes, rrows) = self.query(query)
-		self.render(rtypes, rrows)
+		if len(rrows) > 0:
+			self.render(rtypes, rrows)
+		else:
+			self.report.write('(None)\n')
+
 		self.report.write('\n')
 
 #
@@ -97,18 +102,20 @@ def ditto_fields(rtypes, rrows, id_col, ditto_cols):
 				row[col] = row[col]._replace(value = "  ''")
 		last_id = this_id
 
-def quarter_report(year: int, quarter_n: int, db):
+def quarter_report(year: int, quarter_n: int, currencies: List[str], db):
 	quarter = f"{ty}-Q{quarter_n}"
 	quarter_begin = f"""{ty}-{["01", "04", "07", "10"][quarter_n-1]}-01"""
-	currency_re = "BTC|ETH|LTC|XCH"
+	currency_re = "|".join(currencies)
 
-	db.report.write(f.renderText(f"{year} Q {quarter_n} : inventory"))
+	db.report.write(f.renderText(f"-- {year} Q {quarter_n} --"))
+
+	db.report.write(f.renderText("Inventory"))
 
 	q =	q_inventory(quarter_begin, currency_re)
 	db.report.write(subreport_header(f"Inventory as of {quarter_begin}", q))
 	db.query_and_render(q)
 
-	db.report.write(f.renderText(f"{year} Q {quarter_n} : transactions & PnL"))
+	db.report.write(f.renderText(f"Transactions & PnL"))
 
 	q = q_disposals(quarter)
 	db.report.write(subreport_header(f"Disposals in {quarter}", q))
@@ -122,15 +129,19 @@ def quarter_report(year: int, quarter_n: int, db):
 	db.report.write(subreport_header(f"Acquisitions in {quarter}", q))
 	db.query_and_render(q)
 
+
 if __name__ == '__main__':
 	ledger_path = sys.argv[1]   # "build/final.beancount"
 	out_path = sys.argv[2]   # "build/report.txt"
 
 	print(f"Generating report for beancount file {ledger_path} and writing to {out_path}")
 	db = ReportDriver(ledger_path, out_path)
-
 	f = Figlet(width=120)
-				
-	for ty in range(2018, 2022 + 1):
+
+	# TODO: move to a config
+	currencies = ["BTC", "ETH", "LTC", "XCH"]
+	tax_years = range(2018, 2022 + 1)
+
+	for ty in tax_years:
 		for quarter_n in [1, 2, 3, 4]:
-			quarter_report(ty, quarter_n, db)
+			quarter_report(ty, quarter_n, currencies, db)

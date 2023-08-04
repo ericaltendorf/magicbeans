@@ -100,11 +100,35 @@ def q_pnl(quarter: str):
 		f'FROM has_account("PnL") AND quarter(date) = "{quarter}" '
 		f'WHERE account="Income:PnL"')
 
-def q_year_pnl(year: int):
+def q_year_large_disposals(year: int):
+	# TODO: cost(position) is the same as number.  Is this right?  Is it what we want to report?
 	return (
 		f'SELECT date, narration, account, cost(position) as amount, balance '
 		f'FROM has_account("PnL") AND year(date) = {year} '
-		f'WHERE account="Income:PnL"')
+		f'WHERE account="Income:PnL" '
+		f'AND abs(number) >= 1000')
+		
+def q_year_small_disposals(year: int):
+	# TODO: cost(position) is the same as number.  Is this right?  Is it what we want to report?
+	return (
+		f'SELECT account, count(*) as num_transactions, '
+		f'sum(cost(position)) as total '
+		f'FROM has_account("PnL") AND year(date) = {year} '
+		f'WHERE account="Income:PnL" AND abs(number) < 1000')
+
+def q_year_mining_income_by_quarter(year: int):
+	return (
+		f'SELECT units(sum(position)) as total, '
+		f'quarter(date) as quarter from year(date) = {year} '
+		f'AND has_account("Income:Mining") GROUP BY quarter')
+
+def q_year_mining_income_total(year: int):
+	return (
+		f'SELECT units(sum(position)) as total '
+		f'FROM year(date) = {year} '
+		f'AND has_account("Income:Mining") '
+		f'WHERE currency="USD"')
+
 
 #
 # Report generation helpers
@@ -172,8 +196,22 @@ if __name__ == '__main__':
 
 	for ty in tax_years:
 		db.report.write(f.renderText(f"{ty} Tax Summary"))
-		q = q_year_pnl(ty)
+
+		q = q_year_large_disposals(ty)
+		db.report.write(subreport_header(f"Large Disposals", q))
 		db.query_and_render(q)
+
+		q = q_year_small_disposals(ty)
+		db.report.write(subreport_header(f"Small Disposals (aggregated by quarter)", q))
+		db.query_and_render(q)
+
+		q = q_year_mining_income_by_quarter(ty)
+		db.report.write(subreport_header(f"Mining Income By Quarter", q))
+		db.query_and_render(q, footer="For more detail see full mining history at end of report.")
+
+		q = q_year_mining_income_total(ty)
+		db.report.write(subreport_header(f"Mining Income Year Total", q))
+		db.query_and_render(q, footer="Note: this is an income account; neg values are gains and pos values are losses.")
 
 	db.report.write(f.renderText("Quarterly Operations"))
 	for ty in tax_years:

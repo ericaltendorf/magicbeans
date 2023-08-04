@@ -103,7 +103,7 @@ class CoinbaseImporter(beangulp.Importer):
                 account_cash = account.join(self.account_root, asset_price_currency)
                 account_inst = account.join(self.account_root, instrument)
 
-                desc = "CB: " + row["Notes"]
+                desc = "CB: " + row["Notes"].replace("Bought", "Buy").replace("Sold", "Sell")
                 links = set()  # { "ut{0[REF #]}".format(row) }
 
                 if rtype in ("Send", "Receive"):
@@ -127,10 +127,10 @@ class CoinbaseImporter(beangulp.Importer):
                     )
 
                 elif rtype in ("Buy", "Sell"):
-                    computed_asset_price = subtotal / quantity
-                    desc += f" (reported {reported_asset_price}" \
-                            f" computed {computed_asset_price}" \
-                            f" {asset_price_currency})"
+                    imputed_asset_price = subtotal / quantity
+                    desc += f' (@"{reported_asset_price}" ' \
+                            f"or ~{imputed_asset_price:.4f} " \
+                            f"{asset_price_currency})"
 
                     sign = Decimal(1 if (rtype == "Buy") else -1)
 
@@ -138,12 +138,13 @@ class CoinbaseImporter(beangulp.Importer):
                     asset_price_amount = None
                     if rtype == "Buy":
                         asset_cost = position.Cost(
-                            computed_asset_price, asset_price_currency, None, None
+                            # TODO: should we impute ourselves, or can Beancount do it automatically?
+                            imputed_asset_price, asset_price_currency, None, None
                         )
                     else:
                         asset_cost = position.Cost(None, None, None, None)
                         asset_price_amount = amount.Amount(
-                            computed_asset_price, asset_price_currency)
+                            imputed_asset_price, asset_price_currency)
 
                     postings = [
                         data.Posting(account_inst, amount.mul(units, sign),

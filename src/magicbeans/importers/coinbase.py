@@ -26,7 +26,7 @@ from beancount.core.number import ZERO
 import beangulp
 from beangulp.testing import main
 
-from magicbeans.transfers import Network
+from magicbeans.transfers import Link, Network
 
 
 def coinbase_data_reader(reader):
@@ -172,9 +172,13 @@ class CoinbaseImporter(beangulp.Importer):
 
 
 if __name__ == "__main__":
+    # Example usage; also enables running integration tests
     importer = CoinbaseImporter(
         account_root="Assets:Coinbase",
         account_gains="Income:PnL",
         account_fees="Expenses:Financial:Fees",
+        network=Network([Link("Coinbase", "Bank", "USD"),
+                         Link("Coinbase", "Ledger", "BTC")],
+                        untracked_institutions=["Bank", "Ledger"])
     )
     main(importer)

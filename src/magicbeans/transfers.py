@@ -6,6 +6,8 @@ from typing import NamedTuple
 from beancount.core import account
 
 class Link(NamedTuple):
+    """A link between two institutions, in a given currency.  Asset account names
+    will be constructed from instution names, so don't prefix "Assets:" """
     institution_a: str
     institution_b: str
     currency: str

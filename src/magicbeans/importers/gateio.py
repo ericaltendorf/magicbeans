@@ -15,7 +15,7 @@ import sys
 
 from os import path
 from magicbeans import common
-from magicbeans.transfers import Network
+from magicbeans.transfers import Link, Network
 from magicbeans.tripod import Tripod
 from beancount.core.data import Posting
 from beancount.core.position import Cost
@@ -339,9 +339,13 @@ class GateIOImporter(beangulp.Importer):
         return entries
 
 if __name__ == "__main__":
+    # Example usage; also enables running integration tests
     importer = GateIOImporter(
         account_root="Assets:GateIO",
         account_pnl="Income:PnL",
         account_fees="Expenses:Financial:Fees",
+        network=Network([Link("GateIO", "Coinbase", "USDT"),
+                         Link("GateIO", "ChiaWallet", "XCH")],
+                        untracked_institutions=[])  # not particularly relevant
     )
     main(importer)

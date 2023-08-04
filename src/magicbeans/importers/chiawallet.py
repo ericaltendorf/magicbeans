@@ -14,7 +14,7 @@ from typing import NamedTuple
 import re
 import logging
 from magicbeans import config
-from magicbeans.transfers import Network
+from magicbeans.transfers import Link, Network
 import pytz
 
 from os import path
@@ -162,6 +162,8 @@ if __name__ == "__main__":
         account_root="Assets:ChiaWallet",
         account_mining_income="Income:Mining",
         account_gains="Income:PnL",
-        account_fees="Expenses:Financial:Fees",
+        account_fees="Expenses:Fees",
+        network=Network([Link("ChiaWallet", "GateIO", "XCH")],
+                        untracked_institutions=[])  # not particularly relevant
     )
     main(importer)

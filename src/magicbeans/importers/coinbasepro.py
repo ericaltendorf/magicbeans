@@ -33,7 +33,7 @@ from beangulp.testing import main
 
 from magicbeans.common import usd_cost_spec
 
-from magicbeans.transfers import Network
+from magicbeans.transfers import Link, Network
 
 class CoinbaseProImporter(beangulp.Importer):
 
@@ -263,9 +263,13 @@ class CoinbaseProImporter(beangulp.Importer):
     
 
 if __name__ == "__main__":
+    # Example usage; also enables running integration tests
     importer = CoinbaseProImporter(
         account_root="Assets:Coinbase",
         account_pnl="Income:PnL",
-        account_fees="Expenses:Financial:Fees",
+        account_fees="Expenses:Fees",
+        network=Network([Link("Coinbase", "Bank", "USD"),
+                         Link("Coinbase", "Ledger", "BTC")],
+                        untracked_institutions=["Bank", "Ledger"])
     )
     main(importer)

@@ -50,12 +50,6 @@ class ReportDriver:
 # TODO: parameterize the account names out of these queries
 #
 
-def q_fees(ty: int):
-	return (
-		f'SELECT account, sum(position)'
-	    f'FROM has_account("Fees") OPEN ON {ty}-01-01 CLOSE ON {ty+1}-01-01'
-		f'WHERE account ~ "Fees" ')
-
 def q_inventory(date: str, currency_re: str):
 	return (
 		f'SELECT account, SUM(position) as lots, '
@@ -106,6 +100,12 @@ def q_pnl(quarter: str):
 		f'FROM has_account("PnL") AND quarter(date) = "{quarter}" '
 		f'WHERE account="Income:PnL"')
 
+def q_year_pnl(year: int):
+	return (
+		f'SELECT date, narration, account, cost(position) as amount, balance '
+		f'FROM has_account("PnL") AND year(date) = {year} '
+		f'WHERE account="Income:PnL"')
+
 #
 # Report generation helpers
 #
@@ -114,6 +114,7 @@ def quarter_str(year: int, quarter_n: int):
 	return f"{ty}-Q{quarter_n}"
 
 def subreport_header(title: str, q: str):
+	# TODO: move this into ReportDriver?
 	return f"##########  {title}  ##########\n\n{q}\n\n"
 
 # TODO: this doesn't really work; each column data is typed so you can't
@@ -172,6 +173,11 @@ if __name__ == '__main__':
 	# TODO: move to a config
 	currencies = ["BTC", "ETH", "LTC", "XCH"]
 	tax_years = range(2018, 2022 + 1)
+
+	for ty in tax_years:
+		db.report.write(f.renderText(f"{ty} Tax Summary"))
+		q = q_year_pnl(ty)
+		db.query_and_render(q)
 
 	db.report.write(f.renderText("Quarterly Operations"))
 	for ty in tax_years:

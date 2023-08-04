@@ -13,7 +13,6 @@ from decimal import Decimal
 from typing import NamedTuple
 import re
 import logging
-from magicbeans import config
 from magicbeans.transfers import Link, Network
 import pytz
 

@@ -115,7 +115,7 @@ def quarter_str(year: int, quarter_n: int):
 
 def subreport_header(title: str, q: str):
 	# TODO: move this into ReportDriver?
-	return f"##########  {title}  ##########\n\n{q}\n\n"
+	return " " + ("_" * 98) + f" \n|{title:_^98}|\n\n{q}\n\n"
 
 # TODO: this doesn't really work; each column data is typed so you can't
 # just replace it with a ditto character. 
@@ -133,15 +133,11 @@ def quarter_report(year: int, quarter_n: int, currencies: List[str], db):
 	quarter_begin = f"""{ty}-{["01", "04", "07", "10"][quarter_n-1]}-01"""
 	currency_re = "|".join(currencies)
 
-	db.report.write(f.renderText(f"-- {year} Q {quarter_n} --"))
-
-	db.report.write(f.renderText("Inventory"))
+	db.report.write(f.renderText(f"{year} Q {quarter_n}"))
 
 	q =	q_inventory(quarter_begin, currency_re)
 	db.report.write(subreport_header(f"Inventory as of {quarter_begin}", q))
 	db.query_and_render(q)
-
-	db.report.write(f.renderText(f"Transactions & PnL"))
 
 	q = q_disposals(quarter)
 	db.report.write(subreport_header(f"Disposals in {quarter}", q))

@@ -60,14 +60,3 @@ class ReportDriver:
 def subreport_header(title: str, q: str):
 	# TODO: move this into ReportDriver?
 	return " " + ("_" * 98) + f" \n|{title:_^98}|\n\n{q}\n\n"
-
-# TODO: this doesn't really work; each column data is typed so you can't
-# just replace it with a ditto character. 
-def ditto_fields(rtypes, rrows, id_col, ditto_cols):
-	last_id = None
-	for row in rrows:
-		this_id = rrows[id_col]
-		if this_id == last_id:
-			for col in ditto_cols:
-				row[col] = row[col]._replace(value = "  ''")
-		last_id = this_id

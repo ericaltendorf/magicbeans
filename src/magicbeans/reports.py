@@ -49,6 +49,10 @@ class ReportDriver:
 
 		self.report.write('\n')
 
+	def run_subreport(self, title: str, query: str, footer: str = None):
+		self.report.write(subreport_header(title, query))
+		self.query_and_render(query, footer)
+
 #
 # Report generation helpers
 #

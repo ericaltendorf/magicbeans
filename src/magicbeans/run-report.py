@@ -17,10 +17,6 @@ from magicbeans import queries
 # Report generation helpers
 #
 
-def subreport_header(title: str, q: str):
-	# TODO: move this into ReportDriver?
-	return " " + ("_" * 98) + f" \n|{title:_^98}|\n\n{q}\n\n"
-
 # TODO: this doesn't really work; each column data is typed so you can't
 # just replace it with a ditto character. 
 def ditto_fields(rtypes, rrows, id_col, ditto_cols):
@@ -39,25 +35,22 @@ def quarter_report(year: int, quarter_n: int, currencies: List[str], db):
 
 	db.report.write(f.renderText(f"{year} Q {quarter_n}"))
 
-	q =	queries.inventory(quarter_begin, currency_re)
-	db.report.write(subreport_header(f"Inventory as of {quarter_begin}", q))
-	db.query_and_render(q)
-
-	q = queries.disposals(quarter)
-	db.report.write(subreport_header(f"Disposals in {quarter}", q))
-	db.query_and_render(q)
-
-	q = queries.pnl(quarter)
-	db.report.write(subreport_header(f"Profit and loss in {quarter}", q))
-	db.query_and_render(q, footer="Note: this is an income account; neg values are gains and pos values are losses.")
-
-	q = queries.acquisitions(quarter, currency_re)
-	db.report.write(subreport_header(f"Acquisitions in {quarter}", q))
-	db.query_and_render(q)
-	
-	q = queries.mining_summary(quarter, currency_re)
-	db.report.write(subreport_header(f"Mining summary for {quarter}", q))
-	db.query_and_render(q)
+	db.run_subreport(
+		f"Inventory as of {quarter_begin}",
+		queries.inventory(quarter_begin, currency_re))
+	db.run_subreport(
+		f"Disposals in {quarter}",
+		queries.disposals(quarter))
+	db.run_subreport(
+		f"Profit and loss in {quarter}",
+		queries.pnl(quarter),
+		footer="Note: this is an income account; neg values are gains and pos values are losses.")
+	db.run_subreport(
+		f"Acquisitions in {quarter}",
+		queries.acquisitions(quarter, currency_re))
+	db.run_subreport(
+		f"Mining summary for {quarter}",
+		queries.mining_summary(quarter, currency_re))
 
 
 if __name__ == '__main__':
@@ -79,21 +72,20 @@ if __name__ == '__main__':
 		print(f"  {ty}", end="", flush=True)
 		db.report.write(f.renderText(f"{ty} Tax Summary"))
 
-		q = queries.year_large_disposals(ty)
-		db.report.write(subreport_header(f"Large Disposals", q))
-		db.query_and_render(q)
-
-		q = queries.year_small_disposals(ty)
-		db.report.write(subreport_header(f"Small Disposals (aggregated by quarter)", q))
-		db.query_and_render(q)
-
-		q = queries.year_mining_income_by_quarter(ty)
-		db.report.write(subreport_header(f"Mining Income By Quarter", q))
-		db.query_and_render(q, footer="For more detail see full mining history at end of report.")
-
-		q = queries.year_mining_income_total(ty)
-		db.report.write(subreport_header(f"Mining Income Year Total", q))
-		db.query_and_render(q, footer="Note: this is an income account; neg values are gains and pos values are losses.")
+		db.run_subreport(
+			"Large Disposals",
+			queries.year_large_disposals(ty))
+		db.run_subreport(
+			f"Small Disposals (aggregated by quarter)",
+			queries.year_small_disposals(ty))
+		db.run_subreport(
+			f"Mining Income By Quarter",
+			queries.year_mining_income_by_quarter(ty),
+			footer="For more detail see full mining history at end of report.")
+		db.run_subreport(
+			f"Mining Income Year Total",
+			queries.year_mining_income_total(ty),
+			footer="Note: this is an income account; neg values are gains and pos values are losses.")
 	print()
 
 	db.report.write(f.renderText("Quarterly Operations"))
@@ -113,8 +105,8 @@ if __name__ == '__main__':
 		for quarter_n in [1, 2, 3, 4]:
 			print(f"{quarter_n} ", end="", flush=True)
 			quarter = reports.beancount_quarter(ty, quarter_n)
-			q = queries.mining_full(quarter, currency_re)
-			db.report.write(subreport_header(f"Mining in {quarter}", q))
-			db.query_and_render(q)
+			db.run_subreport(
+				f"Mining in {quarter}",
+				queries.mining_full(quarter, currency_re))
 	print()
 

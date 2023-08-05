@@ -74,7 +74,9 @@ if __name__ == '__main__':
 	currencies = ["BTC", "ETH", "LTC", "XCH"]
 	tax_years = range(2018, 2022 + 1)
 
+	print("Generating tax summaries:")
 	for ty in tax_years:
+		print(f"  {ty}", end="", flush=True)
 		db.report.write(f.renderText(f"{ty} Tax Summary"))
 
 		q = queries.year_large_disposals(ty)
@@ -92,18 +94,27 @@ if __name__ == '__main__':
 		q = queries.year_mining_income_total(ty)
 		db.report.write(subreport_header(f"Mining Income Year Total", q))
 		db.query_and_render(q, footer="Note: this is an income account; neg values are gains and pos values are losses.")
+	print()
 
 	db.report.write(f.renderText("Quarterly Operations"))
+	print("Generating quarterly operations reports:")
 	for ty in tax_years:
+		print(f"  {ty} ", end="", flush=True)
 		for quarter_n in [1, 2, 3, 4]:
+			print(f"{quarter_n} ", end="", flush=True)
 			quarter_report(ty, quarter_n, currencies, db)
+	print()
 
 	db.report.write(f.renderText("Full Mining History"))
 	currency_re = "|".join(currencies)  # TODO: dup code
+	print("Generating full mining history:")
 	for ty in tax_years[2:]:
+		print(f"  {ty} ", end="", flush=True)
 		for quarter_n in [1, 2, 3, 4]:
+			print(f"{quarter_n} ", end="", flush=True)
 			quarter = reports.beancount_quarter(ty, quarter_n)
 			q = queries.mining_full(quarter, currency_re)
 			db.report.write(subreport_header(f"Mining in {quarter}", q))
 			db.query_and_render(q)
+	print()
 

@@ -15,6 +15,10 @@ from tabulate import tabulate
 def beancount_quarter(ty: int, quarter_n: int):
 	return f"{ty}-Q{quarter_n}"
 
+def subreport_header(title: str, q: str):
+	# TODO: move this into ReportDriver?
+	return " " + ("_" * 98) + f" \n|{title:_^98}|\n\n{q}\n\n"
+
 class ReportDriver:
 	"""Simple wrapper around a beancount database facilitating bean-query queries
 	and writing the results to a file."""
@@ -52,11 +56,3 @@ class ReportDriver:
 	def run_subreport(self, title: str, query: str, footer: str = None):
 		self.report.write(subreport_header(title, query))
 		self.query_and_render(query, footer)
-
-#
-# Report generation helpers
-#
-
-def subreport_header(title: str, q: str):
-	# TODO: move this into ReportDriver?
-	return " " + ("_" * 98) + f" \n|{title:_^98}|\n\n{q}\n\n"

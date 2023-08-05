@@ -36,6 +36,7 @@ Data importers which have been (mostly) implemented include:
 - Integrate the Chia wallet preprocessing code into this repository
 - Write some introductory documentation
 - Write some more detailed documentation with tips, tricks, gotchas, examples, and war stories of real-life data
+- clean up license declarations
 
 ### Necessary and missing functionality
 - Get prices working (see [thread](https://groups.google.com/g/beancount/c/8LS1e2GfAmk),

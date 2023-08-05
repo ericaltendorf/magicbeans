@@ -13,6 +13,35 @@ class Link(NamedTuple):
     currency: str
 
 class Network():
+    """A network of accounts and links, for reasoning about asset transfers.
+    
+    A network is defined by a set of accounts (vertices) and links between
+    them that represent a conduit for transfers in a particular currency.  Once
+    defined, the network can be queried to infer the source or destination of
+    a particular transfer, given only information about one leg.  For example,
+    suppose you use Coinbase and Ledger for BTC, and GateIO and Chia Wallet for
+    XCH, and you fund Coinbase with USD from your bank, and transfer USDT to
+    GateIO.  Your network is:
+    
+    (Bank)
+       |
+      USD
+       |
+    (Coinbase) ---BTC--- (Ledger Wallet)
+       |
+      USDT
+       |
+    (GateIO) ---XCH--- (Chia Wallet)
+
+    Once defined, the network can answer, for example:
+    - If USDT arrives in GateIO, it must have come from Coinbase 
+    - If Ledger Wallet sends BTC, it must have gone to Coinbase
+
+    This, of course, assumes that the network is well defined, that currencies
+    uniquely define the transfer conduits, and that there are no other out of
+    band transfers.
+    """
+
     def __init__(self, links: List[Link], untracked_institutions: List[str] = None):
         """Constructs a routing network with zero sum transfer account buffers.
            Assumes accounts have the form "Assets:<Institution>:<Currency> ."""

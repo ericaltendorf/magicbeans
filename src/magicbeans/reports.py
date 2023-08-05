@@ -15,13 +15,21 @@ from tabulate import tabulate
 def beancount_quarter(ty: int, quarter_n: int):
 	return f"{ty}-Q{quarter_n}"
 
+# TODO: parameterize the width of this header, probably
+# via an argument on ReportDriver.
 def subreport_header(title: str, q: str):
 	# TODO: move this into ReportDriver?
 	return " " + ("_" * 98) + f" \n|{title:_^98}|\n\n{q}\n\n"
 
 class ReportDriver:
-	"""Simple wrapper around a beancount database facilitating bean-query queries
-	and writing the results to a file."""
+	"""Wraps a beancount file and facilitates reporting with BQL queries.
+
+	Initialize the driver with the path to the beancount file and the path to
+	the output report file.  Then call the other methods to run queries and
+	write the results to the report file.
+	"""	
+
+	# TODO: query(), render(), and query_and_render() may be obsolete now.
 
 	def __init__(self, ledger_path: str, out_path: str) -> None:
 		"""Load the beancount file at the given path and parse it for queries, 

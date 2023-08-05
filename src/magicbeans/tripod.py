@@ -1,11 +1,3 @@
-"""Represents the common class of transaction with a received and/or sent leg,
-and an optional fees leg.  Enforces internal consistency and offers higher-level
-views of the data, e.g. as a transaction or an account transfer.  Does not
-classify between "buy" and "sell" transactions, since those labels only make
-sense in the context of a leg in the operating currency (e.g., BTC for USD), and
-conversely, in the context of taxation, events that don't seem to be sales need
-to be treated as sales (e.g. payment of transaction fees in non-USD assets)."""
-
 from decimal import Decimal
 from beancount.core.number import D
 
@@ -16,10 +8,26 @@ def check_booleq_and_return(val1, val2):
     return bool(val1)
 
 class Tripod():
-    """A tripod represents a transaction with up to three legs (received, sent,
-    and fees), from the perspective of one account.  Therefore, each amount is
-    represented as a positive value.  At least one of {received, sent} is
-    required, and if both are present, then their currencies must differ."""
+    """Represents a transaction with up to three legs (received, sent, fees).
+    
+    A common class of transaction with a up to three legs (received, sent,
+    and fees), from the perspective of one account.  
+
+    Enforces internal consistency and offers higher-level views of the data,
+    e.g. as a transaction or an account transfer.  Does not classify between
+    "buy" and "sell" transactions, since those labels only make sense in the
+    context of a leg in the operating currency (e.g., BTC for USD), and
+    conversely, in the context of taxation, events that don't seem to be sales
+    need to be treated as sales (e.g. payment of transaction fees in non-USD
+    assets).
+
+    Because the legs are from the perspective of one account, each amount is
+    represented as a positive value.  
+    
+    At least one of {received, sent} is required, and if both are present, then
+    their currencies must differ.
+    """
+
     def __init__(self,
                  rcvd_amt: str, rcvd_cur: str,
                  sent_amt: str, sent_cur: str,

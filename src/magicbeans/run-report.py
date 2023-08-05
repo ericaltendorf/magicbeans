@@ -17,17 +17,6 @@ from magicbeans import queries
 # Report generation helpers
 #
 
-# TODO: this doesn't really work; each column data is typed so you can't
-# just replace it with a ditto character. 
-def ditto_fields(rtypes, rrows, id_col, ditto_cols):
-	last_id = None
-	for row in rrows:
-		this_id = rrows[id_col]
-		if this_id == last_id:
-			for col in ditto_cols:
-				row[col] = row[col]._replace(value = "  ''")
-		last_id = this_id
-
 def quarter_report(year: int, quarter_n: int, currencies: List[str], db):
 	quarter = reports.beancount_quarter(year, quarter_n)
 	quarter_begin = f"""{ty}-{["01", "04", "07", "10"][quarter_n-1]}-01"""

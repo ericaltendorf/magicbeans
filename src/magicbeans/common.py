@@ -2,10 +2,12 @@ import copy
 import datetime
 import re
 from typing import Tuple
-from beancount.core import position
-from beancount.core import data
-from beancount.core.data import Posting, Transaction
+
 import dateutil
+
+from beancount.core import data, position
+from beancount.core.data import Posting, Transaction
+
 
 def is_exempt_currency(currency: str) -> bool:
     """Return True if the provided currency is exempt from capital gains"""

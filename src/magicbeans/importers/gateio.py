@@ -4,34 +4,28 @@
 __copyright__ = "Copyright (C) 2023  Eric Altendorf"
 __license__ = "GNU GPLv2"
 
-from collections import defaultdict
 import csv
 import datetime
-from decimal import Decimal
 import decimal
-from typing import NamedTuple
 import re
 import sys
-
+from collections import defaultdict
+from decimal import Decimal
 from os import path
+from typing import NamedTuple
+
+import pytz
+from dateutil.parser import parse
+
+import beangulp
+from beancount.core import account, amount, data, flags, position
+from beancount.core.data import Posting
+from beancount.core.number import ZERO, D
+from beancount.core.position import Cost
+from beangulp.testing import main
 from magicbeans import common
 from magicbeans.transfers import Link, Network
 from magicbeans.tripod import Tripod
-from beancount.core.data import Posting
-from beancount.core.position import Cost
-from dateutil.parser import parse
-import pytz
-
-from beancount.core import account
-from beancount.core import amount
-from beancount.core import data
-from beancount.core import flags
-from beancount.core import position
-from beancount.core.number import D
-from beancount.core.number import ZERO
-
-import beangulp
-from beangulp.testing import main
 
 gateio_headers = 'no,time,action_desc,action_data,type,change_amount,amount,total'
 inreader = csv.DictReader(sys.stdin, delimiter=',', quotechar='"')

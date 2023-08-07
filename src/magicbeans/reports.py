@@ -1,15 +1,16 @@
-from enum import Enum
 import subprocess
 import sys
+from enum import Enum
 from typing import List
-from beancount.core.amount import Amount
-from beanquery.query_render import render_text
-from pyfiglet import Figlet
-from beancount import loader
 
+from pyfiglet import Figlet
+from tabulate import tabulate
+
+from beancount import loader
+from beancount.core.amount import Amount
 from beancount.parser import parser
 from beanquery.query import run_query
-from tabulate import tabulate
+from beanquery.query_render import render_text
 
 
 def beancount_quarter(ty: int, quarter_n: int):

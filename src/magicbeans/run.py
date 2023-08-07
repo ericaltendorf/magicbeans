@@ -1,13 +1,12 @@
-from collections import namedtuple
 import os
-from beancount import parser
+from collections import namedtuple
+
+import dateutil
+from click import Context
 
 import beangulp
-from beangulp import exceptions, utils
-from beangulp import extract
-from beangulp import identify
-from click import Context
-import dateutil
+from beancount import parser
+from beangulp import exceptions, extract, identify, utils
 
 
 def run(config, input_dir, working_dir):

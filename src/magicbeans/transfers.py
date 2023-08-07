@@ -1,9 +1,9 @@
 """Utilities for managing transfers among a network of accounts."""
 
-from typing import List, Set
-from typing import NamedTuple
+from typing import List, NamedTuple, Set
 
 from beancount.core import account
+
 
 class Link(NamedTuple):
     """A link between two institutions, in a given currency.  Asset account names

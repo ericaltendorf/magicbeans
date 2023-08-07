@@ -9,28 +9,21 @@ __license__ = "GNU GPLv2"
 
 import csv
 import datetime
-from decimal import Decimal
-from typing import NamedTuple
-import re
 import logging
-from magicbeans.transfers import Link, Network
-import pytz
-
+import re
+from decimal import Decimal
 from os import path
+from typing import NamedTuple
+
+import pytz
 from dateutil.parser import parse
 
-from beancount.core import account
-from beancount.core import amount
-from beancount.core import data
-from beancount.core import flags
-from beancount.core import position
-from beancount.core.number import D
-from beancount.core.number import ZERO
-
 import beangulp
+from beancount.core import account, amount, data, flags, position
+from beancount.core.number import ZERO, D
 from beangulp.testing import main
-
 from magicbeans import common
+from magicbeans.transfers import Link, Network
 from magicbeans.tripod import Tripod
 
 # Surprisingly the Chia wallet dumps seem to be in local (PST) time.

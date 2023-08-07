@@ -1,5 +1,7 @@
 from decimal import Decimal
+
 from beancount.core.number import D
+
 
 def check_booleq_and_return(val1, val2):
     if bool(val1) != bool(val2):

@@ -19,21 +19,20 @@ import os
 import re
 from itertools import groupby
 from os import path
-from magicbeans import common
+
 import dateutil.parser
 
-from beancount.core import account
-from beancount.core.amount import Amount
-from beancount.core.data import EMPTY_SET, new_metadata, Cost, Posting, Price, Transaction
-from beancount.core import flags
-from beancount.core.number import D, round_to
-
 import beangulp
+from beancount.core import account, flags
+from beancount.core.amount import Amount
+from beancount.core.data import (EMPTY_SET, Cost, Posting, Price, Transaction,
+                                 new_metadata)
+from beancount.core.number import D, round_to
 from beangulp.testing import main
-
+from magicbeans import common
 from magicbeans.common import usd_cost_spec
-
 from magicbeans.transfers import Link, Network
+
 
 class CoinbaseProImporter(beangulp.Importer):
 

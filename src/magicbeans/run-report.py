@@ -1,7 +1,9 @@
+import datetime
 import subprocess
 import sys
 from enum import Enum
 from typing import List
+from magicbeans.config import Config
 
 from pyfiglet import Figlet
 from tabulate import tabulate
@@ -45,6 +47,8 @@ def quarter_report(year: int, quarter_n: int, currencies: List[str], db):
 if __name__ == '__main__':
 	ledger_path = sys.argv[1]   # "build/final.beancount"
 	out_path = sys.argv[2]   # "build/report.txt"
+	config = Config()  # Report generation barely uses this, but it's probably OK since
+	                   # we'll combine this file with run.py at some point anyway.
 
 	print(f"Generating report for beancount file {ledger_path} and writing to {out_path}")
 	db = reports.ReportDriver(ledger_path, out_path)
@@ -52,9 +56,14 @@ if __name__ == '__main__':
 	# TODO: move figlet into ReportDriver?
 	f = Figlet(width=120)
 
-	# TODO: move to a config
-	currencies = ["BTC", "ETH", "LTC", "XCH"]
+	currencies = config.get_covered_currencies()
 	tax_years = range(2018, 2022 + 1)
+
+	db.report.write(f.renderText(f"Magicbeans Tax Report"))
+	db.report.write(f"Generated {datetime.datetime.now()}\n")
+	tys_str = ", ".join([str(ty) for ty in tax_years])
+	db.report.write(f"Covering tax years {tys_str}\n")
+	db.report.write(f"Reporting on cryptocurrencies {currencies}\n\n")
 
 	print("Generating tax summaries:")
 	for ty in tax_years:

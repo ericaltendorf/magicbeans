@@ -42,3 +42,7 @@ class Config:
         This can be used to mark transactions which are nominally a "buy" or
         "sell"."""
         return currency in ["USD", "USDC", "USDT"]
+
+    def get_covered_currencies(self) -> List[str]:
+        """Return a list of cryptocurrencies on which we'll report."""
+        return ["BTC", "ETH", "LTC", "XCH"]

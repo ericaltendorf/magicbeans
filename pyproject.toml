@@ -18,5 +18,5 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/ericaltendorf/beancount-crypto-importers"
-"Bug Tracker" = "https://github.com/ericaltendorf/beancount-crypto-importers/issues"
+"Homepage" = "https://github.com/ericaltendorf/magicbeans"
+"Bug Tracker" = "https://github.com/ericaltendorf/magicbeans/issues"

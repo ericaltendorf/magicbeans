@@ -260,15 +260,16 @@ class CoinbaseProImporter(beangulp.Importer):
 
         return entries
     
+    @staticmethod
+    def test_instance():
+        return CoinbaseProImporter(
+            account_root="Assets:Coinbase",
+            account_pnl="Income:PnL",
+            account_fees="Expenses:Fees",
+            network=Network([Link("Coinbase", "Bank", "USD"),
+                             Link("Coinbase", "Ledger", "BTC")],
+                            untracked_institutions=["Bank", "Ledger"])
+        )
 
 if __name__ == "__main__":
-    # Example usage; also enables running integration tests
-    importer = CoinbaseProImporter(
-        account_root="Assets:Coinbase",
-        account_pnl="Income:PnL",
-        account_fees="Expenses:Fees",
-        network=Network([Link("Coinbase", "Bank", "USD"),
-                         Link("Coinbase", "Ledger", "BTC")],
-                        untracked_institutions=["Bank", "Ledger"])
-    )
-    main(importer)
+    main(CoinbaseProImporter.test_instance())

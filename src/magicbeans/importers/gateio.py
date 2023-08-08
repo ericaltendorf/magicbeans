@@ -341,6 +341,15 @@ class GateIOImporter(beangulp.Importer):
 
         return entries
 
+    @staticmethod
+    def test_instance():
+        """Returns an instance of this importer for testing."""
+        return GateIOImporter(
+            account_root="Assets:GateIO",
+            account_pnl="Income:PnL",
+            account_fees="Expenses:Financial:Fees",
+            config=GateIOTestConfig())
+
 class GateIOTestConfig(Config):
     """Partial implementation of a config for the GateIO importer that enables running
     integration tests."""
@@ -350,12 +359,4 @@ class GateIOTestConfig(Config):
                         untracked_institutions=[])  # not particularly relevant
 
 if __name__ == "__main__":
-    # Example usage; also enables running integration tests
-    config = GateIOTestConfig()
-    importer = GateIOImporter(
-        account_root="Assets:GateIO",
-        account_pnl="Income:PnL",
-        account_fees="Expenses:Financial:Fees",
-        config=config
-    )
-    main(importer)
+    main(GateIOImporter.test_instance())

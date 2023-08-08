@@ -148,14 +148,16 @@ class ChiaWalletImporter(beangulp.Importer):
 
         return entries
 
+    @staticmethod
+    def test_instance():
+        return ChiaWalletImporter(
+            account_root="Assets:ChiaWallet",
+            account_mining_income="Income:Mining",
+            account_gains="Income:PnL",
+            account_fees="Expenses:Fees",
+            network=Network([Link("ChiaWallet", "GateIO", "XCH")],
+                            untracked_institutions=[])  # not particularly relevant
+        )
 
 if __name__ == "__main__":
-    importer = ChiaWalletImporter(
-        account_root="Assets:ChiaWallet",
-        account_mining_income="Income:Mining",
-        account_gains="Income:PnL",
-        account_fees="Expenses:Fees",
-        network=Network([Link("ChiaWallet", "GateIO", "XCH")],
-                        untracked_institutions=[])  # not particularly relevant
-    )
-    main(importer)
+    main(ChiaWalletImporter.test_instance())

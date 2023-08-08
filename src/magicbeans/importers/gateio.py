@@ -4,28 +4,35 @@
 __copyright__ = "Copyright (C) 2023  Eric Altendorf"
 __license__ = "GNU GPLv2"
 
+from collections import defaultdict
 import csv
 import datetime
+from decimal import Decimal
 import decimal
+from typing import NamedTuple
 import re
 import sys
-from collections import defaultdict
-from decimal import Decimal
+
 from os import path
-from typing import NamedTuple
-
-import pytz
-from dateutil.parser import parse
-
-import beangulp
-from beancount.core import account, amount, data, flags, position
-from beancount.core.data import Posting
-from beancount.core.number import ZERO, D
-from beancount.core.position import Cost
-from beangulp.testing import main
 from magicbeans import common
+from magicbeans.config import Config
 from magicbeans.transfers import Link, Network
 from magicbeans.tripod import Tripod
+from beancount.core.data import Posting
+from beancount.core.position import Cost
+from dateutil.parser import parse
+import pytz
+
+from beancount.core import account
+from beancount.core import amount
+from beancount.core import data
+from beancount.core import flags
+from beancount.core import position
+from beancount.core.number import D
+from beancount.core.number import ZERO
+
+import beangulp
+from beangulp.testing import main
 
 gateio_headers = 'no,time,action_desc,action_data,type,change_amount,amount,total'
 inreader = csv.DictReader(sys.stdin, delimiter=',', quotechar='"')
@@ -49,12 +56,13 @@ def StrDict():
 
 # TODO: rename to imputed?  And/or look at using tripod.py
 
-def ComputeRcvdCost(rcvd_cur: str, rcvd_amt: Decimal, sent_cur: str, sent_amt: Decimal):
+def ComputeRcvdCost(rcvd_cur: str, rcvd_amt: Decimal,
+                    sent_cur: str, sent_amt: Decimal, config: Config):
     """Compute cost basis per item recieved, if appropriate"""
     # TODO: Replace these price estimates and assumptions with a data feed
 
     # We bought XCH using USD or USDT, so we are establishing a cost basis.
-    if rcvd_cur == "XCH" and common.is_like_operating_currency(sent_cur):
+    if rcvd_cur == "XCH" and config.is_like_operating_currency(sent_cur):
         xch_usd = Decimal(sent_amt / rcvd_amt)
         return Cost(xch_usd, "USD", None, None)
 
@@ -69,12 +77,13 @@ def ComputeRcvdCost(rcvd_cur: str, rcvd_amt: Decimal, sent_cur: str, sent_amt: D
     else:
         assert False
 
-def ComputeSentPrice(rcvd_cur: str, rcvd_amt: Decimal, sent_cur: str, sent_amt: Decimal):
+def ComputeSentPrice(rcvd_cur: str, rcvd_amt: Decimal,
+                     sent_cur: str, sent_amt: Decimal, config: Config):
     """Compute price for items disposed of, if appropriate"""
     # TODO: Replace these price estimates and assumptions with a data feed
 
     # Disposed of XCH to obtain USD or USDT; compute price.
-    if sent_cur == "XCH" and common.is_like_operating_currency(rcvd_cur):
+    if sent_cur == "XCH" and config.is_like_operating_currency(rcvd_cur):
         xch_usd = Decimal(rcvd_amt / sent_amt)
         return amount.Amount(xch_usd, "USD")
     
@@ -92,11 +101,11 @@ def ComputeSentPrice(rcvd_cur: str, rcvd_amt: Decimal, sent_cur: str, sent_amt: 
 class GateIOImporter(beangulp.Importer):
     """An importer for GateIO csv files."""
 
-    def __init__(self, account_root, account_pnl, account_fees, network: Network):
+    def __init__(self, account_root, account_pnl, account_fees, config: Config):
         self.account_root = account_root
         self.account_pnl = account_pnl
         self.account_fees = account_fees
-        self.network = network
+        self.config = config
 
     def name(self) -> str:
         return 'GateIO'
@@ -229,7 +238,7 @@ class GateIOImporter(beangulp.Importer):
                 postings = []
                 if tripod.is_transfer():
                     local_acct = account.join(self.account_root, tripod.xfer_cur())
-                    remote_acct = self.network.route(
+                    remote_acct = self.config.get_network().route(
                         tripod.is_send(), local_acct, tripod.xfer_cur())
                     xfer_amt = amount.Amount(tripod.xfer_amt(), tripod.xfer_cur())
                     xfer_amt_neg = amount.Amount(-tripod.xfer_amt(), tripod.xfer_cur())
@@ -256,14 +265,14 @@ class GateIOImporter(beangulp.Importer):
                         Posting(credit_acct, 
                                 amount.Amount(tripod.rcvd_amt, tripod.rcvd_cur),
                                 ComputeRcvdCost(rcvd_cur[oid], rcvd_amt[oid],
-                                            sent_cur[oid], sent_amt[oid]),
+                                                sent_cur[oid], sent_amt[oid], self.config),
                                 None, None, None))
                     postings.append(
                         Posting(debit_acct,
                                 amount.Amount(-tripod.sent_amt, tripod.sent_cur),
                                 Cost(None, None, None, None),
                                 ComputeSentPrice(rcvd_cur[oid], rcvd_amt[oid],
-                                             sent_cur[oid], sent_amt[oid]),
+                                                 sent_cur[oid], sent_amt[oid], self.config),
                                 None, None))
 
                 else:
@@ -332,14 +341,21 @@ class GateIOImporter(beangulp.Importer):
 
         return entries
 
+class GateIOTestConfig(Config):
+    """Partial implementation of a config for the GateIO importer that enables running
+    integration tests."""
+    def get_network(self):
+        return Network([Link("GateIO", "Coinbase", "USDT"),
+                        Link("GateIO", "ChiaWallet", "XCH")],
+                        untracked_institutions=[])  # not particularly relevant
+
 if __name__ == "__main__":
     # Example usage; also enables running integration tests
+    config = GateIOTestConfig()
     importer = GateIOImporter(
         account_root="Assets:GateIO",
         account_pnl="Income:PnL",
         account_fees="Expenses:Financial:Fees",
-        network=Network([Link("GateIO", "Coinbase", "USDT"),
-                         Link("GateIO", "ChiaWallet", "XCH")],
-                        untracked_institutions=[])  # not particularly relevant
+        config=config
     )
     main(importer)

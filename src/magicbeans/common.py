@@ -2,24 +2,10 @@ import copy
 import datetime
 import re
 from typing import Tuple
-
-import dateutil
-
-from beancount.core import data, position
+from beancount.core import position
+from beancount.core import data
 from beancount.core.data import Posting, Transaction
-
-
-def is_exempt_currency(currency: str) -> bool:
-    """Return True if the provided currency is exempt from capital gains"""
-    # TODO: This is a hack, we should be able to get this from the config.
-    return currency in ["USD"]
-
-def is_like_operating_currency(currency: str) -> bool:
-    """Return True if the provided currency is an operating currency or
-    a stablecoin pegged to one.  This can be used to mark transactions
-    which are nominally a "buy" or "sell"."""
-    # TODO: This is a hack, we should be able to get this from the config.
-    return currency in ["USD", "USDC", "USDT"]
+import dateutil
 
 def file_begins_with(filepath: str, expected: str) -> bool:
     """Return True if the provided file begins with the provided string."""

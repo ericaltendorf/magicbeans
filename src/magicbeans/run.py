@@ -7,41 +7,25 @@ from click import Context
 import beangulp
 from beancount import parser
 from beangulp import exceptions, extract, identify, utils
+from magicbeans.config import Config
 
 
-def run(config, input_dir, working_dir):
-    """Main entry point.  Runs the whole pipeline.
+def run(config: Config, input_dir: str, working_dir: str):
+    """Main entry point to run beancount importing and processing.
 
-    Pass in a config with three methods:
-    - get_network() -> Network
-    - get_importers(network) -> List[Importer]
-    - get_hooks() -> List[Hook]
-    - get_preamble() -> str
-
-    Example usage is to write a file, e.g. `magicbeans_local.py` which defines
-    your own settings and behavior, and then run the pipeline from that file:
-
-        preamble = ('option "title" "Crypto Trading"\n' +
-                    'option "operating_currency" "USD\n" + ...)
-
-        class LocalConfig:
-            def get_network():
-                return transfers.Network(...)
-            def get_importers(network):
-                return [CoinbaseImporter(...), ... ]
-            def get_hooks():
-                return [my_hook, ... ]
-            def get_preamble():
-                return preamble
-
-        def my_hook(extracted, _existing_entries=None):
-            return  ....  # this will be simpler after factoring filter/map code out of my own local file
+    Usage: write a file, e.g. `magicbeans_local.py` which defines your own
+    settings and behavior in a subclass of Config.  Pass an instance of that
+    subclass to this function, along with the input directory containing the
+    crypto transaction files to import, and the working directory in which to
+    write intermediate and final output files.  E.g.:
+    
+        class LocalConfig(magicbeans.config.Config):
+            # Override methods ...
 
         if __name__ == '__main__':
             config = LocalConfig()
-            magicbeans.run.run(config)
+            magicbeans.run.run(config, "input_dir", "working_dir")
 
-    TODO: improve  documentation
     TODO: separate in phases, allow running of subphases
     """
 
@@ -67,7 +51,7 @@ def run(config, input_dir, working_dir):
     # Extract
     print(f"==== Extracting data to {path_extracted}...")
     with open(path_extracted, "w") as out:
-        importers = config.get_importers(network)
+        importers = config.get_importers()
         hooks = config.get_hooks()
         extract_all(utils.walk([input_dir]), out, importers, hooks)
 
@@ -116,8 +100,3 @@ def extract_all(input_filenames, out, importers, hooks):
 
     # Serialize entries.
     extract.print_extracted_entries(extracted, out)
-
-
-if __name__ == '__main__':
-    config = None  # TODO: create some workable default config 
-    run(config, "sourcefiles", "workingdir")

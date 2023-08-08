@@ -31,16 +31,14 @@ Data importers which have been (mostly) implemented include:
 ## TODO
 
 ### Enable collaborators & alpha testers
-- Set up a standard method of running the code, including adding a preamble of options and account declarations (currently `build.sh` outside this repo)
-- Set up a config framework for local/private stuff (account info, specific transaction overrides)
 - Integrate the Chia wallet preprocessing code into this repository
 - Write some introductory documentation
 - Write some more detailed documentation with tips, tricks, gotchas, examples, and war stories of real-life data
-- clean up license declarations
 
 ### Necessary and missing functionality
 - Get prices working (see [thread](https://groups.google.com/g/beancount/c/8LS1e2GfAmk),
   maybe Integrate [beancount-coinmarketcap](https://github.com/aamerabbas/beancount-coinmarketcap) plugin)
+- Add option for folding trading fees into cost basis and proceeds
 - Ensure prices and acquisition dates are being tracked through transfers
 - Figure out plan for identifying, applying, saving, and applying in the future, booking decisions.
   Ref: [minimizegains](https://github.com/redstreet/fava_investor/tree/main/fava_investor/modules/minimizegains)

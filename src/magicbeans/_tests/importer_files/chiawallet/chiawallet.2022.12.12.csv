@@ -1,10 +1,15 @@
-Date,Received Quantity,Received Currency,Sent Quantity,Sent Currency,Fee Amount,Fee Currency,Tag
-05/02/2022 14:51:14,2.00,XCH,,,,,mined
-05/06/2022 09:40:27,1.74,XCH,,,,,
-05/11/2022 16:55:19,,,1,XCH,,,
-05/13/2022 07:21:28,8.83,XCH,,,,,mined
-06/01/2022 18:41:58,5.11,XCH,,,,,
-07/01/2022 14:42:27,2.42,XCH,,,,,mined
-08/01/2022 14:53:48,,,4,XCH,,,
-09/01/2022 13:01:53,,,20,XCH,,,
-10/01/2022 22:57:46,2.22,XCH,,,,,mined
+token_name,transaction,confirmed,amount,sent,type,destination,time
+XCH,tx0100,True,1.75,False,COINBASE_REWARD,xch2farming,2022-05-02T14:51:14
+XCH,tx0110,True,0.25,False,COINBASE_REWARD,xch2farming,2022-05-02T14:51:14
+XCH,tx0120,True,1.74,False,INCOMING_TX,xch2someotheraddr,2022-05-06T09:40:27
+XCH,tx0130,True,1,False,OUTGOING_TX,xch2anotherplace,2022-05-11T16:55:19
+XCH,tx0140,True,8.83,False,INCOMING_TX,xch2pooladdr,2022-05-13T07:21:28
+XCH,tx0150,True,1E-12,False,INCOMING_TX,xch2farming,2022-05-15T05:20:34
+XCH,tx0160,True,5E-12,False,INCOMING_TX,xch2farming,2022-05-16T05:20:34
+XCH,tx0170,True,9E-12,False,INCOMING_TX,xch2farming,2022-05-17T05:20:34
+XCH,tx0180,True,5.11,False,INCOMING_TX,xch2anotheraddr,2022-06-01T18:41:58
+XCH,tx0190,True,2.42,False,INCOMING_TX,xch2pooladdr,2022-07-01T14:42:27
+XCH,tx0200,True,4,False,OUTGOING_TX,xch2somewhere,2022-08-01T14:53:48
+XCH,tx0210,True,20,False,OUTGOING_TX,xch2somewhere,2022-09-01T13:01:53
+XCH,tx0220,True,2.22,False,INCOMING_TX,xch2pooladdr,2022-10-01T22:57:46
+

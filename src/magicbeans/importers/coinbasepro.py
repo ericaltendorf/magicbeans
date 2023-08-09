@@ -31,16 +31,20 @@ from beancount.core.number import D, round_to
 from beangulp.testing import main
 from magicbeans import common
 from magicbeans.common import usd_cost_spec
+from magicbeans.config import Config
 from magicbeans.transfers import Link, Network
+import pytz
 
 
 class CoinbaseProImporter(beangulp.Importer):
 
-    def __init__(self, account_root, account_pnl, account_fees, network: Network):
+    # TODO: Migrate from passing in network to passing in config
+    def __init__(self, account_root, account_pnl, account_fees, network: Network, config: Config = None):
         self.account_root = account_root
         self.account_pnl = account_pnl
         self.account_fees = account_fees
         self.network = network
+        self.config = config
 
     def name(self) -> str:
         return 'Coinbase Pro'
@@ -74,7 +78,9 @@ class CoinbaseProImporter(beangulp.Importer):
         for order_id, transfers in transactions_by_order:
             if order_id == '':
                 for transfer in transfers:
-                    tx_ts = dateutil.parser.parse(transfer["time"])
+                    tx_ts = dateutil.parser.parse(transfer["time"]).astimezone(pytz.utc)
+                    
+
                     value = D(transfer['amount'])
                     currency = transfer['amount/balance unit']
                     local_account = account.join(self.account_root, currency)
@@ -124,7 +130,7 @@ class CoinbaseProImporter(beangulp.Importer):
 
                 for transfer in transfers:
                     if tx_ts is None:
-                        tx_ts = dateutil.parser.parse(transfer["time"])
+                        tx_ts = dateutil.parser.parse(transfer["time"]).astimezone(pytz.utc)
                     metadata = {'orderid': transfer['order id']}
                     currency = transfer['amount/balance unit']
                     value = D(transfer['amount'])
@@ -193,8 +199,9 @@ class CoinbaseProImporter(beangulp.Importer):
 
                     increase_currency_cost_entry = None
                     if increase_currency != "USD":
-                        # TODO: get real price of currency
-                        increase_currency_cost_entry = Cost(D('1.0'), "USD", None, None)
+                        currency_price = (self.config.get_price_fetcher()
+                                          .get_price(increase_currency, tx_ts))
+                        increase_currency_cost_entry = Cost(currency_price, "USD", None, None)
 
                     postings.append(
                         Posting(f'{self.account_root}:{increase_currency}',
@@ -217,9 +224,11 @@ class CoinbaseProImporter(beangulp.Importer):
                                     None, None, fee_metadata)
                         )
                         
-                        # TODO: generalize and use real prices
                         assert fee_currency in ["USD", "USDT"]
                         fee_currency_price_in_usd = D('1.0')
+                        if fee_currency == "USDT":
+                            fee_currency_price_in_usd = (self.config.get_price_fetcher()
+                                                         .get_price(fee_currency, tx_ts))
 
                         usd_fee_amount = fee_amount * fee_currency_price_in_usd
 

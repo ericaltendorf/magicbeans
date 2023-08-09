@@ -1,7 +1,7 @@
 
 from typing import List
 from beangulp.importer import Importer
-from magicbeans import transfers
+from magicbeans import prices, transfers
 
 class Config:
     """The API for magicbeans to access local configuration settings.
@@ -29,6 +29,10 @@ class Config:
         """Return the preamble (opening beancount directives and entries) to use.
         
         This is often just a static hard-coded string."""
+        raise NotImplementedError
+
+    def get_price_fetcher(self) -> prices.PriceFetcher:
+        """Return the price fetcher to use."""
         raise NotImplementedError
     
     def is_exempt_currency(self, currency: str) -> bool:

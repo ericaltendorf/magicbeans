@@ -42,6 +42,7 @@ from decimal import Decimal
 from os import path
 from typing import NamedTuple
 from beancount.core.data import Posting, Transaction
+from magicbeans.config import Config
 
 import yaml
 import pytz
@@ -86,8 +87,10 @@ class ChiaWalletImporter(beangulp.Importer):
     transactions related to cancelation of an NFT offer.
     """
 
+    # TODO: migrate away from supplying Network to supply Config only
     def __init__(self, account_root, account_mining_income,
                  account_gains, account_fees, network: Network,
+                 config: Config = None,
                  chiawallet_config_path: str = None,
                  chiawallet_config_dict: dict = None):
         self.account_root = account_root
@@ -95,6 +98,8 @@ class ChiaWalletImporter(beangulp.Importer):
         self.account_gains = account_gains
         self.account_fees = account_fees
         self.network = network
+        if config:
+            self.config = config
 
         if chiawallet_config_dict and chiawallet_config_path:
             raise ValueError("Cannot specify both chiawallet_config_path and chiawallet_config_dict")
@@ -278,7 +283,7 @@ class ChiaWalletImporter(beangulp.Importer):
                 meta = beancount.core.data.new_metadata(filepath, index)
 
                 local_dt = pytz.timezone(rendered_tz).localize(time)
-                utc_dt = local_dt.astimezone(pytz.timezone('UTC'))
+                utc_dt = local_dt.astimezone(pytz.timezone('UTC'))  # TODO: pytz.utc?
                 tripod = Tripod(rcvd_quantity, rcvd_currency,
                                 sent_quantity, sent_currency,
                                 '', '')
@@ -314,7 +319,8 @@ class ChiaWalletImporter(beangulp.Importer):
 
                     # Just to get things running, assign all XCH a cost basis of 1 USD
                     # TODO: fix
-                    mined_cost_basis = beancount.core.position.Cost(D("1.0"), "USD", None, None)
+                    xch_price = self.config.get_price_fetcher().get_price("XCH", utc_dt)
+                    mined_cost_basis = beancount.core.position.Cost(xch_price, "USD", None, None)
 
                     txn = Transaction(meta, utc_dt.date(), beancount.core.flags.FLAG_OKAY,
                                       None, desc, beancount.core.data.EMPTY_SET, links,

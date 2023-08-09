@@ -101,7 +101,7 @@ class ChiaWalletImporter(beangulp.Importer):
 
         if chiawallet_config_path:
             with open(chiawallet_config_path, 'r') as f:
-                self.chiawallet_config = yaml.load(f)
+                self.chiawallet_config = yaml.load(f, Loader=yaml.FullLoader)
         else:
             self.chiawallet_config = {}
 

@@ -56,47 +56,33 @@ def StrDict():
 
 # TODO: rename to imputed?  And/or look at using tripod.py
 
-def ComputeRcvdCost(rcvd_cur: str, rcvd_amt: Decimal,
-                    sent_cur: str, sent_amt: Decimal, config: Config):
+def rcvd_cost(rcvd_cur: str, sent_cur: str, tx_ts: datetime, config: Config):
     """Compute cost basis per item recieved, if appropriate"""
-    # TODO: Replace these price estimates and assumptions with a data feed
-
-    # We bought XCH using USD or USDT, so we are establishing a cost basis.
-    if rcvd_cur == "XCH" and config.is_like_operating_currency(sent_cur):
-        xch_usd = Decimal(sent_amt / rcvd_amt)
-        return Cost(xch_usd, "USD", None, None)
-
-    # We sold XCH for USDT, and we assume cost basis of 1 USDT is 1.0 USD.
-    elif (rcvd_cur == "USDT" and sent_cur == "XCH"):
-        return Cost(Decimal("1.0"), "USD", None, None)
     
     # We didn't send anything to get this, so it was a transfer in; no cost basis.
-    elif not sent_cur:
+    if not sent_cur:
         return None
-    
-    else:
-        assert False
 
-def ComputeSentPrice(rcvd_cur: str, rcvd_amt: Decimal,
-                     sent_cur: str, sent_amt: Decimal, config: Config):
+    elif rcvd_cur in ["XCH", "USDT"]:
+        cost = config.get_price_fetcher().get_price(rcvd_cur, tx_ts)
+        return Cost(cost, "USD", None, None)
+
+    else:
+        raise Exception(f"Unknown currency {rcvd_cur}")
+
+def sent_price(rcvd_cur: str, sent_cur: str, tx_ts: datetime, config: Config):
     """Compute price for items disposed of, if appropriate"""
-    # TODO: Replace these price estimates and assumptions with a data feed
 
-    # Disposed of XCH to obtain USD or USDT; compute price.
-    if sent_cur == "XCH" and config.is_like_operating_currency(rcvd_cur):
-        xch_usd = Decimal(rcvd_amt / sent_amt)
-        return amount.Amount(xch_usd, "USD")
-    
     # If we sent something but didn't recieve anything, it was a transfer not a disposal.
-    elif not rcvd_cur:
+    if not rcvd_cur:
         return None
-    
-    # Disposed of USDT; price is always 1.0 USD.
-    elif sent_cur == "USDT":
-        return amount.Amount(Decimal("1.0"), "USD")
-    
+
+    elif sent_cur in ["XCH", "USDT"]:
+        price = config.get_price_fetcher().get_price(sent_cur, tx_ts)
+        return amount.Amount(price, "USD")
+
     else:
-        assert False, f"rcvd {rcvd_cur} sent {sent_cur}"
+        raise Exception(f"Unknown currency {sent_cur}")
 
 class GateIOImporter(beangulp.Importer):
     """An importer for GateIO csv files."""
@@ -264,15 +250,13 @@ class GateIOImporter(beangulp.Importer):
                     postings.append(
                         Posting(credit_acct, 
                                 amount.Amount(tripod.rcvd_amt, tripod.rcvd_cur),
-                                ComputeRcvdCost(rcvd_cur[oid], rcvd_amt[oid],
-                                                sent_cur[oid], sent_amt[oid], self.config),
+                                rcvd_cost(rcvd_cur[oid], sent_cur[oid], timestamp, self.config),
                                 None, None, None))
                     postings.append(
                         Posting(debit_acct,
                                 amount.Amount(-tripod.sent_amt, tripod.sent_cur),
                                 Cost(None, None, None, None),
-                                ComputeSentPrice(rcvd_cur[oid], rcvd_amt[oid],
-                                                 sent_cur[oid], sent_amt[oid], self.config),
+                                sent_price(rcvd_cur[oid], sent_cur[oid], timestamp, self.config),
                                 None, None))
 
                 else:
@@ -291,16 +275,16 @@ class GateIOImporter(beangulp.Importer):
                     if tripod.fees_cur == "USD":
                         raise Exception("not expecting USD feeds in GateIO")
 
-                    # Price to use for the virtual exchange.  TODO: get real prices.
-                    asset_price_in_usd = Decimal('1.0')
-                    fees_in_usd = tripod.fees_amt * asset_price_in_usd
+                    # Price to use for the virtual exchange
+                    fee_cur_price = self.config.get_price_fetcher().get_price(tripod.fees_cur, timestamp)
+                    fees_in_usd = tripod.fees_amt * fee_cur_price
 
                     # Book the sale
                     postings.append(
                         Posting(account.join(self.account_root, tripod.fees_cur),
                                 amount.Amount(-fees_amt[oid], tripod.fees_cur),
                                 Cost(None, None, None, None),
-                                amount.Amount(asset_price_in_usd, "USD"),
+                                amount.Amount(fee_cur_price, "USD"),
                                 None, {'is_fee': True}))
 
                     # Book the fee

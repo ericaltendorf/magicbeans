@@ -27,6 +27,8 @@ import pytz
 
 import requests
 
+# TODO: This soure lacks early price data for XCH, and also has limited resolution for
+# historical data.  Consider other sources.
 # TODO: USD is hard-coded here.
 API_URL_TEMPLATE = "https://min-api.cryptocompare.com/data/v2/histohour?fsym={currency}&toTs={ts}&tsym=USD&limit=1"
 
@@ -141,11 +143,12 @@ class PriceFetcher:
         s_since_last_call = (datetime.datetime.now() - self.last_fetch_ts).total_seconds()
         throttle_deficit_s = self.min_fetch_interval_ms / 1000 - s_since_last_call
         if throttle_deficit_s > 0:
-            print(f"throttling API call: {throttle_deficit_s} seconds", end="")
+            print(f"throttling API call: {throttle_deficit_s:.3f} seconds")
             time.sleep(throttle_deficit_s)
+        else:
+            print()
         self.last_fetch_ts = datetime.datetime.now()
-        print()
-        
+
         epoch_ts = int(ts.timestamp())
         url = API_URL_TEMPLATE.format(currency=currency, ts=epoch_ts)
 

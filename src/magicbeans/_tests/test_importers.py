@@ -1,4 +1,5 @@
 from beangulp import regression_pytest
+from magicbeans._tests import mocks
 
 from magicbeans.importers.chiawallet import ChiaWalletImporter
 from magicbeans.importers.coinbase import CoinbaseImporter
@@ -18,13 +19,13 @@ class TestCoinbaseProImporter(regression_pytest.ImporterTestBase):
     pass
 
 # GateIO
-@regression_pytest.with_importer(GateIOImporter.test_instance())
+@regression_pytest.with_importer(mocks.gateio_importer_for_testing())
 @regression_pytest.with_testdir("_tests/importer_files/gateio/")
 class TestGateIOImporter(regression_pytest.ImporterTestBase):
     pass
 
 # ChiaWallet
-@regression_pytest.with_importer(ChiaWalletImporter.test_instance())
+@regression_pytest.with_importer(mocks.chia_wallet_importer_for_testing())
 @regression_pytest.with_testdir("_tests/importer_files/chiawallet/")
 class TestChiaWalletImporter(regression_pytest.ImporterTestBase):
     pass

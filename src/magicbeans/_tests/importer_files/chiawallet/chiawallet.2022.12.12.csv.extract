@@ -1,7 +1,7 @@
 
 2022-05-02 * "Mining reward of 2.00 XCH"
   timestamp: "2022-05-02T21:51:14Z"
-  Assets:ChiaWallet:XCH  2.00 XCH {1.0 USD}
+  Assets:ChiaWallet:XCH  2.00 XCH {50.0 USD}
   Income:Mining:USD
 
 2022-05-06 * "Receive 1.74 XCH"
@@ -16,7 +16,7 @@
 
 2022-05-13 * "Mining reward of 8.83 XCH"
   timestamp: "2022-05-13T14:21:28Z"
-  Assets:ChiaWallet:XCH  8.83 XCH {1.0 USD}
+  Assets:ChiaWallet:XCH  8.83 XCH {50.0 USD}
   Income:Mining:USD
 
 2022-06-02 * "Receive 5.11 XCH"
@@ -26,7 +26,7 @@
 
 2022-07-01 * "Mining reward of 2.42 XCH"
   timestamp: "2022-07-01T21:42:27Z"
-  Assets:ChiaWallet:XCH  2.42 XCH {1.0 USD}
+  Assets:ChiaWallet:XCH  2.42 XCH {50.0 USD}
   Income:Mining:USD
 
 2022-08-01 * "Send 4 XCH"
@@ -41,5 +41,5 @@
 
 2022-10-02 * "Mining reward of 2.22 XCH"
   timestamp: "2022-10-02T05:57:46Z"
-  Assets:ChiaWallet:XCH  2.22 XCH {1.0 USD}
+  Assets:ChiaWallet:XCH  2.22 XCH {50.0 USD}
   Income:Mining:USD

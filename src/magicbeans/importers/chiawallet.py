@@ -346,25 +346,3 @@ class ChiaWalletImporter(beangulp.Importer):
                 entries.append(txn)
 
         return entries
-
-    @staticmethod
-    def test_instance():
-        return ChiaWalletImporter(
-            account_root="Assets:ChiaWallet",
-            account_mining_income="Income:Mining",
-            account_gains="Income:PnL",
-            account_fees="Expenses:Fees",
-            network=Network([Link("ChiaWallet", "GateIO", "XCH")],
-                            untracked_institutions=[]),  # not particularly relevant
-            # TODO: exercise more of these configurations in the test
-            chiawallet_config_dict={
-                "farming_reward_addrs": ["xch2farming", "xch2pooladdr"],
-                "known_farming_reward_txs": [],
-                "blocklisted_txs": [],
-                "allowed_tokens": ["XCH"],
-                "ignored_tokens": ["Chia Holiday 2021 Token"],
-                }
-        )
-
-if __name__ == "__main__":
-    main(ChiaWalletImporter.test_instance())

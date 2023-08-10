@@ -324,23 +324,3 @@ class GateIOImporter(beangulp.Importer):
                     entries.append(tx)
 
         return entries
-
-    @staticmethod
-    def test_instance():
-        """Returns an instance of this importer for testing."""
-        return GateIOImporter(
-            account_root="Assets:GateIO",
-            account_pnl="Income:PnL",
-            account_fees="Expenses:Financial:Fees",
-            config=GateIOTestConfig())
-
-class GateIOTestConfig(Config):
-    """Partial implementation of a config for the GateIO importer that enables running
-    integration tests."""
-    def get_network(self):
-        return Network([Link("GateIO", "Coinbase", "USDT"),
-                        Link("GateIO", "ChiaWallet", "XCH")],
-                        untracked_institutions=[])  # not particularly relevant
-
-if __name__ == "__main__":
-    main(GateIOImporter.test_instance())

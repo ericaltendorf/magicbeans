@@ -11,15 +11,15 @@
 
 2021-03-01 * "Buy (from USDT) tx:462845726"
   timestamp: "2021-03-01T06:52:23Z"
-  Assets:GateIO:XCH     20.0000000000000000 XCH {20 USD}
-  Assets:GateIO:USDT  -400.0000000000000000 USDT {} @ 1.0 USD
+  Assets:GateIO:XCH     20.0000000000000000 XCH {50.0 USD}
+  Assets:GateIO:USDT  -400.0000000000000000 USDT {} @ 1.0001 USD
   Income:PnL
 
 2021-03-01 * "Fees for Buy (from USDT) tx:462845726"
   timestamp: "2021-03-01T06:52:23.001Z"
-  Assets:GateIO:XCH            -0.2000000000 XCH {} @ 1.0 USD
+  Assets:GateIO:XCH             -0.2000000000 XCH {} @ 50.0 USD
     is_fee: TRUE
-  Expenses:Financial:Fees:USD  0.20000000000 USD
+  Expenses:Financial:Fees:USD  10.00000000000 USD
     is_fee: TRUE
   Income:PnL
     is_fee: TRUE
@@ -31,15 +31,15 @@
 
 2021-04-30 * "Buy (from USDT) tx:32475432626"
   timestamp: "2021-04-30T16:18:55Z"
-  Assets:GateIO:XCH     10.0000000000000000 XCH {25 USD}
-  Assets:GateIO:USDT  -250.0000000000000000 USDT {} @ 1.0 USD
+  Assets:GateIO:XCH     10.0000000000000000 XCH {50.0 USD}
+  Assets:GateIO:USDT  -250.0000000000000000 USDT {} @ 1.0001 USD
   Income:PnL
 
 2021-04-30 * "Fees for Buy (from USDT) tx:32475432626"
   timestamp: "2021-04-30T16:18:55.001Z"
-  Assets:GateIO:XCH            -0.2000000000000000 XCH {} @ 1.0 USD
+  Assets:GateIO:XCH             -0.2000000000000000 XCH {} @ 50.0 USD
     is_fee: TRUE
-  Expenses:Financial:Fees:USD  0.20000000000000000 USD
+  Expenses:Financial:Fees:USD  10.00000000000000000 USD
     is_fee: TRUE
   Income:PnL
     is_fee: TRUE
@@ -51,15 +51,15 @@
 
 2021-07-01 * "Sell (for USDT) tx:234765643"
   timestamp: "2021-07-01T10:46:21Z"
-  Assets:GateIO:USDT  600.0000000000000000 USDT {1.0 USD}
-  Assets:GateIO:XCH   -20.0000000000000000 XCH {} @ 30 USD
+  Assets:GateIO:USDT  600.0000000000000000 USDT {1.0001 USD}
+  Assets:GateIO:XCH   -20.0000000000000000 XCH {} @ 50.0 USD
   Income:PnL
 
 2021-07-01 * "Fees for Sell (for USDT) tx:234765643"
   timestamp: "2021-07-01T10:46:21.001Z"
-  Assets:GateIO:USDT           -0.5000000000000000 USDT {} @ 1.0 USD
+  Assets:GateIO:USDT              -0.5000000000000000 USDT {} @ 1.0001 USD
     is_fee: TRUE
-  Expenses:Financial:Fees:USD  0.50000000000000000 USD
+  Expenses:Financial:Fees:USD  0.50005000000000000000 USD
     is_fee: TRUE
   Income:PnL
     is_fee: TRUE

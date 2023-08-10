@@ -95,9 +95,11 @@ class CoinbaseProImporter(beangulp.Importer):
                         remote_account = self.network.target(local_account, currency)
 
                     # value appears to be negated for withdrawals already
-                    posting1 = Posting(local_account, Amount(value, currency),
+                    posting1 = Posting(local_account,
+                                       common.rounded_amt(value, currency),
                                        usd_cost_spec(currency), None, None, None)
-                    posting2 = Posting(remote_account, Amount(-value, currency),
+                    posting2 = Posting(remote_account,
+                                       common.rounded_amt(-value, currency),
                                        usd_cost_spec(currency), None, None, None)
 
                     metadata = {'transferid': transfer['transfer id']}
@@ -165,12 +167,12 @@ class CoinbaseProImporter(beangulp.Importer):
                     title = f' {increase_amount} {increase_currency}'
                     postings.append(
                         Posting(f'{self.account_root}:{increase_currency}',
-                                Amount(increase_amount, increase_currency),
+                                common.rounded_amt(increase_amount, increase_currency),
                                 cost_amount, None, None, None),
                     )
                     postings.append(
                         Posting(f'{self.account_root}:{reduce_currency}',
-                                Amount(-reduce_amount + fee_amount, reduce_currency),
+                                common.rounded_amt(-reduce_amount + fee_amount, reduce_currency),
                                 None, None, None, None)
                     )
                     if fee_currency:
@@ -178,13 +180,13 @@ class CoinbaseProImporter(beangulp.Importer):
                             raise Exception("Haven't implemented non-USD fee disposal here yet")
                         postings.append(
                             Posting(self.account_fees,
-                                    Amount(-fee_amount, fee_currency),
+                                    common.rounded_amt(-fee_amount, fee_currency),
                                     None, None, None, None)
                         )
 
                 else: # Sell or Swap
                     if trade_type == 'Sell':
-                        price = Amount(increase_amount/reduce_amount, 'USD')
+                        price = common.rounded_amt(increase_amount/reduce_amount, 'USD')
                         title = f' {reduce_amount} {reduce_currency}'
                     else:
                         price = None
@@ -192,7 +194,7 @@ class CoinbaseProImporter(beangulp.Importer):
                                 f'for {increase_amount} {increase_currency}'
                     postings.append(
                         Posting(f'{self.account_root}:{reduce_currency}',
-                                Amount(-reduce_amount, reduce_currency),
+                                common.rounded_amt(-reduce_amount, reduce_currency),
                                 Cost(None, None, None, None),
                                 price, None, None),
                     )
@@ -205,7 +207,7 @@ class CoinbaseProImporter(beangulp.Importer):
 
                     postings.append(
                         Posting(f'{self.account_root}:{increase_currency}',
-                                Amount(increase_amount, increase_currency),
+                                common.rounded_amt(increase_amount, increase_currency),
                                 increase_currency_cost_entry, None, None, None),
                     )
                     if fee_currency:
@@ -219,7 +221,7 @@ class CoinbaseProImporter(beangulp.Importer):
                         # in USD, we must supply a cost.
                         postings.append(
                             Posting(account.join(self.account_root, fee_currency),
-                                    Amount(fee_amount, fee_currency),
+                                    common.rounded_amt(fee_amount, fee_currency),
                                     None if fee_currency == "USD" else Cost(None, None, None, None),
                                     None, None, fee_metadata)
                         )
@@ -236,7 +238,7 @@ class CoinbaseProImporter(beangulp.Importer):
                         # and must be recorded in USD.
                         postings.append(
                             Posting(self.account_fees,
-                                    Amount(-usd_fee_amount, "USD"),
+                                    common.rounded_amt(-usd_fee_amount, "USD"),
                                     None, None, None, fee_metadata)
                         )
                         if fee_metadata:

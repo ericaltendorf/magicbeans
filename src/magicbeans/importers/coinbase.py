@@ -90,9 +90,9 @@ class CoinbaseImporter(beangulp.Importer):
                 subtotal = D(row['Subtotal'])
                 total = D(row["Total (inclusive of fees and/or spread)"])
 
-                total_amount = amount.Amount(total, asset_price_currency)
-                units = amount.Amount(quantity, instrument)
-                fees = amount.Amount(D(fees), asset_price_currency)
+                total_amount = common.rounded_amt(total, asset_price_currency)
+                units = common.rounded_amt(quantity, instrument)
+                fees = common.rounded_amt(D(fees), asset_price_currency)
                 account_cash = account.join(self.account_root, asset_price_currency)
                 account_inst = account.join(self.account_root, instrument)
 

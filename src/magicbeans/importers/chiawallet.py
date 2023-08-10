@@ -20,9 +20,10 @@ spent coin).  This heuristic only works for the simple case of a single spend &
 change-receipt transaction in one block.
 
 BUGS:
-- A few incoming 1.74999999....XCH transactions that would seem to be farming
-  rewards are not being marked as such; this breaks later tax computation as
-  they appear to be transfers from nowhere, with an unknown cost basis.
+- A couple incoming 1.7499..?  XCH transactions that would seem to be farming
+  rewards or change or something are just showing up as random receives; this
+  breaks later tax computation as they appear to be transfers from nowhere, with
+  an unknown cost basis.
 
 OTHER KNOWN ISSUES:
 - The change-coin heuristics are not reliable

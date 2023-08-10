@@ -296,7 +296,6 @@ class ChiaWalletImporter(beangulp.Importer):
                 if tag == "mined":
                     desc = f"Mining reward of {tripod.amount()} {tripod.currency()}"
                 elif tripod.is_transfer():
-                    # desc = f"{tripod.tx_class()} {tripod.amount()} {tripod.currency()}"
                     desc = f"{tripod.narrate()}"
                 else:
                     desc = "Unexpected transaction??"
@@ -319,8 +318,6 @@ class ChiaWalletImporter(beangulp.Importer):
                     units = beancount.core.amount.Amount(tripod.amount(), tripod.currency())
                     sign = Decimal(1 if tripod.rcvd else -1)
 
-                    # Just to get things running, assign all XCH a cost basis of 1 USD
-                    # TODO: fix
                     xch_price = self.config.get_price_fetcher().get_price("XCH", utc_dt)
                     mined_cost_basis = beancount.core.position.Cost(xch_price, "USD", None, None)
 

@@ -1,7 +1,11 @@
 from decimal import Decimal
 
 from beancount.core.number import D
+from magicbeans import common
 
+
+def is_integral(n: Decimal) -> bool:
+    return n == n.to_integral_value()
 
 def check_booleq_and_return(val1, val2):
     if bool(val1) != bool(val2):
@@ -114,6 +118,26 @@ class Tripod():
             raise Exception("Single amount only defined on transfers")
         return self.rcvd_amt or self.sent_amt
 
+    def narrate(self) -> str:
+        # This seems really dumb.  Isn't there a better way?
+        fmt_rcvd_amt = f"{self.rcvd_amt:.0f}" if is_integral(self.rcvd_amt) else f"{self.rcvd_amt:.4f}"
+        fmt_sent_amt = f"{self.sent_amt:.0f}" if is_integral(self.sent_amt) else f"{self.sent_amt:.4f}"
+
+        if self.is_transaction():
+            # TODO: use the config for USD/USDT
+            if self.sent_cur in ["USD", "USDT"]:
+                return f"Buy {fmt_rcvd_amt} {self.rcvd_cur} with {fmt_sent_amt} {self.sent_cur}"
+            elif self.rcvd_cur in ["USD", "USDT"]:
+                return f"Sell {fmt_sent_amt} {self.sent_cur} for {fmt_rcvd_amt} {self.rcvd_cur}"
+            else:
+                return f"Exchange {fmt_sent_amt} {self.sent_cur} for {fmt_rcvd_amt} {self.rcvd_cur}"
+        elif self.is_transfer():
+            if self.sent_amt:
+                return f"Send {self.sent_amt:.4f} {self.sent_cur}"
+            else:
+                return f"Receive {self.rcvd_amt:.4f} {self.rcvd_cur}"
+
+    # TODO: remove this?  We now use narrate() where we used to use this.
     def tx_class(self) -> str:
         if self.is_transaction():
             if self.sent_cur == "USD":

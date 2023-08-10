@@ -289,7 +289,7 @@ class GateIOImporter(beangulp.Importer):
 
                     # Book the fee
                     postings.append(
-                        Posting(account.join(self.account_fees, "USD"),
+                        Posting(self.account_fees,   #account.join(self.account_fees, "USD"),
                                 amount.Amount(fees_in_usd, "USD"),
                                 None,
                                 None,

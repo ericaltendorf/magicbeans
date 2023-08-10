@@ -48,8 +48,11 @@ class CacheEntry(NamedTuple):
 
     # TODO: enforce timestamps are UTC
 
+    # TODO: rounding the price is useful but should probably be done in a more
+    # principled or transparent way.
+
     def price(self) -> Decimal:
-        return (self.high + self.low) / 2
+        return round((self.high + self.low) / Decimal("2.0"), 4)
 
 class PriceFetcher:
     """Fetch prices for magicbeans importers.

@@ -77,13 +77,13 @@ if __name__ == '__main__':
 			f"Small Disposals (aggregated by quarter)",
 			queries.year_small_disposals(ty))
 		db.run_subreport(
-			f"Mining Income By Quarter",
-			queries.year_mining_income_by_quarter(ty),
-			footer="For more detail see full mining history at end of report.")
-		db.run_subreport(
 			f"Mining Income Year Total",
 			queries.year_mining_income_total(ty),
 			footer="Note: this is an income account; neg values are gains and pos values are losses.")
+		db.run_subreport(
+			f"Mining Breakdown By Quarter",
+			queries.year_mining_income_by_quarter(ty),
+			footer="For more detail see full mining history at end of report.")
 	print()
 
 	db.report.write(f.renderText("Quarterly Operations"))
@@ -95,16 +95,16 @@ if __name__ == '__main__':
 			quarter_report(ty, quarter_n, currencies, db)
 	print()
 
-	db.report.write(f.renderText("Full Mining History"))
-	currency_re = "|".join(currencies)  # TODO: dup code
-	print("Generating full mining history:")
-	for ty in tax_years[2:]:
-		print(f"  {ty} ", end="", flush=True)
-		for quarter_n in [1, 2, 3, 4]:
-			print(f"{quarter_n} ", end="", flush=True)
-			quarter = reports.beancount_quarter(ty, quarter_n)
-			db.run_subreport(
-				f"Mining in {quarter}",
-				queries.mining_full(quarter, currency_re))
-	print()
+	# db.report.write(f.renderText("Full Mining History"))
+	# currency_re = "|".join(currencies)  # TODO: dup code
+	# print("Generating full mining history:")
+	# for ty in tax_years[2:]:
+	# 	print(f"  {ty} ", end="", flush=True)
+	# 	for quarter_n in [1, 2, 3, 4]:
+	# 		print(f"{quarter_n} ", end="", flush=True)
+	# 		quarter = reports.beancount_quarter(ty, quarter_n)
+	# 		db.run_subreport(
+	# 			f"Mining in {quarter}",
+	# 			queries.mining_full(quarter, currency_re))
+	# print()
 

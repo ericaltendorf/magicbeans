@@ -31,7 +31,7 @@ def disposals(quarter: str):
 		f'units(position) as amount, '
 		f'round(number(cost(position)) / number(units(position)), 4) as cost_each, '
 		f'cost(position) as total_cost ' 
-		f'FROM has_account("PnL") and quarter(date) = "{quarter}" ')
+		f'FROM has_account("CapGains") and quarter(date) = "{quarter}" ')
 
 def acquisitions(quarter: str, currency_re: str):
 	# This has query code in common with disposals(); consider refactoring.
@@ -65,15 +65,15 @@ def mining_full(quarter: str, currency_re: str):
 def pnl(quarter: str):
 	return (
 		f'SELECT date, narration, account, cost(position) as amount, balance '
-		f'FROM has_account("PnL") AND quarter(date) = "{quarter}" '
-		f'WHERE account="Income:PnL"')
+		f'FROM has_account("CapGains") AND quarter(date) = "{quarter}" '
+		f'WHERE account="Income:CapGains"')
 
 def year_large_disposals(year: int):
 	# TODO: cost(position) is the same as number.  Is this right?  Is it what we want to report?
 	return (
-		f'SELECT date, narration, account, cost(position) as amount, balance '
-		f'FROM has_account("PnL") AND year(date) = {year} '
-		f'WHERE account="Income:PnL" '
+		f'SELECT date, narration, account, round(cost(position),2) as amount, balance '
+		f'FROM has_account("CapGains") AND year(date) = {year} '
+		f'WHERE account="Income:CapGains" '
 		f'AND abs(number) >= 1000')
 		
 def year_small_disposals(year: int):
@@ -81,14 +81,17 @@ def year_small_disposals(year: int):
 	return (
 		f'SELECT account, count(*) as num_transactions, '
 		f'sum(cost(position)) as total '
-		f'FROM has_account("PnL") AND year(date) = {year} '
-		f'WHERE account="Income:PnL" AND abs(number) < 1000')
+		f'FROM has_account("CapGains") AND year(date) = {year} '
+		f'WHERE account="Income:CapGains" AND abs(number) < 1000')
 
 def year_mining_income_by_quarter(year: int):
 	return (
-		f'SELECT units(sum(position)) as total, '
-		f'quarter(date) as quarter from year(date) = {year} '
-		f'AND has_account("Income:Mining") GROUP BY quarter')
+		f'SELECT '
+		f'quarter(date) as quarter '
+		f'units(sum(filter_currency(position, "USD"))) as usd_subtotal, '
+		f'units(sum(filter_currency(position, "XCH"))) as xch_subtotal, '
+		f'from year(date) = {year} '
+		f'AND has_account("Income:Mining") ORDER BY quarter')
 
 def year_mining_income_total(year: int):
 	return (

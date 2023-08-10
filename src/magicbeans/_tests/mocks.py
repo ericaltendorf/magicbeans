@@ -5,6 +5,8 @@ from magicbeans.config import Config
 from magicbeans.importers.chiawallet import ChiaWalletImporter
 from magicbeans.importers.gateio import GateIOImporter
 
+# TODO: this is just code -- is there a pytest mocking framework we should be using?
+
 # TODO: each of these testing importers uses a different set of accounts -- clean up
 
 def gateio_importer_for_testing():
@@ -34,6 +36,8 @@ def chia_wallet_importer_for_testing():
             "ignored_tokens": ["Chia Holiday 2021 Token"],
             }
     )
+
+# TODO: mocks for other importer configs
 
 class MockPriceFetcher():
     def get_price(self, currency: str, timestamp: datetime.datetime) -> Decimal:

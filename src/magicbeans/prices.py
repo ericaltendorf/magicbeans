@@ -28,7 +28,8 @@ import pytz
 import requests
 
 # This soure lacks early price data for XCH, and also has limited resolution for
-# historical data.  See https://min-api.cryptocompare.com/documentation  
+# historical data -- although it claims to be hourly, it appears to be daily.
+# See https://min-api.cryptocompare.com/documentation
 # TODO: Consider other sources.
 # TODO: USD is hard-coded here.
 API_URL_TEMPLATE = "https://min-api.cryptocompare.com/data/v2/histohour?fsym={currency}&toTs={ts}&tsym=USD&limit=1"

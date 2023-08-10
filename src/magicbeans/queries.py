@@ -65,15 +65,15 @@ def mining_full(quarter: str, currency_re: str):
 def pnl(quarter: str):
 	return (
 		f'SELECT date, narration, account, cost(position) as amount, balance '
-		f'FROM has_account("CapGains") AND quarter(date) = "{quarter}" '
-		f'WHERE account="Income:CapGains"')
+		f'FROM quarter(date) = "{quarter}" '
+		f'WHERE account~"Income:CapGains"')
 
 def year_large_disposals(year: int):
 	# TODO: cost(position) is the same as number.  Is this right?  Is it what we want to report?
 	return (
 		f'SELECT date, narration, account, round(cost(position),2) as amount, balance '
-		f'FROM has_account("CapGains") AND year(date) = {year} '
-		f'WHERE account="Income:CapGains" '
+		f'FROM year(date) = {year} '
+		f'WHERE account~"Income:CapGains" '
 		f'AND abs(number) >= 1000')
 		
 def year_small_disposals(year: int):
@@ -81,8 +81,8 @@ def year_small_disposals(year: int):
 	return (
 		f'SELECT account, count(*) as num_transactions, '
 		f'sum(cost(position)) as total '
-		f'FROM has_account("CapGains") AND year(date) = {year} '
-		f'WHERE account="Income:CapGains" AND abs(number) < 1000')
+		f'FROM year(date) = {year} '
+		f'WHERE account~"Income:CapGains" AND abs(number) < 1000')
 
 def year_mining_income_by_quarter(year: int):
 	return (

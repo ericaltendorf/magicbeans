@@ -121,9 +121,14 @@ class GateIOImporter(beangulp.Importer):
         sent_cur = StrDict()
         fees_amt = DecDict()
         fees_cur = StrDict()
+
+        # TODO: what were these for?  they're populated but never used.
         ext_amt = DecDict()
         ext_cur = StrDict()
+
+        # TODO: this doesn't appear to be used anymore either (populated but not used)
         label = StrDict()
+
         tx_ts_min = {}  # Transaction timestamp range
         tx_ts_max = {}
         metadata_dict = {}
@@ -189,8 +194,8 @@ class GateIOImporter(beangulp.Importer):
                     assert not oid in rcvd_amt
                     rcvd_amt[oid] = ch_amt
                     rcvd_cur[oid] = currency
-                    ext_amt[oid] = -ch_amt
-                    ext_cur[oid] = currency
+                    ext_amt[oid] = -ch_amt     # TODO: this is never used!
+                    ext_cur[oid] = currency     # TODO: this is never used!
                     label[oid] = "Deposit"
 
                 elif action == 'Withdraw':
@@ -198,8 +203,8 @@ class GateIOImporter(beangulp.Importer):
                     assert not oid in sent_amt
                     sent_amt[oid] = -ch_amt
                     sent_cur[oid] = currency
-                    ext_amt[oid] = -ch_amt
-                    ext_cur[oid] = currency
+                    ext_amt[oid] = -ch_amt     # TODO: this is never used!
+                    ext_cur[oid] = currency     # TODO: this is never used!
                     label[oid] = "Withdraw"
 
                 else:
@@ -218,7 +223,7 @@ class GateIOImporter(beangulp.Importer):
                                 fees_amt=fees_amt[oid],
                                 fees_cur=fees_cur[oid])
                 
-                desc = f'{tripod.tx_class()} tx:{oid}'
+                desc = f'{tripod.narrate()} tx:{oid}'
                 links = set()
 
                 postings = []

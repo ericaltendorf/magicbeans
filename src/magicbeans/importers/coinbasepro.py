@@ -63,6 +63,7 @@ class CoinbaseProImporter(beangulp.Importer):
     def account(self, filepath):
         return self.account_root
 
+    # TODO: we could probably clean a lot of this up by using Tripod.
     def extract(self, file, existing_entries=None) -> list:
         with open(file, 'r') as _file:
             transactions = list(csv.DictReader(_file))
@@ -164,7 +165,7 @@ class CoinbaseProImporter(beangulp.Importer):
 
                 if trade_type == 'Buy':
                     cost_amount = Cost(reduce_amount/increase_amount, 'USD', None, None)
-                    title = f' {increase_amount} {increase_currency}'
+                    title = f' {increase_amount} {increase_currency} with {reduce_amount} {reduce_currency}'
                     postings.append(
                         Posting(f'{self.account_root}:{increase_currency}',
                                 common.rounded_amt(increase_amount, increase_currency),
@@ -187,7 +188,7 @@ class CoinbaseProImporter(beangulp.Importer):
                 else: # Sell or Swap
                     if trade_type == 'Sell':
                         price = common.rounded_amt(increase_amount/reduce_amount, 'USD')
-                        title = f' {reduce_amount} {reduce_currency}'
+                        title = f' {reduce_amount} {reduce_currency} for {increase_amount} {increase_currency}'
                     else:
                         price = None
                         title = f' {reduce_amount} {reduce_currency} ' \

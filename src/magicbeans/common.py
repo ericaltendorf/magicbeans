@@ -1,5 +1,6 @@
 import copy
 import datetime
+from decimal import Decimal
 import re
 from typing import Tuple
 from beancount.core import position
@@ -12,6 +13,19 @@ def file_begins_with(filepath: str, expected: str) -> bool:
     with open(filepath, "r") as file:
         head = file.read(len(expected))
         return head == expected
+
+def rounded_amt(number: Decimal, currency: str, digits: int = None) -> position.Amount:
+    """Return a position.Amount with the provided number and currency, rounded
+       to the provided number of digits.  If digits is None, the number will be
+       rounded to a default precision (or not rounded at all) based on the currency."""
+    if digits is None:
+        if currency == "USD":
+            digits = 4
+        elif currency == "USDT":
+            digits = 8
+    if digits is not None:
+        number = round(number, digits)
+    return position.Amount(number, currency)
 
 def attach_timestamp(entry: Transaction, ts: datetime.datetime):
     """Attach a timestamp to the metadata of the provided transaction, formatted

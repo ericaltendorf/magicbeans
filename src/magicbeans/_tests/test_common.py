@@ -14,6 +14,18 @@ import pytest
 
 from magicbeans.transfers import Network, Link
 
+
+def test_rounded_amt() -> None:
+    assert (common.rounded_amt(D("7.123456789"), "USD", 2)
+            == amount.Amount(D("7.12"), "USD"))
+    assert (common.rounded_amt(D("7.123456789"), "USD")
+            == amount.Amount(D("7.1235"), "USD"))
+    assert (common.rounded_amt(D("7.123456789"), "USDT")
+            == amount.Amount(D("7.12345679"), "USDT"))
+    assert (common.rounded_amt(D("7.123456789"), "BTC")
+            == amount.Amount(D("7.123456789"), "BTC"))
+
+
 def EmptyCost():
     return data.Cost(None, None, None, None)
 

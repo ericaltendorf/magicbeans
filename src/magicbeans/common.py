@@ -23,6 +23,8 @@ def rounded_amt(number: Decimal, currency: str, digits: int = None) -> position.
             digits = 4
         elif currency == "USDT":
             digits = 8
+        else:
+            digits = 8   # TODO: this throws away precision; but it cleans up the reports
     if digits is not None:
         number = round(number, digits)
     return position.Amount(number, currency)

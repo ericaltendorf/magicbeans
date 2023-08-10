@@ -77,7 +77,10 @@ if __name__ == '__main__':
 		# db.run_subreport(
 		# 	f"Small Disposals (aggregated by quarter)",
 		# 	queries.year_small_disposals(ty))
+
 		db.run_disposals_subreport("Asset Disposals and Capital Gains/Losses", ty)
+		db.report.write("\n")
+
 		db.run_subreport(
 			f"Mining Income Year Total",
 			queries.year_mining_income_total(ty),

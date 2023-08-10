@@ -1,6 +1,7 @@
 import subprocess
 import sys
 from enum import Enum
+import textwrap
 from typing import List
 from magicbeans import disposals
 
@@ -21,9 +22,10 @@ def beancount_quarter(ty: int, quarter_n: int):
 # via an argument on ReportDriver.
 def subreport_header(title: str, q: str = None):
 	# TODO: move this into ReportDriver?
-	result = " " + ("_" * 98) + f" \n|{title:_^98}|\n"
+	result = " " + ("_" * 140) + f" \n|{title:_^140}|\n"
 	if q:
-		result += f"\n{q}\n"
+		result += "\n".join(textwrap.wrap(q, width=140,
+		      initial_indent="", subsequent_indent="  "))
 	return  result
 
 class ReportDriver:

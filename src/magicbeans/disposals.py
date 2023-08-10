@@ -15,7 +15,6 @@ class DisposalSummary(NamedTuple):
     narration: str
     short_term: Posting
     long_term: Posting
-    gain_currency: str
     lots: List[Posting]
 
     def stcg(self) -> Decimal:
@@ -92,7 +91,7 @@ def mk_disposal_summary(entry: Transaction):
     if st: assert st.units.currency == "USD"
     if lt: assert lt.units.currency == "USD" 
     return DisposalSummary(entry.date, entry.narration,
-                           st, lt, "USD", disposal_postings)
+                           st, lt, disposal_postings)
 
 # TODO: check logic.  check against red's plugin logic
 def is_disposal_tx(entry: Transaction):
@@ -101,17 +100,21 @@ def is_disposal_tx(entry: Transaction):
 
 # TODO: should probably move to another file
 def render_disposals_table(entries, file):
-    file.write(f"{'Date':<12} {'Narration':<100} "
-        f"{'STCG':>12} "
-        f"{'Cumulative':>12} "
-        f"{'LTCG':>12} "
-        f"{'Cumulative':>12} "
-        f"{'':>6}\n\n")
+    file.write(
+        f"{'Date':<10} {'Narration':<84} "
+        f"{'STCG':>10} "
+        f"{'Cumulative':>11} "
+        f"{'LTCG':>10} "
+        f"{'Cumulative':>11}\n\n")
 
     cumulative_stcg = Decimal("0")
     cumulative_ltcg = Decimal("0")
+    
+    num_lines = 0
+
     for e in entries:
         if isinstance(e, Transaction) and is_disposal_tx(e):
+            num_lines += 1
             summary = mk_disposal_summary(e)
    
             if summary.short_term:
@@ -121,21 +124,23 @@ def render_disposals_table(entries, file):
 
 			# TODO: hardcoded for ~140 char width now
             # TODO: why do i have to call str(summary.date)??
-            file.write(f"{str(summary.date):<12} {summary.narration:<100} "
-                f"{format_money(summary.stcg()):>12} "
-                f"{cumulative_stcg:>12.2f} "
-                f"{format_money(summary.ltcg()):>12} "
-                f"{cumulative_ltcg:>12.2f} "
-                f"{summary.gain_currency:>6}\n")
+            file.write(
+                f"{str(summary.date):<10} {summary.narration:<84.84} "
+                f"{format_money(summary.stcg()):>10} "
+                f"{cumulative_stcg:>11.2f} "
+                f"{format_money(summary.ltcg()):>10} "
+                f"{cumulative_ltcg:>11.2f}\n")
             file.write("\n".join(textwrap.wrap(
-                f"Lots: {render_lots(summary.lots)}",
-                width=112, initial_indent="  ", subsequent_indent="  ")))
+                f"Disposed lots: {render_lots(summary.lots)}",
+                width=94, initial_indent="  ", subsequent_indent="  ")))
             file.write("\n")
 
-    file.write(f"\n{'':<12} {'Total for tax year {ty}':<100} "
-        f"{'STCG':>12} "
-        f"{cumulative_stcg:>12.2f} "
-        f"{'LTCG':>12} "
-        f"{cumulative_ltcg:>12.2f} "
-        f"{'USD':>6}\n\n")   # TODO: hardcoded currency
+    if num_lines == 0:
+         file.write("(No disposals)\n")
 
+    file.write(
+        f"\n{'':<10} {'Total':<84} "
+        f"{'STCG':>10} "
+        f"{cumulative_stcg:>11.2f} "
+        f"{'LTCG':>10} "
+        f"{cumulative_ltcg:>11.2f}\n")

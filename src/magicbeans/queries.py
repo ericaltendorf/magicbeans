@@ -87,9 +87,9 @@ def year_small_disposals(year: int):
 def year_mining_income_by_quarter(year: int):
 	return (
 		f'SELECT '
-		f'quarter(date) as quarter '
+		f'quarter(date) as quarter, '
 		f'units(sum(filter_currency(position, "USD"))) as usd_subtotal, '
-		f'units(sum(filter_currency(position, "XCH"))) as xch_subtotal, '
+		f'units(sum(filter_currency(position, "XCH"))) as xch_subtotal '
 		f'from year(date) = {year} '
 		f'AND has_account("Income:Mining") ORDER BY quarter')
 

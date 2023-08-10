@@ -2,6 +2,7 @@ import subprocess
 import sys
 from enum import Enum
 from typing import List
+from magicbeans import disposals
 
 from pyfiglet import Figlet
 from tabulate import tabulate
@@ -18,9 +19,12 @@ def beancount_quarter(ty: int, quarter_n: int):
 
 # TODO: parameterize the width of this header, probably
 # via an argument on ReportDriver.
-def subreport_header(title: str, q: str):
+def subreport_header(title: str, q: str = None):
 	# TODO: move this into ReportDriver?
-	return " " + ("_" * 98) + f" \n|{title:_^98}|\n\n{q}\n\n"
+	result = " " + ("_" * 98) + f" \n|{title:_^98}|\n"
+	if q:
+		result += f"\n{q}\n"
+	return  result
 
 class ReportDriver:
 	"""Wraps a beancount file and facilitates reporting with BQL queries.
@@ -65,3 +69,8 @@ class ReportDriver:
 	def run_subreport(self, title: str, query: str, footer: str = None):
 		self.report.write(subreport_header(title, query))
 		self.query_and_render(query, footer)
+
+	def run_disposals_subreport(self, title: str, ty: int):
+		self.report.write(subreport_header(title))
+		ty_entries = [e for e in self.entries if e.date.year == ty]
+		disposals.render_disposals_table(ty_entries, self.report)

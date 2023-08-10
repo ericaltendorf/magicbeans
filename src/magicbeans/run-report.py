@@ -3,6 +3,8 @@ import subprocess
 import sys
 from enum import Enum
 from typing import List
+from beancount.core.data import Posting, Transaction
+from beancount.core.inventory import Inventory
 from magicbeans.config import Config
 
 from pyfiglet import Figlet
@@ -13,7 +15,7 @@ from beancount.core.amount import Amount
 from beancount.parser import parser
 from beanquery.query import run_query
 from beanquery.query_render import render_text
-from magicbeans import queries, reports
+from magicbeans import disposals, queries, reports
 
 #
 # Report generation helpers
@@ -43,7 +45,6 @@ def quarter_report(year: int, quarter_n: int, currencies: List[str], db):
 		f"Mining summary for {quarter}",
 		queries.mining_summary(quarter, currency_re))
 
-
 if __name__ == '__main__':
 	ledger_path = sys.argv[1]   # "build/final.beancount"
 	out_path = sys.argv[2]   # "build/report.txt"
@@ -70,12 +71,13 @@ if __name__ == '__main__':
 		print(f"  {ty}", end="", flush=True)
 		db.report.write(f.renderText(f"{ty} Tax Summary"))
 
-		db.run_subreport(
-			"Large Disposals",
-			queries.year_large_disposals(ty))
-		db.run_subreport(
-			f"Small Disposals (aggregated by quarter)",
-			queries.year_small_disposals(ty))
+		# db.run_subreport(
+		# 	"Large Disposals",
+		# 	queries.year_large_disposals(ty))
+		# db.run_subreport(
+		# 	f"Small Disposals (aggregated by quarter)",
+		# 	queries.year_small_disposals(ty))
+		db.run_disposals_subreport("Asset Disposals and Capital Gains/Losses", ty)
 		db.run_subreport(
 			f"Mining Income Year Total",
 			queries.year_mining_income_total(ty),

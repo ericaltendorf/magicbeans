@@ -34,16 +34,34 @@ def quarter_report(year: int, quarter_n: int, currencies: List[str], db):
 	db.run_subreport(
 		f"Disposals in {quarter}",
 		queries.disposals(quarter))
-	db.run_subreport(
-		f"Profit and loss in {quarter}",
-		queries.pnl(quarter),
-		footer="Note: this is an income account; neg values are gains and pos values are losses.")
+	# TODO:  replace this with something like  run_disposals_report() 
+	# db.run_subreport(
+	# 	f"Profit and loss in {quarter}",
+	# 	queries.pnl(quarter),
+	# 	footer="Note: this is an income account; neg values are gains and pos values are losses.")
 	db.run_subreport(
 		f"Acquisitions in {quarter}",
 		queries.acquisitions(quarter, currency_re))
+	# TODO:  fold this into acquisitions somehow?
 	db.run_subreport(
 		f"Mining summary for {quarter}",
 		queries.mining_summary(quarter, currency_re))
+
+REPORT_ABSTRACT = """\
+The first section of this report contains annual summaries.  For each year, it shows
+asset disposals, specifying the lots disposed (their size, original per-unit cost, and
+date of acquisition), the proceeds, and the short and long term capital gains or losses
+(gains shown as positive numbers, losses as negative).
+
+The second section contains more detailed quarterly summaries.  At each quarter, we show
+the starting inventory (the set of held lots for each type of asset).  Then we show
+disposals of assets, followed by new acquisitions of assets via purchase, and finally a
+summary assets acquired via mining.
+
+The third and final section contains a complete history of all mining rewards, for
+reference.
+"""
+
 
 if __name__ == '__main__':
 	ledger_path = sys.argv[1]   # "build/final.beancount"
@@ -66,35 +84,20 @@ if __name__ == '__main__':
 	db.report.write(f"Covering tax years {tys_str}\n")
 	db.report.write(f"Reporting on cryptocurrencies {currencies}\n\n")
 
+	db.report.write(REPORT_ABSTRACT + "\n")
+
 	print("Generating tax summaries:")
 	for ty in tax_years:
 		print(f"  {ty}", end="", flush=True)
 		db.report.write(f.renderText(f"{ty} Tax Summary"))
 
-		# db.run_subreport(
-		# 	"Large Disposals",
-		# 	queries.year_large_disposals(ty))
-		# db.run_subreport(
-		# 	f"Small Disposals (aggregated by quarter)",
-		# 	queries.year_small_disposals(ty))
-
 		db.run_disposals_subreport("Asset Disposals and Capital Gains/Losses", ty)
 		db.report.write("\n")
-
-		# db.run_subreport(
-		# 	f"Mining Income Year Total",
-		# 	queries.year_mining_income_total(ty),
-		# 	footer="Note: this is an income account; neg values are gains and pos values are losses.")
-		# db.run_subreport(
-		# 	f"Mining Breakdown By Quarter",
-		# 	queries.year_mining_income_by_quarter(ty),
-		# 	footer="For more detail see full mining history at end of report.")
 	
 		db.run_mining_summary_subreport("Mining Operations and Income", ty)
 		db.report.write("\n")
 
 	print()
-	exit()
 
 	db.report.write(f.renderText("Quarterly Operations"))
 	print("Generating quarterly operations reports:")
@@ -105,16 +108,16 @@ if __name__ == '__main__':
 			quarter_report(ty, quarter_n, currencies, db)
 	print()
 
-	# db.report.write(f.renderText("Full Mining History"))
-	# currency_re = "|".join(currencies)  # TODO: dup code
-	# print("Generating full mining history:")
-	# for ty in tax_years[2:]:
-	# 	print(f"  {ty} ", end="", flush=True)
-	# 	for quarter_n in [1, 2, 3, 4]:
-	# 		print(f"{quarter_n} ", end="", flush=True)
-	# 		quarter = reports.beancount_quarter(ty, quarter_n)
-	# 		db.run_subreport(
-	# 			f"Mining in {quarter}",
-	# 			queries.mining_full(quarter, currency_re))
-	# print()
-
+	db.report.write(f.renderText("Full Mining History"))
+	currency_re = "|".join(currencies)  # TODO: dup code
+	print("Generating full mining history:")
+	for ty in tax_years[2:]:
+		print(f"  {ty} ", end="", flush=True)
+		for quarter_n in [1, 2, 3, 4]:
+			print(f"{quarter_n} ", end="", flush=True)
+			quarter = reports.beancount_quarter(ty, quarter_n)
+			db.run_subreport(
+				f"Mining in {quarter}",
+				queries.mining_full(quarter, currency_re))
+	print()
+ 

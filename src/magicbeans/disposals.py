@@ -13,6 +13,7 @@ LTCG_ACCOUNT = "Income:CapGains:Long"
 class DisposalSummary(NamedTuple):
     date: datetime.date
     narration: str
+    proceeds: Decimal
     short_term: Posting
     long_term: Posting
     lots: List[Posting]
@@ -28,6 +29,12 @@ class DisposalSummary(NamedTuple):
             return - self.long_term.units.number
         else:
             return Decimal(0)
+
+def is_proceeds_posting(posting: Posting):
+    return (posting.account.startswith("Assets:")
+        and posting.units.number > 0
+        and posting.units.currency == "USD"
+   		)
 
 def is_disposal_posting(posting: Posting):
 	return (posting.account.startswith("Assets:")
@@ -88,9 +95,17 @@ def render_lots(lots: List[Posting]):
 def mk_disposal_summary(entry: Transaction):
     (st, lt) = get_capgains_postings(entry)
     disposal_postings = get_disposal_postings(entry)
+
     if st: assert st.units.currency == "USD"
     if lt: assert lt.units.currency == "USD" 
-    return DisposalSummary(entry.date, entry.narration,
+
+    total_proceeds = Decimal(0)
+    for p in entry.postings:
+        if is_proceeds_posting(p):
+            assert p.units.currency == "USD"
+            total_proceeds += p.units.number
+
+    return DisposalSummary(entry.date, entry.narration, total_proceeds,
                            st, lt, disposal_postings)
 
 # TODO: check logic.  check against red's plugin logic
@@ -101,7 +116,8 @@ def is_disposal_tx(entry: Transaction):
 # TODO: should probably move to another file
 def render_disposals_table(entries, file):
     file.write(
-        f"{'Date':<10} {'Narration':<84} "
+        f"{'Date':<10} {'Narration':<74} "
+        f"{'Proceeds':>10} "
         f"{'STCG':>10} "
         f"{'Cumulative':>11} "
         f"{'LTCG':>10} "
@@ -109,6 +125,7 @@ def render_disposals_table(entries, file):
 
     cumulative_stcg = Decimal("0")
     cumulative_ltcg = Decimal("0")
+    cumulative_proceeds = Decimal("0")
     
     num_lines = 0
 
@@ -121,25 +138,28 @@ def render_disposals_table(entries, file):
                 cumulative_stcg += summary.stcg()
             if summary.long_term:
                 cumulative_ltcg += summary.ltcg()
+            if summary.proceeds:
+                cumulative_proceeds += summary.proceeds
 
-			# TODO: hardcoded for ~140 char width now
             # TODO: why do i have to call str(summary.date)??
             file.write(
-                f"{str(summary.date):<10} {summary.narration:<84.84} "
+                f"{str(summary.date):<10} {summary.narration:.<74.74} "
+                f"{format_money(summary.proceeds):>10} "
                 f"{format_money(summary.stcg()):>10} "
                 f"{cumulative_stcg:>11.2f} "
                 f"{format_money(summary.ltcg()):>10} "
                 f"{cumulative_ltcg:>11.2f}\n")
             file.write("\n".join(textwrap.wrap(
                 f"Disposed lots: {render_lots(summary.lots)}",
-                width=94, initial_indent="  ", subsequent_indent="  ")))
+                width=74, initial_indent="           ", subsequent_indent="           ")))
             file.write("\n")
 
     if num_lines == 0:
          file.write("(No disposals)\n")
 
     file.write(
-        f"\n{'':<10} {'Total':<84} "
+        f"\n{'':<10} {'Total':<74} "
+        f"{cumulative_proceeds:>10.2f} "
         f"{'STCG':>10} "
         f"{cumulative_stcg:>11.2f} "
         f"{'LTCG':>10} "

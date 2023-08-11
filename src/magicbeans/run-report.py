@@ -81,15 +81,20 @@ if __name__ == '__main__':
 		db.run_disposals_subreport("Asset Disposals and Capital Gains/Losses", ty)
 		db.report.write("\n")
 
-		db.run_subreport(
-			f"Mining Income Year Total",
-			queries.year_mining_income_total(ty),
-			footer="Note: this is an income account; neg values are gains and pos values are losses.")
-		db.run_subreport(
-			f"Mining Breakdown By Quarter",
-			queries.year_mining_income_by_quarter(ty),
-			footer="For more detail see full mining history at end of report.")
+		# db.run_subreport(
+		# 	f"Mining Income Year Total",
+		# 	queries.year_mining_income_total(ty),
+		# 	footer="Note: this is an income account; neg values are gains and pos values are losses.")
+		# db.run_subreport(
+		# 	f"Mining Breakdown By Quarter",
+		# 	queries.year_mining_income_by_quarter(ty),
+		# 	footer="For more detail see full mining history at end of report.")
+	
+		db.run_mining_summary_subreport("Mining Operations and Income", ty)
+		db.report.write("\n")
+
 	print()
+	exit()
 
 	db.report.write(f.renderText("Quarterly Operations"))
 	print("Generating quarterly operations reports:")

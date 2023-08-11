@@ -3,7 +3,7 @@ import sys
 from enum import Enum
 import textwrap
 from typing import List
-from magicbeans import disposals
+from magicbeans import disposals, mining
 
 from pyfiglet import Figlet
 from tabulate import tabulate
@@ -74,5 +74,18 @@ class ReportDriver:
 
 	def run_disposals_subreport(self, title: str, ty: int):
 		self.report.write(subreport_header(title))
+
+		# see this: 
+		# def iter_entry_dates(entries, date_begin, date_end):
 		ty_entries = [e for e in self.entries if e.date.year == ty]
+
 		disposals.render_disposals_table(ty_entries, self.report)
+
+	def run_mining_summary_subreport(self, title: str, ty: int):
+		self.report.write(subreport_header(title))
+
+		# see this: 
+		# def iter_entry_dates(entries, date_begin, date_end):
+		ty_entries = [e for e in self.entries if e.date.year == ty]
+
+		mining.render_mining_summary(ty_entries, self.report)

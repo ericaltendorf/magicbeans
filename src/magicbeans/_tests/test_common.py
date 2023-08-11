@@ -23,8 +23,11 @@ def test_rounded_amt() -> None:
     assert (common.rounded_amt(D("7.123456789"), "USDT")
             == amount.Amount(D("7.12345679"), "USDT"))
     assert (common.rounded_amt(D("7.123456789"), "BTC")
-            == amount.Amount(D("7.123456789"), "BTC"))
+            == amount.Amount(D("7.12345679"), "BTC"))
 
+def test_format_money() -> None:
+    assert common.format_money(D("7.1234"), "USD", 2, 13, 3) == "     7.12 USD"
+    assert common.format_money(None, "USD", 2, 13, 3)        == "             "
 
 def EmptyCost():
     return data.Cost(None, None, None, None)

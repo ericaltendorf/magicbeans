@@ -29,6 +29,33 @@ def rounded_amt(number: Decimal, currency: str, digits: int = None) -> position.
         number = round(number, digits)
     return position.Amount(number, currency)
 
+def format_money(num: Decimal, sym: str, dec_points: int, width: int) -> str:
+    sym_width = len(sym)   # Only works if all rows use the same symbol
+    if num:
+        num_width = width - sym_width - 1
+        return f"{num:>{num_width}.{dec_points}f} {sym:<{sym_width}}"
+    else:
+        return " " * width
+
+def get_unique_posting_by_account(txn: Transaction, account: str) -> Posting:
+    if not isinstance(txn, Transaction):
+        raise Exception(f"Expected a Transaction, got {txn}")
+    matched_postings = [p for p in txn.postings if p.account == account]
+    if len(matched_postings) != 1:
+        raise Exception(f"Expected exactly one posting with account {account} in {txn}")
+    return matched_postings[0]
+
+def maybe_get_unique_posting_by_account(txn: Transaction, account: str) -> Posting:
+    if not isinstance(txn, Transaction):
+        raise Exception(f"Expected a Transaction, got {txn}")
+    matched_postings = [p for p in txn.postings if p.account == account]
+    if len(matched_postings) == 1:
+        return matched_postings[0]
+    elif len(matched_postings) == 0:
+        return None
+    else:
+        raise Exception(f"Expected no more than one posting with account {account} in {txn}")
+
 def attach_timestamp(entry: Transaction, ts: datetime.datetime):
     """Attach a timestamp to the metadata of the provided transaction, formatted
     as a string in the standard ISO 8601 format using Z notation for UTC.  If a

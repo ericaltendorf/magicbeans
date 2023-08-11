@@ -74,11 +74,11 @@ class Network():
                 self._add_rev_route(account_b, link.currency, account_a)
 
             else:
-                a2b_buffer = account.join("Assets", "ZeroSumAccount",
-                                        f"{link.institution_a}-To-{link.institution_b}",
+                a2b_buffer = account.join("Assets", "Xfer",
+                                        f"{link.institution_a}-{link.institution_b}",
                                         link.currency)
-                b2a_buffer = account.join("Assets", "ZeroSumAccount",
-                                        f"{link.institution_b}-To-{link.institution_a}",
+                b2a_buffer = account.join("Assets", "Xfer",
+                                        f"{link.institution_b}-{link.institution_a}",
                                         link.currency)
 
                 self.buffer_accts.append(a2b_buffer)

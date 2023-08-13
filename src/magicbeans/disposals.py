@@ -2,7 +2,6 @@
 
 import datetime
 from decimal import Decimal
-import textwrap
 from typing import List, NamedTuple
 from beancount.core.data import Posting, Transaction
 
@@ -111,56 +110,3 @@ def mk_disposal_summary(entry: Transaction):
 # TODO: check logic.  check against red's plugin logic
 def is_disposal_tx(entry: Transaction):
     return any((p.account in [STCG_ACCOUNT, LTCG_ACCOUNT] for p in entry.postings))
-
-
-# TODO: should probably move to another file
-def render_disposals_table(entries, file):
-    file.write(
-        f"{'Date':<10} {'Narration':<74} "
-        f"{'Proceeds':>10} "
-        f"{'STCG':>10} "
-        f"{'Cumulative':>11} "
-        f"{'LTCG':>10} "
-        f"{'Cumulative':>11}\n\n")
-
-    cumulative_stcg = Decimal("0")
-    cumulative_ltcg = Decimal("0")
-    cumulative_proceeds = Decimal("0")
-    
-    num_lines = 0
-
-    for e in entries:
-        if isinstance(e, Transaction) and is_disposal_tx(e):
-            num_lines += 1
-            summary = mk_disposal_summary(e)
-   
-            if summary.short_term:
-                cumulative_stcg += summary.stcg()
-            if summary.long_term:
-                cumulative_ltcg += summary.ltcg()
-            if summary.proceeds:
-                cumulative_proceeds += summary.proceeds
-
-            # TODO: why do i have to call str(summary.date)??
-            file.write(
-                f"{str(summary.date):<10} {summary.narration:.<74.74} "
-                f"{format_money(summary.proceeds):>10} "
-                f"{format_money(summary.stcg()):>10} "
-                f"{cumulative_stcg:>11.2f} "
-                f"{format_money(summary.ltcg()):>10} "
-                f"{cumulative_ltcg:>11.2f}\n")
-            file.write("\n".join(textwrap.wrap(
-                f"Disposed lots: {render_lots(summary.lots)}",
-                width=74, initial_indent="           ", subsequent_indent="           ")))
-            file.write("\n")
-
-    if num_lines == 0:
-         file.write("(No disposals)\n")
-
-    file.write(
-        f"\n{'':<10} {'Total':<74} "
-        f"{cumulative_proceeds:>10.2f} "
-        f"{'STCG':>10} "
-        f"{cumulative_stcg:>11.2f} "
-        f"{'LTCG':>10} "
-        f"{cumulative_ltcg:>11.2f}\n")

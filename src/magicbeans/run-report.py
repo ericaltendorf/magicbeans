@@ -7,6 +7,7 @@ from beancount.core.data import Posting, Transaction
 from beancount.core.inventory import Inventory
 from beancount.ops.summarize import balance_by_account
 from magicbeans.config import Config
+from magicbeans.reports import driver
 
 from pyfiglet import Figlet
 from tabulate import tabulate
@@ -16,7 +17,7 @@ from beancount.core.amount import Amount
 from beancount.parser import parser
 from beanquery.query import run_query
 from beanquery.query_render import render_text
-from magicbeans import disposals, queries, reports
+from magicbeans import disposals, queries
 
 #
 # Report generation helpers
@@ -32,7 +33,7 @@ def quarter_end(year: int, quarter_n: int) -> datetime.date:
 		return datetime.date(year, quarter_n*3 + 1, 1)
 
 def quarter_report(year: int, quarter_n: int, currencies: List[str], db):
-	quarter = reports.beancount_quarter(year, quarter_n)
+	quarter = driver.beancount_quarter(year, quarter_n)
 	quarter_begin = f"""{ty}-{["01", "04", "07", "10"][quarter_n-1]}-01"""
 	currency_re = "|".join(currencies)
 
@@ -80,7 +81,7 @@ if __name__ == '__main__':
 	                   # we'll combine this file with run.py at some point anyway.
 
 	print(f"Generating report for beancount file {ledger_path} and writing to {out_path}")
-	db = reports.ReportDriver(ledger_path, out_path)
+	db = driver.ReportDriver(ledger_path, out_path)
 
 	# TODO: move figlet into ReportDriver?
 	f = Figlet(width=120)

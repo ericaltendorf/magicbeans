@@ -11,7 +11,7 @@ from beancount.core.amount import Amount
 from beancount.parser import parser
 from beanquery.query import run_query
 from beanquery.query_render import render_text
-from magicbeans import reports
+from magicbeans.reports import driver
 
 #
 # Queries

@@ -14,6 +14,7 @@ from magicbeans import common
 from magicbeans import disposals
 from magicbeans.disposals import format_money, get_disposal_postings, is_disposal_tx, mk_disposal_summary, render_lots, sum_amounts
 from magicbeans.mining import MINING_BENEFICIARY_ACCOUNT, MINING_INCOME_ACCOUNT, MiningStats, is_mining_tx
+from magicbeans.reports.text import TextRenderer
 
 from pyfiglet import Figlet
 from tabulate import tabulate
@@ -27,19 +28,6 @@ from beanquery.query_render import render_text
 
 def beancount_quarter(ty: int, quarter_n: int):
 	return f"{ty}-Q{quarter_n}"
-
-# TODO: parameterize the width of this header, probably
-# via an argument on ReportDriver.
-def subreport_header(title: str, q: str = None):
-	# TODO: move this into ReportDriver?
-	result = " " + ("_" * 140) + f" \n|{title:_^140}|\n"
-	if q:
-		# Text wrapping is useful if you're consuming as a text file;
-		#   if you convert to PDF that will wrap for you.
-		# result += "\n".join(textwrap.wrap(q, width=140,
-		#       initial_indent="", subsequent_indent="  ")) + "\n"
-		result += q + "\n"
-	return  result
 
 
 class ReportDriver:
@@ -56,6 +44,8 @@ class ReportDriver:
 		"""Load the beancount file at the given path and parse it for queries, 
 		and initialize the output report file."""
 		self.report = open(out_path, 'w')   # TODO: verify this is closed on destruction
+
+		self.renderer = TextRenderer(self.report)
 
 		entries, _errors, options = loader.load_file(ledger_path)
 		self.entries = entries
@@ -87,11 +77,11 @@ class ReportDriver:
 		self.report.write('\n')
 
 	def run_subreport(self, title: str, query: str, footer: str = None):
-		self.report.write(subreport_header(title, query))
+		self.renderer.subreport_header(title, query)
 		self.query_and_render(query, footer)
 
 	def run_disposals_subreport(self, title: str, ty: int):
-		self.report.write(subreport_header(title))
+		self.renderer.subreport_header(title)
 
 		# see this: 
 		# def iter_entry_dates(entries, date_begin, date_end):
@@ -236,7 +226,7 @@ class ReportDriver:
 
 
 	def run_mining_summary_subreport(self, title: str, ty: int):
-		self.report.write(subreport_header(title))
+		self.renderer.subreport_header(title)
 
 		# see this: 
 		# def iter_entry_dates(entries, date_begin, date_end):

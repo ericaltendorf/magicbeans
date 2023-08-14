@@ -5,6 +5,7 @@ from enum import Enum
 from typing import List
 from beancount.core.data import Posting, Transaction
 from beancount.core.inventory import Inventory
+from beancount.ops.summarize import balance_by_account
 from magicbeans.config import Config
 
 from pyfiglet import Figlet
@@ -20,6 +21,15 @@ from magicbeans import disposals, queries, reports
 #
 # Report generation helpers
 #
+
+def quarter_start(year: int, quarter_n: int) -> datetime.date:
+	return datetime.date(year, (quarter_n-1)*3 + 1, 1)
+
+def quarter_end(year: int, quarter_n: int) -> datetime.date:
+	if quarter_n == 4:
+		return datetime.date(year+1, 1, 1)
+	else:
+		return datetime.date(year, quarter_n*3 + 1, 1)
 
 def quarter_report(year: int, quarter_n: int, currencies: List[str], db):
 	quarter = reports.beancount_quarter(year, quarter_n)
@@ -103,21 +113,24 @@ if __name__ == '__main__':
 	print("Generating quarterly operations reports:")
 	for ty in tax_years:
 		print(f"  {ty} ", end="", flush=True)
-		for quarter_n in [1, 2, 3, 4]:
-			print(f"{quarter_n} ", end="", flush=True)
-			quarter_report(ty, quarter_n, currencies, db)
+		for q in [1, 2, 3, 4]:
+			print(f"{q} ", end="", flush=True)
+			start = quarter_start(ty, q)
+			db.report.write(f.renderText(f"{ty} Q {q}"))
+			db.run_disposals_details(quarter_start(ty, q), quarter_end(ty, q))
+
 	print()
 
-	db.report.write(f.renderText("Full Mining History"))
-	currency_re = "|".join(currencies)  # TODO: dup code
-	print("Generating full mining history:")
-	for ty in tax_years[2:]:
-		print(f"  {ty} ", end="", flush=True)
-		for quarter_n in [1, 2, 3, 4]:
-			print(f"{quarter_n} ", end="", flush=True)
-			quarter = reports.beancount_quarter(ty, quarter_n)
-			db.run_subreport(
-				f"Mining in {quarter}",
-				queries.mining_full(quarter, currency_re))
-	print()
- 
+	# db.report.write(f.renderText("Full Mining History"))
+	# currency_re = "|".join(currencies)  # TODO: dup code
+	# print("Generating full mining history:")
+	# for ty in tax_years[0:]:
+		# print(f"  {ty} ", end="", flush=True)
+		# for quarter_n in [1, 2, 3, 4]:
+			# print(f"{quarter_n} ", end="", flush=True)
+			# quarter = reports.beancount_quarter(ty, quarter_n)
+			# db.run_subreport(
+				# f"Mining in {quarter}",
+				# queries.mining_full(quarter, currency_re))
+	# print()
+#  

@@ -3,12 +3,157 @@
 import datetime
 from decimal import Decimal
 from typing import List, NamedTuple
+from beancount.core import amount
+from beancount.core.amount import Amount
 from beancount.core.data import Posting, Transaction
+from beancount.core.number import ZERO
+from beancount.core.position import Cost, Position
+from beancount.ops.summarize import balance_by_account
 
 # TODO: get these account names from the config
+ASSETS_ACCOUNT = "Assets"
 STCG_ACCOUNT = "Income:CapGains:Short"
 LTCG_ACCOUNT = "Income:CapGains:Long"
 
+class ReductionIndexedInventory():
+    """A wrapper around beancount Inventory objects for reporting disposals.
+
+    This class aggregates inventories of multiple accounts and also provides
+    a way to assign user-reportable index numbers to lots in the inventory(s) in
+    order to generate reports which associate reductions in disposal transactions
+    back to lots in an inventory list."""
+
+    # TODO: filter out numeraire accounts
+
+    def __init__(self, account_to_inventory):
+        """account_to_inventory is a dict mapping account names to inventories,
+        as returned by beancount.ops.summarize.balance_by_account()"""
+
+        # Our index is a dict mapping
+        # keys: (account str, cost)
+        # value: (position, id or None)
+        self.index = {}
+
+        self.account_to_inventory = account_to_inventory
+
+        self.accounts = set()
+        for (account, inventory) in self.account_to_inventory.items():
+            for pos in inventory:
+                self.index[(account, pos.cost)] = (pos, None)
+            self.accounts.add(account)
+            
+        self.next_id = 1
+
+    def index_lot(self, account: str, cost: Cost):
+        """Finds the lot in the inventory, assigns an index number to it
+           if it doesn't already have one, remembers that and returns it"""
+        if not (account, cost) in self.index:
+            # print(f"warning: Lot not found in inventory: {account} {cost}")
+            pass
+            
+        (position, id) = self.index[(account, cost)]
+        if id is None:
+            self.index[(account, cost)] = (position, self.next_id)
+            self.next_id += 1
+
+        return self.index[(account, cost)][1]
+
+    def index_contains(self, account: str, cost: Cost):
+        """Return True if this lot has been indexed"""
+        return (account, cost) in self.index
+
+    def lookup_lot_id(self, account: str, cost: Cost):
+        """If this lot has been indexed, return the index, otherwise None"""
+        if not (account, cost) in self.index:
+            # print(f"Lot not found in inventory: {account} {cost}")
+            return None
+            # raise Exception(f"Lot not found in inventory: {account} {cost} "
+            #                 f"Available: {self.index.keys()}")
+        return self.index[(account, cost)][1]
+
+    def get_accounts(self):
+        return self.accounts
+    
+    def get_inventory_w_ids(self, account: str):
+        """For a given account, return a list of (position, id) pairs."""
+        return [(pos, self.lookup_lot_id(account, pos.cost))
+                for pos in self.account_to_inventory[account]]
+
+
+class BookedDisposal():
+    """Provides a view on a transaction which contains booked disposals
+    
+    The provided entry must be a transaction, it must have at least one
+    reduction posting, and any reduction postings must already be fully
+    booked (i.e., have an unambiguous cost assigned).
+    
+    One initialized, provides convenient accessors for explaining capital
+    gains (in terms of the provided numeraire)."""
+
+    def __init__(self, entry: Transaction, numeraire: str):
+        if not isinstance(entry, Transaction):
+            raise Exception(f"Expected a transaction, got: {entry}")
+        if not is_disposal_tx(entry):
+            raise Exception(f"Expected a disposal transaction, got: {entry}")
+        self.tx = entry
+        self.numeraire = numeraire
+        self.numeraire_zero = Amount(ZERO, numeraire)
+
+        self.disposal_legs = list(filter(self.is_disposal_leg, entry.postings))
+        self.numeraire_proceeds_legs = list(filter(self.is_numeraire_proceeds_leg, entry.postings))
+        self.other_proceeds_legs = list(filter(self.is_other_proceeds_leg, entry.postings))
+
+        # TODO: expect that all legs were classified?
+
+    def total_numeriare_proceeds(self) -> Amount:
+        """Return the total proceeds obtained natively in the numeraire"""
+        nums = [p.units for p in self.numeraire_proceeds_legs]
+        return sum_amounts(self.numeraire, nums)
+
+    def total_other_proceeds_value(self) -> Amount:
+        """Return the total value of the proceeds"""
+        costs = [amount.mul(p.cost, p.units.number) for p in self.other_proceeds_legs]
+        return sum_amounts(self.numeraire, costs)
+    
+    def total_disposed_cost(self) -> Amount:
+        """Return the total cost of the disposed assets"""
+        costs = [amount.mul(p.cost, -p.units.number) for p in self.disposal_legs]
+        return sum_amounts(self.numeraire, costs)
+
+    def is_disposal_leg(self, posting: Posting) -> bool:
+        return (posting.account.startswith(ASSETS_ACCOUNT)
+            and posting.units.number < 0
+            and posting.units.currency != self.numeraire
+            )
+
+    def is_numeraire_proceeds_leg(self, posting: Posting) -> bool:
+        return (posting.account.startswith(ASSETS_ACCOUNT)
+            and posting.units.number > 0
+            and posting.units.currency == self.numeraire
+            )
+
+    def is_other_proceeds_leg(self, posting: Posting) -> bool:
+        return (posting.account.startswith(ASSETS_ACCOUNT)
+            and posting.units.number > 0
+            and posting.units.currency != self.numeraire
+            )
+
+def disposal_inventory_desc(pos: Position, id: int) -> str:
+    result = (f"{pos.units.number:.8f} {pos.units.currency} "
+              f"{{{pos.cost.number:0.4f} {pos.cost.date}}}")
+    if id:
+        result += f" (#{id})"
+    return result
+
+def disposal_inventory_ref(posting: Posting, id: int) -> str:
+    result = (f"{posting.units.number:f} x "
+              f"{posting.cost.number:.4f} {posting.cost.currency}"
+              f" {posting.cost.date}")
+    if id:
+        result += f" (#{id})"
+    return result
+
+# TODO: remove, this should be obsoleted by BookedDisposal
 class DisposalSummary(NamedTuple):
     date: datetime.date
     narration: str
@@ -35,6 +180,7 @@ def is_proceeds_posting(posting: Posting):
         and posting.units.currency == "USD"
    		)
 
+# TODO: remove, replaced by is_disposal_leg() above
 def is_disposal_posting(posting: Posting):
 	return (posting.account.startswith("Assets:")
 	    and posting.units.number < 0
@@ -60,11 +206,25 @@ def abbrv_disposal(disposal: Posting):
 		f"{{${disposal.cost.number:.4f} {disposal.cost.date}}}"
 		)
 
-def format_money(num: Decimal) -> str:
+def sum_amounts(cur: str, amounts: List[Amount]) -> Amount:
+    """Add up a list of amounts, all of which must be in the same currency
+    For some reason, sum() doesn't work for Amounts."""
+    sum = Amount(ZERO, cur)
+    for a in amounts:
+        sum = amount.add(sum, a)
+    return sum
+
+def format_money(num) -> str:
     if num:
-        return f"{num:.2f}"
+        if isinstance(num, Amount) or isinstance(num, Cost):  # TODO: what a hack
+            if num.currency == "USD":
+                return f"${num.number:.2f}"
+            else:
+                return f"{num.number:.2f} {num.currency}"
+        else:
+            return f"{num:.2f}"
     else:
-        return ""
+        return "--"
 
 def get_capgains_postings(entry: Transaction):
     """Return a pair of (short term, long term) capital gains postings as Decimal values"""
@@ -109,4 +269,4 @@ def mk_disposal_summary(entry: Transaction):
 
 # TODO: check logic.  check against red's plugin logic
 def is_disposal_tx(entry: Transaction):
-    return any((p.account in [STCG_ACCOUNT, LTCG_ACCOUNT] for p in entry.postings))
+    return isinstance(entry, Transaction) and any((p.account in [STCG_ACCOUNT, LTCG_ACCOUNT] for p in entry.postings))

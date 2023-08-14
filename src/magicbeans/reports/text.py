@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import datetime
 from decimal import Decimal
 import textwrap
@@ -7,7 +8,6 @@ from beancount.core.data import Posting
 from beanquery.query_render import render_text
 from magicbeans import disposals
 from magicbeans.disposals import abbrv_disposal, format_money
-
 
 class TextRenderer():
 	def __init__(self, file) -> None:
@@ -20,7 +20,6 @@ class TextRenderer():
 	# TODO: parameterize the width of this header, probably
 	# via an argument on ReportDriver.
 	def subreport_header(self, title: str, q: str = None):
-		# TODO: move this into ReportDriver?
 		result = " " + ("_" * 140) + f" \n|{title:_^140}|\n"
 		if q:
 			# Text wrapping is useful if you're consuming as a text file;

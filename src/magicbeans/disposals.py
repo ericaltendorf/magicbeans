@@ -99,11 +99,13 @@ class BookedDisposal():
 		self.numeraire = numeraire
 		self.numeraire_zero = Amount(ZERO, numeraire)
 
+		# TODO: expect that this is a complete nonoverlapping partition?
 		self.disposal_legs = list(filter(self.is_disposal_leg, entry.postings))
 		self.numeraire_proceeds_legs = list(filter(self.is_numeraire_proceeds_leg, entry.postings))
 		self.other_proceeds_legs = list(filter(self.is_other_proceeds_leg, entry.postings))
 
-		# TODO: expect that all legs were classified?
+		# TODO: verify these add up to the gains we compute ourselves?
+		(self.short_term, self.long_term) = get_capgains_postings(entry)
 
 	def total_numeriare_proceeds(self) -> Amount:
 		"""Return the total proceeds obtained natively in the numeraire"""
@@ -137,6 +139,18 @@ class BookedDisposal():
 			and posting.units.number > 0
 			and posting.units.currency != self.numeraire
 			)
+
+	def stcg(self) -> Decimal:
+		if self.short_term:
+			return - self.short_term.units.number
+		else:
+			return Decimal(0)
+
+	def ltcg(self) -> Decimal:
+		if self.long_term:
+			return - self.long_term.units.number
+		else:
+			return Decimal(0)
 
 def disposal_inventory_desc(pos: Position, id: int) -> str:
 	result = (f"{pos.units.number:.8f} {pos.units.currency} "

@@ -102,7 +102,8 @@ if __name__ == '__main__':
 		print(f"  {ty}", end="", flush=True)
 		db.report.write(f.renderText(f"{ty} Tax Summary"))
 
-		db.run_disposals_subreport("Asset Disposals and Capital Gains/Losses", ty)
+		db.renderer.subreport_header("Asset Disposals and Capital Gains/Losses")
+		db.run_disposals_details(datetime.date(ty, 1, 1), datetime.date(ty+1, 1, 1), False)
 		db.report.write("\n")
 	
 		db.run_mining_summary_subreport("Mining Operations and Income", ty)
@@ -118,7 +119,7 @@ if __name__ == '__main__':
 			print(f"{q} ", end="", flush=True)
 			start = quarter_start(ty, q)
 			db.report.write(f.renderText(f"{ty} Q {q}"))
-			db.run_disposals_details(quarter_start(ty, q), quarter_end(ty, q))
+			db.run_disposals_details(quarter_start(ty, q), quarter_end(ty, q), True)
 
 	print()
 

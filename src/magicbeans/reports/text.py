@@ -11,9 +11,10 @@ from magicbeans.disposals import abbrv_disposal, format_money
 from magicbeans.reports.data import AccountInventoryReport, InventoryReport
 
 class TextRenderer():
-	def __init__(self, file) -> None:
+	def __init__(self, out_path) -> None:
 		"""Initialize with the file to write to."""
-		self.file = file
+		# TODO: verify this is closed on destruction
+		self.file = open(out_path, 'w')
 
 	def write_text(self, text: str):
 		self.file.write(text)

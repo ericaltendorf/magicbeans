@@ -44,16 +44,18 @@ class ReportDriver:
 	def __init__(self, ledger_path: str, out_path: str) -> None:
 		"""Load the beancount file at the given path and parse it for queries, 
 		and initialize the output report file."""
-		self.report = open(out_path, 'w')   # TODO: verify this is closed on destruction
-		self.renderer = TextRenderer(self.report)
+		self.renderer = TextRenderer(out_path)
 
 		entries, _errors, options = loader.load_file(ledger_path)
 		self.entries = entries
 		self.options = options
 	
-	# TODO: remove
-	def w(self, s: str):
-		self.report.write(s)
+	def write_text(self, text: str):
+		"""Legacy function to allow caller to write direclty to underlying file"""
+		self.renderer.write_text(text)
+	
+	def close(self):
+		self.report.close()
 	
 	#
 	# Old report methods, mostly for bean-query driven reports
@@ -189,12 +191,12 @@ class ReportDriver:
 
 
 		if not any(stats.n_events for stats in mining_stats_by_month):
-			self.report.write("\n(No mining income)\n")
+			self.write_text("\n(No mining income)\n")
 			return
 
 		# TODO: this one might actually be better rendered by beanquery query rendering....
 
-		self.report.write("\n"
+		self.write_text("\n"
 			f"{'Month':<6}"
 			f"{'#Awards':>8}"
 			f"{'Amount mined':>24}"
@@ -211,7 +213,7 @@ class ReportDriver:
 		for (month, stats) in enumerate(mining_stats_by_month):
 			cumulative_mined += stats.total_mined
 			cumulative_fmv += stats.total_fmv
-			self.report.write(
+			self.write_text(
 				f"{calendar.month_abbr[month + 1]:<6}"
 				f"{stats.n_events:>8}"
 				f"{common.format_money(stats.total_mined, token, 8, 24)}"
@@ -222,6 +224,6 @@ class ReportDriver:
 				f"{common.format_money(cumulative_fmv, 'USD', 2, 20)}"
 				"\n")
 
-		self.report.write(f"\n{'':6}{'':8}"
+		self.write_text(f"\n{'':6}{'':8}"
 				f"{'Total cumulative fair market value of all mined tokens:':>{24 + 20 + 24 + 20 + 20}}"
 				f"{common.format_money(cumulative_fmv, 'USD', 2, 20)}")

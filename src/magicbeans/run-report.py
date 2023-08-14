@@ -37,7 +37,7 @@ def quarter_report(year: int, quarter_n: int, currencies: List[str], db):
 	quarter_begin = f"""{ty}-{["01", "04", "07", "10"][quarter_n-1]}-01"""
 	currency_re = "|".join(currencies)
 
-	db.report.write(f.renderText(f"{year} Q {quarter_n}"))
+	db.write_text(f.renderText(f"{year} Q {quarter_n}"))
 
 	db.run_subreport(
 		f"Inventory as of {quarter_begin}",
@@ -89,41 +89,41 @@ if __name__ == '__main__':
 	currencies = config.get_covered_currencies()
 	tax_years = range(2018, 2022 + 1)
 
-	db.report.write(f.renderText(f"Magicbeans Tax Report"))
-	db.report.write(f"Generated {datetime.datetime.now()}\n")
+	db.write_text(f.renderText(f"Magicbeans Tax Report"))
+	db.write_text(f"Generated {datetime.datetime.now()}\n")
 	tys_str = ", ".join([str(ty) for ty in tax_years])
-	db.report.write(f"Covering tax years {tys_str}\n")
-	db.report.write(f"Reporting on cryptocurrencies {currencies}\n\n")
+	db.write_text(f"Covering tax years {tys_str}\n")
+	db.write_text(f"Reporting on cryptocurrencies {currencies}\n\n")
 
-	db.report.write(REPORT_ABSTRACT + "\n")
+	db.write_text(REPORT_ABSTRACT + "\n")
 
 	print("Generating tax summaries:")
 	for ty in tax_years:
 		print(f"  {ty}", end="", flush=True)
-		db.report.write(f.renderText(f"{ty} Tax Summary"))
+		db.write_text(f.renderText(f"{ty} Tax Summary"))
 
 		db.renderer.subreport_header("Asset Disposals and Capital Gains/Losses")
 		db.disposals(datetime.date(ty, 1, 1), datetime.date(ty+1, 1, 1), False)
-		db.report.write("\n")
+		db.write_text("\n")
 	
 		db.run_mining_summary_subreport("Mining Operations and Income", ty)
-		db.report.write("\n")
+		db.write_text("\n")
 
 	print()
 
-	db.report.write(f.renderText("Quarterly Operations"))
+	db.write_text(f.renderText("Quarterly Operations"))
 	print("Generating quarterly operations reports:")
 	for ty in tax_years:
 		print(f"  {ty} ", end="", flush=True)
 		for q in [1, 2, 3, 4]:
 			print(f"{q} ", end="", flush=True)
 			start = quarter_start(ty, q)
-			db.report.write(f.renderText(f"{ty} Q {q}"))
+			db.write_text(f.renderText(f"{ty} Q {q}"))
 			db.disposals(quarter_start(ty, q), quarter_end(ty, q), True)
 
 	print()
 
-	# db.report.write(f.renderText("Full Mining History"))
+	# db.write_text(f.renderText("Full Mining History"))
 	# currency_re = "|".join(currencies)  # TODO: dup code
 	# print("Generating full mining history:")
 	# for ty in tax_years[0:]:

@@ -14,6 +14,7 @@ from magicbeans import common
 from magicbeans import disposals
 from magicbeans.disposals import check_and_sort_lots, format_money, get_disposal_postings, is_disposal_tx, mk_disposal_summary, sum_amounts
 from magicbeans.mining import MINING_BENEFICIARY_ACCOUNT, MINING_INCOME_ACCOUNT, MiningStats, is_mining_tx
+from magicbeans.reports.data import DisposalsReportRow, InventoryReport
 from magicbeans.reports.text import TextRenderer
 
 from pyfiglet import Figlet
@@ -76,7 +77,7 @@ class ReportDriver:
 	# New report methods, using direct analysis of the entries
 	#
 
-	def run_disposals_details(self, start: datetime, end: datetime, extended: bool):
+	def disposals(self, start: datetime, end: datetime, extended: bool):
 		numeraire = "USD"
 
 		(account_to_inventory, index) = summarize.balance_by_account(
@@ -108,23 +109,34 @@ class ReportDriver:
 
 		# Write ante-inventory with IDs
 		if extended:
-			self.renderer.start_inventory_table(start)
+			inv_reps = [] 
 			for account in inventory_idx.get_accounts():
 				cur_to_inventory = account_to_inventory[account].split()
 				for (cur, inventory) in cur_to_inventory.items():
 					items = inventory_idx.get_inventory_w_ids(account)
 					total = sum_amounts(cur, [pos.units for (pos, id) in items])
-					self.renderer.start_inventory_account(account, cur, total)
-
+					inv_rep = InventoryReport(account, total, items)
 					sorted_pairs = sorted(items, key=lambda x: -abs(x[0].units.number))
 					for (pos, lot_id) in sorted_pairs:
-						self.renderer.inventory_row(pos, lot_id)
+						inv_rep.positions_and_ids.append((pos, lot_id))
+					inv_reps.append(inv_rep)
+
+			# To move to the renderer
+			self.renderer.start_inventory_table(start)
+			for inv_rep in inv_reps:
+				self.renderer.start_inventory_account(
+					inv_rep.account, inv_rep.total.currency, inv_rep.total)
+				for (pos, lot_id) in inv_rep.positions_and_ids:
+					self.renderer.inventory_row(pos, lot_id)
 			self.renderer.end_inventory_table()
 
 		# Write disposal transactions referencing IDs
 		cumulative_stcg = Decimal("0")
 		cumulative_ltcg = Decimal("0")
-		self.renderer.start_disposals_table()
+
+		disposals_report_rows = []
+
+
 		for e in page_entries:
 			bd = disposals.BookedDisposal(e, numeraire)
 
@@ -136,25 +148,37 @@ class ReportDriver:
 			cumulative_ltcg += bd.ltcg()
 
 			(disposed_currency, lots) = check_and_sort_lots(bd.disposal_legs)
-			self.renderer.disposal_row(
-				e.date, e.narration, numer_proc, other_proc,
-				disposed_cost, gain,
-				bd.stcg(), cumulative_stcg,
-				bd.ltcg(), cumulative_ltcg,
-				disposed_currency, lots)
+			disposal_legs_and_ids = [
+				(p, inventory_idx.lookup_lot_id(p.account, p.cost))
+			    for p in bd.disposal_legs]
 
+			disposals_report_rows.append(DisposalsReportRow(
+				e.date, e.narration, numer_proc, other_proc, disposed_cost, gain,
+				bd.stcg(), cumulative_stcg, bd.ltcg(), cumulative_ltcg,
+				disposed_currency,
+				bd.numeraire_proceeds_legs,
+				bd.other_proceeds_legs,
+				disposal_legs_and_ids))
+		
+		# TODO move to renderer
+		self.renderer.start_disposals_table()
+		for row in disposals_report_rows:
+			self.renderer.disposal_row(
+				row.date, row.narration,
+				row.numeraire_proceeds, row.other_proceeds, row.disposed_cost,
+				row.gain, row.stcg, row.cum_stcg, row.ltcg, row.cum_ltcg,
+				row.disposed_currency, [p[0] for p in row.disposal_legs_and_ids])
 			if extended:
-				self.w(f"USD proceeds: {format_money(bd.total_numeriare_proceeds())}\n")
-				for leg in bd.numeraire_proceeds_legs:
+				self.w(f"USD proceeds: {format_money(row.numeraire_proceeds)}\n")
+				for leg in row.numeraire_proceeds_legs:
 					self.w(f"  + {leg.units}\n")
 
-				self.w(f"Other proceeds: total value {format_money(bd.total_other_proceeds_value())}\n")
-				for leg in bd.other_proceeds_legs:
+				self.w(f"Other proceeds: total value {format_money(row.other_proceeds)}\n")
+				for leg in row.other_proceeds_legs:
 					self.w(f"  + {leg.units} value ea {format_money(leg.cost)}\n")
 				
-				self.w(f"Total disposed cost: {format_money(bd.total_disposed_cost())}\n")
-				for leg in bd.disposal_legs:
-					id = inventory_idx.lookup_lot_id(leg.account, leg.cost)
+				self.w(f"Total disposed cost: {format_money(row.disposed_cost)}\n")
+				for (leg, id) in row.disposal_legs_and_ids:
 					self.w(f"  - {disposals.disposal_inventory_ref(leg, id)}\n")
 
 

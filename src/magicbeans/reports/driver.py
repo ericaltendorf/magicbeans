@@ -12,7 +12,7 @@ from beancount.core.number import ZERO
 from beancount.ops import summarize
 from magicbeans import common
 from magicbeans import disposals
-from magicbeans.disposals import format_money, get_disposal_postings, is_disposal_tx, mk_disposal_summary, render_lots, sum_amounts
+from magicbeans.disposals import check_and_sort_lots, format_money, get_disposal_postings, is_disposal_tx, mk_disposal_summary, sum_amounts
 from magicbeans.mining import MINING_BENEFICIARY_ACCOUNT, MINING_INCOME_ACCOUNT, MiningStats, is_mining_tx
 from magicbeans.reports.text import TextRenderer
 
@@ -44,16 +44,19 @@ class ReportDriver:
 		"""Load the beancount file at the given path and parse it for queries, 
 		and initialize the output report file."""
 		self.report = open(out_path, 'w')   # TODO: verify this is closed on destruction
-
 		self.renderer = TextRenderer(self.report)
 
 		entries, _errors, options = loader.load_file(ledger_path)
 		self.entries = entries
 		self.options = options
 	
-	# TODO: use throughout
+	# TODO: remove
 	def w(self, s: str):
 		self.report.write(s)
+	
+	#
+	# Old report methods, mostly for bean-query driven reports
+	#
 	
 	def query(self, query: str):
 		"""Run a bean-query query on the entries in this database.  Returns a
@@ -61,24 +64,17 @@ class ReportDriver:
 		of ResultRow tuples with the data.item pairs."""
 		return run_query(self.entries, self.options, query)
 
-	def render(self, rtypes, rrows):
-		render_text(rtypes, rrows, self.options['dcontext'], self.report,
-		  			expand=True, boxed=False, narrow=False)
-
 	def query_and_render(self, query: str, footer: str = None):
 		(rtypes, rrows) = self.query(query)
-		if len(rrows) > 0:
-			self.render(rtypes, rrows)
-			if footer:
-				self.report.write("\n" + footer + "\n")
-		else:
-			self.report.write('(None)\n')
-
-		self.report.write('\n')
+		self.renderer.beanquery_table(rtypes, rrows, footer)
 
 	def run_subreport(self, title: str, query: str, footer: str = None):
 		self.renderer.subreport_header(title, query)
 		self.query_and_render(query, footer)
+
+	#
+	# New report methods, using direct analysis of the entries
+	#
 
 	def run_disposals_subreport(self, title: str, ty: int):
 		self.renderer.subreport_header(title)
@@ -87,20 +83,13 @@ class ReportDriver:
 		# def iter_entry_dates(entries, date_begin, date_end):
 		ty_entries = [e for e in self.entries if e.date.year == ty]
 
-		self.report.write(
-			f"{'Date':<10} {'Narration':<74} "
-			f"{'Proceeds':>10} "
-			f"{'STCG':>10} "
-			f"{'Cumulative':>11} "
-			f"{'LTCG':>10} "
-			f"{'Cumulative':>11}\n\n")
-
 		cumulative_stcg = Decimal("0")
 		cumulative_ltcg = Decimal("0")
 		cumulative_proceeds = Decimal("0")
 
 		num_lines = 0
 
+		self.renderer.start_disposals_table()
 		for e in ty_entries:
 			if isinstance(e, Transaction) and is_disposal_tx(e):
 				num_lines += 1
@@ -113,30 +102,18 @@ class ReportDriver:
 				if summary.proceeds:
 					cumulative_proceeds += summary.proceeds
 
-				# TODO: why do i have to call str(summary.date)??
-				self.report.write(
-					f"{str(summary.date):<10} {summary.narration:.<74.74} "
-					f"{format_money(summary.proceeds):>10} "
-					f"{format_money(summary.stcg()):>10} "
-					f"{cumulative_stcg:>11.2f} "
-					f"{format_money(summary.ltcg()):>10} "
-					f"{cumulative_ltcg:>11.2f}\n")
-				self.report.write("\n".join(textwrap.wrap(
-					f"Disposed lots: {render_lots(summary.lots)}",
-					width=74, initial_indent="           ", subsequent_indent="           ")))
-				self.report.write("\n")
+				(disposed_currency, lots) = check_and_sort_lots(summary.lots)
+				self.renderer.disposal_row(
+					summary.date, summary.narration, summary.proceeds,
+					summary.stcg(), cumulative_stcg,
+					summary.ltcg(), cumulative_ltcg,
+					disposed_currency, lots)
 
 		if num_lines == 0:
-			self.report.write("(No disposals)\n")
+			self.renderer.write_text("(No disposals)\n")
 
-		self.report.write(
-			f"\n{'':<10} {'Total':<74} "
-			f"{cumulative_proceeds:>10.2f} "
-			f"{'STCG':>10} "
-			f"{cumulative_stcg:>11.2f} "
-			f"{'LTCG':>10} "
-			f"{cumulative_ltcg:>11.2f}\n")
-
+		self.renderer.end_disposals_table(
+			cumulative_proceeds, cumulative_stcg, cumulative_ltcg)
 
 	def run_disposals_details(self, start: datetime, end: datetime):
 		numeraire = "USD"

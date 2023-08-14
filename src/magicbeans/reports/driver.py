@@ -55,7 +55,7 @@ class ReportDriver:
 		self.renderer.write_text(text)
 	
 	def close(self):
-		self.report.close()
+		self.renderer.close()
 	
 	#
 	# Old report methods, mostly for bean-query driven reports

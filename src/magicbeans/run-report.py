@@ -135,4 +135,5 @@ if __name__ == '__main__':
 				# f"Mining in {quarter}",
 				# queries.mining_full(quarter, currency_re))
 	# print()
-#  
+
+	db.close()

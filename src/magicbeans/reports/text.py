@@ -16,6 +16,9 @@ class TextRenderer():
 		# TODO: verify this is closed on destruction
 		self.file = open(out_path, 'w')
 
+	def close(self):
+		self.file.close()
+
 	def write_text(self, text: str):
 		self.file.write(text)
 

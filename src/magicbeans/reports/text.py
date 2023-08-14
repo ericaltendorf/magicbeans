@@ -2,8 +2,10 @@ import datetime
 from decimal import Decimal
 import textwrap
 from typing import List
+from beancount.core.amount import Amount
 from beancount.core.data import Posting
 from beanquery.query_render import render_text
+from magicbeans import disposals
 from magicbeans.disposals import abbrv_disposal, format_money
 
 
@@ -41,28 +43,63 @@ class TextRenderer():
 
 		self.file.write('\n')
 
+	#
+	# Inventory report
+	#
+
+	def start_inventory_table(self, date: datetime.date):
+		self.file.write(f"Inventories as of {date}\n\n")
+
+	def start_inventory_account(self, account: str, currency: str, total: Amount):
+		self.file.write(f"{account} {currency} total: {total}\n")
+
+	def inventory_row(self, pos: Posting, lot_id: str):
+		self.file.write(f"  {disposals.disposal_inventory_desc(pos, lot_id)}\n")
+
+	def end_inventory_table(self):
+		self.file.write("\n")
+
+	#
+	# Disposals report
+	#
+
 	def start_disposals_table(self):
 		self.file.write(
-			f"{'Date':<10} {'Narration':<74} "
-			f"{'Proceeds':>10} "
-			f"{'STCG':>10} "
-			f"{'Cumulative':>11} "
-			f"{'LTCG':>10} "
-			f"{'Cumulative':>11}\n\n")
+			f"{'':<10} {'':<64} "
+			f"{'Proceeds value':>20} "
+			f"{'':>20} "
+			f"{'Short term':>21} "
+			f"{'Long term':>21}\n")
+		self.file.write(
+			f"{'Date':<10} {'Narration':<64} "
+			f"{'USD':>10} "
+			f"{'other':>10} "
+			f"{'Cost':>10} "   # New
+			f"{'Gain':>10} "   # New
+			f"{'Gains':>10} "
+			f"{'Cumul.':>11} "
+			f"{'Gains':>10} "
+			f"{'Cumul.':>11}\n\n")
 
-	def disposal_row(self, date: datetime.date, narration: str, proceeds: Decimal,
-					 stcg: Decimal, cumulative_stcg: Decimal,
-					 ltcg: Decimal, cumulative_ltcg: Decimal,
-					 disposed_currency: str, lots: List[Posting]):
+	def disposal_row(self,
+			date: datetime.date, narration: str,
+			numer_proceeds: Decimal, other_proceeds: Decimal,
+			cost: Decimal, gain: Decimal,
+			stcg: Decimal, cumulative_stcg: Decimal,
+			ltcg: Decimal, cumulative_ltcg: Decimal,
+			disposed_currency: str, lots: List[Posting]):
 
 		# TODO: why do i have to call str(summary.date)??
 		self.file.write(
-			f"{str(date):<10} {narration:.<74.74} "
-			f"{format_money(proceeds):>10} "
+			f"{str(date):<10} {narration:.<64.64} "
+			f"{format_money(numer_proceeds):>10} "
+			f"{format_money(other_proceeds):>10} "
+			f"{format_money(cost):>10} "
+			f"{format_money(gain):>10} "
 			f"{format_money(stcg):>10} "
-			f"{cumulative_stcg:>11.2f} "
+			f"{format_money(cumulative_stcg):>11} "
 			f"{format_money(ltcg):>10} "
-			f"{cumulative_ltcg:>11.2f}\n")
+			f"{format_money(cumulative_ltcg):>11}\n")
 		
 		# TODO: abbrv_disposal probably shouldn't be over there
 		rendered_lots = (f"{disposed_currency} " +
@@ -70,15 +107,20 @@ class TextRenderer():
 
 		self.file.write("\n".join(textwrap.wrap(
 			f"Disposed lots: {rendered_lots}",
-			width=74, initial_indent="           ", subsequent_indent="           ")))
+			width=64, initial_indent="           ", subsequent_indent="           ")))
 		self.file.write("\n")
 
-	def end_disposals_table(self, cumulative_proceeds: Decimal,
+	# Use amount?  use format_money() ?
+	def end_disposals_table(self, cum_numer_proceeds: Decimal, cum_other_proceeds: Decimal,
+	      					cum_cost, cum_gain,
 							cumulative_stcg: Decimal, cumulative_ltcg: Decimal):
 		self.file.write("\n")
 		self.file.write(
-			f"\n{'':<10} {'Total':<74} "
-			f"{cumulative_proceeds:>10.2f} "
+			f"\n{'':<10} {'Total':<64} "
+			f"{cum_numer_proceeds:>10.2f} "
+			f"{cum_other_proceeds:>10.2f} "
+			f"{cum_cost:>10} "
+			f"{cum_gain:>10} "
 			f"{'STCG':>10} "
 			f"{cumulative_stcg:>11.2f} "
 			f"{'LTCG':>10} "

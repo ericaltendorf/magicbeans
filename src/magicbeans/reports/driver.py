@@ -105,6 +105,8 @@ class ReportDriver:
 				(disposed_currency, lots) = check_and_sort_lots(summary.lots)
 				self.renderer.disposal_row(
 					summary.date, summary.narration, summary.proceeds,
+					None, # TODO
+					None, None,# TODO
 					summary.stcg(), cumulative_stcg,
 					summary.ltcg(), cumulative_ltcg,
 					disposed_currency, lots)
@@ -113,7 +115,11 @@ class ReportDriver:
 			self.renderer.write_text("(No disposals)\n")
 
 		self.renderer.end_disposals_table(
-			cumulative_proceeds, cumulative_stcg, cumulative_ltcg)
+			cumulative_proceeds,
+			Decimal("0.00"),  # TODO
+			Decimal("0.00"),  # TODO
+			Decimal("0.00"),  # TODO
+			cumulative_stcg, cumulative_ltcg)
 
 	def run_disposals_details(self, start: datetime, end: datetime):
 		numeraire = "USD"
@@ -146,30 +152,21 @@ class ReportDriver:
 					pass
 
 		# Write ante-inventory with IDs
+		self.renderer.start_inventory_table(start)
 		for account in inventory_idx.get_accounts():
-			self.w(f"\n{account}\n")
 			cur_to_inventory = account_to_inventory[account].split()
-
 			for (cur, inventory) in cur_to_inventory.items():
-
 				items = inventory_idx.get_inventory_w_ids(account)
 				total = sum_amounts(cur, [pos.units for (pos, id) in items])
-				self.w(f"  {total}\n")
+				self.renderer.start_inventory_account(account, cur, total)
 
 				sorted_pairs = sorted(items, key=lambda x: -abs(x[0].units.number))
 				for (pos, lot_id) in sorted_pairs:
-					self.w(f"  {disposals.disposal_inventory_desc(pos, lot_id)}\n")
+					self.renderer.inventory_row(pos, lot_id)
+		self.renderer.end_inventory_table()
 
 		# Write disposal transactions referencing IDs
-		self.w("\n")
-		self.w(
-			f"{'Date':<10} {'Narration':.<60.60}  ::  "
-			f"{'USD Proceeds':>10} "
-			f"{'Other value':>10} "
-			f"{'Orig. cost':>10} "
-			f"{'Gain':>10}\n"
-			)
-
+		self.renderer.start_disposals_table()
 		for e in page_entries:
 			bd = disposals.BookedDisposal(e, numeraire)
 
@@ -178,13 +175,15 @@ class ReportDriver:
 			disposed_cost = bd.total_disposed_cost()
 			gain = amount.sub(amount.add(numer_proc, other_proc), disposed_cost)
 
-			self.w(
-				f"{str(e.date):<10} {e.narration:.<60.60}  ::  "
-				f"{format_money(numer_proc):>10} "
-				f"{format_money(other_proc):>10} "
-				f"{format_money(disposed_cost):>10} "
-				f"{format_money(gain):>10}\n"
-				)
+			(disposed_currency, lots) = check_and_sort_lots(bd.disposal_legs)
+			self.renderer.disposal_row(
+				e.date, e.narration, numer_proc, other_proc,
+				disposed_cost, gain,
+
+				None, None, None, None, # TODO
+				# summary.stcg(), cumulative_stcg,
+				# summary.ltcg(), cumulative_ltcg,
+				disposed_currency, lots)
 
 			self.w(f"USD proceeds: {format_money(bd.total_numeriare_proceeds())}\n")
 			for leg in bd.numeraire_proceeds_legs:
@@ -198,8 +197,6 @@ class ReportDriver:
 			for leg in bd.disposal_legs:
 				id = inventory_idx.lookup_lot_id(leg.account, leg.cost)
 				self.w(f"  - {disposals.disposal_inventory_ref(leg, id)}\n")
-
-			self.w("\n")
 
 
 	def run_mining_summary_subreport(self, title: str, ty: int):

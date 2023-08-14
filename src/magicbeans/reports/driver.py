@@ -14,7 +14,7 @@ from magicbeans import common
 from magicbeans import disposals
 from magicbeans.disposals import check_and_sort_lots, format_money, get_disposal_postings, is_disposal_tx, mk_disposal_summary, sum_amounts
 from magicbeans.mining import MINING_BENEFICIARY_ACCOUNT, MINING_INCOME_ACCOUNT, MiningStats, is_mining_tx
-from magicbeans.reports.data import DisposalsReportRow, InventoryReport
+from magicbeans.reports.data import DisposalsReport, DisposalsReportRow, AccountInventoryReport, InventoryReport
 from magicbeans.reports.text import TextRenderer
 
 from pyfiglet import Figlet
@@ -109,34 +109,25 @@ class ReportDriver:
 
 		# Write ante-inventory with IDs
 		if extended:
-			inv_reps = [] 
+			acct_inv_reps = [] 
 			for account in inventory_idx.get_accounts():
 				cur_to_inventory = account_to_inventory[account].split()
 				for (cur, inventory) in cur_to_inventory.items():
 					items = inventory_idx.get_inventory_w_ids(account)
 					total = sum_amounts(cur, [pos.units for (pos, id) in items])
-					inv_rep = InventoryReport(account, total, items)
+					acct_inv_rep = AccountInventoryReport(account, total, items)
 					sorted_pairs = sorted(items, key=lambda x: -abs(x[0].units.number))
 					for (pos, lot_id) in sorted_pairs:
-						inv_rep.positions_and_ids.append((pos, lot_id))
-					inv_reps.append(inv_rep)
+						acct_inv_rep.positions_and_ids.append((pos, lot_id))
+					acct_inv_reps.append(acct_inv_rep)
+			inv_report = InventoryReport(start, acct_inv_reps)
 
-			# To move to the renderer
-			self.renderer.start_inventory_table(start)
-			for inv_rep in inv_reps:
-				self.renderer.start_inventory_account(
-					inv_rep.account, inv_rep.total.currency, inv_rep.total)
-				for (pos, lot_id) in inv_rep.positions_and_ids:
-					self.renderer.inventory_row(pos, lot_id)
-			self.renderer.end_inventory_table()
+			self.renderer.inventory(inv_report)
 
 		# Write disposal transactions referencing IDs
 		cumulative_stcg = Decimal("0")
 		cumulative_ltcg = Decimal("0")
-
 		disposals_report_rows = []
-
-
 		for e in page_entries:
 			bd = disposals.BookedDisposal(e, numeraire)
 
@@ -160,26 +151,10 @@ class ReportDriver:
 				bd.other_proceeds_legs,
 				disposal_legs_and_ids))
 		
-		# TODO move to renderer
-		self.renderer.start_disposals_table()
-		for row in disposals_report_rows:
-			self.renderer.disposal_row(
-				row.date, row.narration,
-				row.numeraire_proceeds, row.other_proceeds, row.disposed_cost,
-				row.gain, row.stcg, row.cum_stcg, row.ltcg, row.cum_ltcg,
-				row.disposed_currency, [p[0] for p in row.disposal_legs_and_ids])
-			if extended:
-				self.w(f"USD proceeds: {format_money(row.numeraire_proceeds)}\n")
-				for leg in row.numeraire_proceeds_legs:
-					self.w(f"  + {leg.units}\n")
-
-				self.w(f"Other proceeds: total value {format_money(row.other_proceeds)}\n")
-				for leg in row.other_proceeds_legs:
-					self.w(f"  + {leg.units} value ea {format_money(leg.cost)}\n")
-				
-				self.w(f"Total disposed cost: {format_money(row.disposed_cost)}\n")
-				for (leg, id) in row.disposal_legs_and_ids:
-					self.w(f"  - {disposals.disposal_inventory_ref(leg, id)}\n")
+		disposals_report = DisposalsReport(start, end, numeraire,
+				disposals_report_rows, cumulative_stcg, cumulative_ltcg, extended)
+		
+		self.renderer.disposals(disposals_report)
 
 
 	def run_mining_summary_subreport(self, title: str, ty: int):

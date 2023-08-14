@@ -8,6 +8,7 @@ from beancount.core.data import Posting
 from beanquery.query_render import render_text
 from magicbeans import disposals
 from magicbeans.disposals import abbrv_disposal, format_money
+from magicbeans.reports.data import AccountInventoryReport, InventoryReport
 
 class TextRenderer():
 	def __init__(self, file) -> None:
@@ -46,23 +47,40 @@ class TextRenderer():
 	# Inventory report
 	#
 
-	def start_inventory_table(self, date: datetime.date):
-		self.file.write(f"Inventories as of {date}\n\n")
-
-	def start_inventory_account(self, account: str, currency: str, total: Amount):
-		self.file.write(f"{account} {currency} total: {total}\n")
-
-	def inventory_row(self, pos: Posting, lot_id: str):
-		self.file.write(f"  {disposals.disposal_inventory_desc(pos, lot_id)}\n")
-
-	def end_inventory_table(self):
+	def inventory(self, inventory_report: InventoryReport):
+		self.file.write(f"Inventories as of {inventory_report.date}\n\n")
+		for acct in inventory_report.accounts:
+			self.file.write(f"{acct.account} total: {acct.total}\n")
+			for (pos, lot_id) in acct.positions_and_ids:
+				self.file.write(f"  {disposals.disposal_inventory_desc(pos, lot_id)}\n")
 		self.file.write("\n")
 
 	#
 	# Disposals report
 	#
 
-	def start_disposals_table(self):
+	def disposals(self, disposals_report):
+		self._start_disposals_table()
+		for row in disposals_report.rows:
+			self._disposal_row(
+				row.date, row.narration,
+				row.numeraire_proceeds, row.other_proceeds, row.disposed_cost,
+				row.gain, row.stcg, row.cum_stcg, row.ltcg, row.cum_ltcg,
+				row.disposed_currency, [p[0] for p in row.disposal_legs_and_ids])
+			if disposals_report.extended:
+				self.file.write(f"USD proceeds: {format_money(row.numeraire_proceeds)}\n")
+				for leg in row.numeraire_proceeds_legs:
+					self.file.write(f"  + {leg.units}\n")
+
+				self.file.write(f"Other proceeds: total value {format_money(row.other_proceeds)}\n")
+				for leg in row.other_proceeds_legs:
+					self.file.write(f"  + {leg.units} value ea {format_money(leg.cost)}\n")
+				
+				self.file.write(f"Total disposed cost: {format_money(row.disposed_cost)}\n")
+				for (leg, id) in row.disposal_legs_and_ids:
+					self.file.write(f"  - {disposals.disposal_inventory_ref(leg, id)}\n")
+
+	def _start_disposals_table(self):
 		self.file.write(
 			f"{'':<10} {'':<64} "
 			f"{'Proceeds value':>20} "
@@ -80,7 +98,7 @@ class TextRenderer():
 			f"{'Gains':>10} "
 			f"{'Cumul.':>11}\n\n")
 
-	def disposal_row(self,
+	def _disposal_row(self,
 			date: datetime.date, narration: str,
 			numer_proceeds: Decimal, other_proceeds: Decimal,
 			cost: Decimal, gain: Decimal,
@@ -110,9 +128,9 @@ class TextRenderer():
 		self.file.write("\n")
 
 	# Use amount?  use format_money() ?
-	def end_disposals_table(self, cum_numer_proceeds: Decimal, cum_other_proceeds: Decimal,
-	      					cum_cost, cum_gain,
-							cumulative_stcg: Decimal, cumulative_ltcg: Decimal):
+	def _end_disposals_table(self,
+			cum_numer_proceeds: Decimal, cum_other_proceeds: Decimal,
+	       	cum_cost, cum_gain, cum_stcg: Decimal, cum_ltcg: Decimal):
 		self.file.write("\n")
 		self.file.write(
 			f"\n{'':<10} {'Total':<64} "
@@ -121,6 +139,6 @@ class TextRenderer():
 			f"{cum_cost:>10} "
 			f"{cum_gain:>10} "
 			f"{'STCG':>10} "
-			f"{cumulative_stcg:>11.2f} "
+			f"{cum_stcg:>11.2f} "
 			f"{'LTCG':>10} "
-			f"{cumulative_ltcg:>11.2f}\n")
+			f"{cum_ltcg:>11.2f}\n")

@@ -152,6 +152,7 @@ class BookedDisposal():
 		else:
 			return Decimal(0)
 
+# TODO: Consolidate tehse four functions
 def disposal_inventory_desc(pos: Position, id: int) -> str:
 	result = (f"{pos.units.number:.8f} {pos.units.currency} "
 			  f"{{{pos.cost.number:0.4f} {pos.cost.date}}}")
@@ -160,12 +161,30 @@ def disposal_inventory_desc(pos: Position, id: int) -> str:
 	return result
 
 def disposal_inventory_ref(posting: Posting, id: int) -> str:
-	result = (f"{posting.units.number:f} {posting.units.currency} "
-			  f"{{ {posting.cost.number:.4f} {posting.cost.currency} }}"
-			  f" {posting.cost.date}")
-	if id:
-		result += f" (#{id})"
+	result = (f"{posting.units.number:.4f} {posting.units.currency} {{"
+	    	  + (f"#{id} " if id else "") +
+			  f"{posting.cost.number:.4f} {posting.cost.currency}"
+			  f" {posting.cost.date}}}")
 	return result
+
+def render_disposal(disposal: Posting):
+	return (
+		f"{disposal.units} "
+		f"{{ {disposal.cost.number} {disposal.cost.currency}"
+		f" {disposal.cost.date} }}"
+		)
+
+def abbrv_disposal(disposal: Posting):
+	assert disposal.cost.currency == "USD"
+	num = -disposal.units.number  # We render disposals as positive numbers
+	if num.to_integral() == num:
+		normalized_num = num.to_integral()
+	else:
+		normalized_num = num.normalize()
+	return (
+		f"{normalized_num} "
+		f"{{${disposal.cost.number:.4f} {disposal.cost.date}}}"
+		)
 
 # TODO: remove, this should be obsoleted by BookedDisposal
 class DisposalSummary(NamedTuple):
@@ -200,25 +219,6 @@ def is_disposal_posting(posting: Posting):
 		and posting.units.number < 0
 		and posting.units.currency != "USD"
    		)
-
-def render_disposal(disposal: Posting):
-	return (
-		f"{disposal.units} "
-		f"{{ {disposal.cost.number} {disposal.cost.currency}"
-		f" {disposal.cost.date} }}"
-		)
-
-def abbrv_disposal(disposal: Posting):
-	assert disposal.cost.currency == "USD"
-	num = -disposal.units.number  # We render disposals as positive numbers
-	if num.to_integral() == num:
-		normalized_num = num.to_integral()
-	else:
-		normalized_num = num.normalize()
-	return (
-		f"{normalized_num} "
-		f"{{${disposal.cost.number:.4f} {disposal.cost.date}}}"
-		)
 
 def sum_amounts(cur: str, amounts: List[Amount]) -> Amount:
 	"""Add up a list of amounts, all of which must be in the same currency

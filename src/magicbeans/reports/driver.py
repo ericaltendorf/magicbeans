@@ -77,7 +77,7 @@ class ReportDriver:
 		self.renderer.write_paragraph(f"Generated {timestamp}")
 		tys_str = ", ".join([str(ty) for ty in tax_years])
 		self.renderer.write_paragraph(f"Covering tax years {tys_str}")
-		self.renderer.write_paragraph(f"Reporting on cryptocurrencies {cryptos}")
+		self.renderer.write_paragraph(f"Reporting on cryptocurrencies {', '.join(cryptos)}")
 		self.renderer.write_paragraph(REPORT_ABSTRACT)
 	
 	#
@@ -98,15 +98,45 @@ class ReportDriver:
 		self.renderer.subreport_header(title, query)
 		self.query_and_render(query, footer)
 
+
+	# TODO: unittest
+	def paginate_entries(self, start: datetime.date, end: datetime.date, page_size: int):
+		"""Yield dates which segment the provide entries into groups containing at
+		   most page_size entries, unless more than that many entries occur on one day."""
+		entered_range = False
+		last_partition = 0
+		last_date_change = 0
+		filtered_entries = list(filter(is_disposal_tx, self.entries))
+		for i in range(0, len(filtered_entries)):
+			if not entered_range and filtered_entries[i].date >= start:
+				entered_range = True
+				last_partition = i
+				last_date_change = i
+
+			if entered_range:
+				if filtered_entries[i].date > end:
+					break
+				if i > 0 and filtered_entries[i].date != filtered_entries[i-1].date:
+					last_date_change = i
+				if i - last_partition >= page_size and last_partition != last_date_change:
+					yield filtered_entries[last_date_change].date
+					last_partition = last_date_change
+
 	#
 	# New report methods, using direct analysis of the entries
 	#
 
-	def disposals(self, start: datetime, end: datetime, extended: bool):
+	def disposals(self, start: datetime.date, end: datetime.date, extended: bool):
+		self.renderer.header(f"{start} - {end - datetime.timedelta(days=1)}")
+
+		first_disposal_after_start = next(filter(
+			lambda e: is_disposal_tx(e) and e.date >= start, self.entries))
+		first_disposal_date = first_disposal_after_start.date
+
 		numeraire = "USD"
 
 		(account_to_inventory, index) = summarize.balance_by_account(
-			self.entries, start)
+			self.entries, first_disposal_date)
 
 		# Remove numeraire-only accounts; we don't need to track those
 		for (account, inventory) in list(account_to_inventory.items()):
@@ -118,7 +148,9 @@ class ReportDriver:
 
 		# Define the list of transactions to process on this page
 		page_entries = summarize.truncate(self.entries[index:], end)
+		print(f"Before filter, {len(page_entries)} entries")
 		page_entries = list(filter(is_disposal_tx, page_entries))
+		print(f"After filter, {len(page_entries)} entries")
 
 		# Index reduced lots with IDs
 		for e in page_entries:
@@ -147,7 +179,8 @@ class ReportDriver:
 					for (pos, lot_id) in sorted_pairs:
 						acct_inv_rep.positions_and_ids.append((pos, lot_id))
 					account_inventory_reports.append(acct_inv_rep)
-			inv_report = InventoryReport(start, account_inventory_reports)
+				account_inventory_reports.sort(key=lambda x: (x.total.currency, x.account))
+			inv_report = InventoryReport(first_disposal_date, account_inventory_reports)
 
 			self.renderer.inventory(inv_report)
 

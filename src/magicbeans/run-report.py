@@ -74,24 +74,36 @@ if __name__ == '__main__':
 	db.preamble(datetime.datetime.now(), tax_years, currencies)
 
 	print("Generating tax summaries:")
-	for ty in tax_years:
-		print(f"  {ty}", end="", flush=True)
-		db.renderer.header(f"{ty} Tax Summary")
-		db.renderer.subheader("Asset Disposals and Capital Gains/Losses")
-		db.disposals(datetime.date(ty, 1, 1), datetime.date(ty+1, 1, 1), False)
-		db.run_mining_summary_subreport("Mining Operations and Income", ty)
+	# for ty in tax_years:
+	# 	print(f"  {ty}", end="", flush=True)
+	# 	db.renderer.header(f"{ty} Tax Summary")
+	# 	db.renderer.subheader("Asset Disposals and Capital Gains/Losses")
+	# 	db.disposals(datetime.date(ty, 1, 1), datetime.date(ty+1, 1, 1), False)
+	# 	db.run_mining_summary_subreport("Mining Operations and Income", ty)
 
 	print()
 
-	db.renderer.header("Quarterly Operations")
-	print("Generating quarterly operations reports:")
+	# db.renderer.header("Quarterly Operations")
+	# print("Generating quarterly operations reports:")
+	# for ty in tax_years:
+	# 	print(f"  {ty} ", end="", flush=True)
+	# 	for q in [1, 2, 3, 4]:
+	# 		print(f"{q} ", end="", flush=True)
+	# 		start = quarter_start(ty, q)
+	# 		db.renderer.header(f"{ty} Q {q}")
+	# 		db.disposals(quarter_start(ty, q), quarter_end(ty, q), True)
+
+	db.renderer.header("Detailed Disposals")
+	print("Generating detailed disposals reports:")
 	for ty in tax_years:
-		print(f"  {ty} ", end="", flush=True)
-		for q in [1, 2, 3, 4]:
-			print(f"{q} ", end="", flush=True)
-			start = quarter_start(ty, q)
-			db.renderer.header(f"{ty} Q {q}")
-			db.disposals(quarter_start(ty, q), quarter_end(ty, q), True)
+		start = datetime.date(ty, 1, 1)
+		end = datetime.date(ty+1, 1, 1)
+		last_date = start
+		for date in db.paginate_entries(start, end, 12):
+			print(f"  {ty} {date}", end="", flush=True)
+			db.disposals(last_date, date, True)
+			last_date = date
+		db.disposals(last_date, end, True)
 
 	print()
 

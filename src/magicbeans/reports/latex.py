@@ -9,7 +9,7 @@ from magicbeans import disposals
 from magicbeans.disposals import abbrv_disposal, format_money
 from magicbeans.reports.data import DisposalsReport, InventoryReport
 
-from pylatex import Document, Section, Subsection, Command, LongTabu, Tabu, Center, MultiColumn
+from pylatex import Document, Section, Subsection, Command, LongTabu, Tabu, Center, MultiColumn, MiniPage, TextColor
 from pylatex.utils import italic, NoEscape, bold
 from pylatex.basic import HugeText, LargeText, MediumText, SmallText, NewPage
 
@@ -38,8 +38,8 @@ class LaTeXRenderer():
 		self.path = path
 		
 		geometry_options = {
-			"landscape": True,
-			"margin": "0.4in",
+			"landscape": False,
+			"margin": "0.3in",
 		}
 
 		# TODO: How to do sans-serif font?
@@ -47,7 +47,7 @@ class LaTeXRenderer():
 			page_numbers=True,
 			font_size="scriptsize",
 		    geometry_options=geometry_options)
-		self.doc.change_length(r"\columnsep", "0.5in")
+		self.doc.change_length(r"\tabcolsep", "2pt")
 
 	def close(self):
 		self.doc.generate_pdf(self.path, clean_tex=False)
@@ -60,7 +60,8 @@ class LaTeXRenderer():
 
 	def header(self, title: str):
 		self.doc.append(NewPage())
-		self.doc.append(LargeText(title) + "\n\n")
+		with self.doc.create(Center()):
+			self.doc.append(LargeText(title))
 		
 	def subheader(self, title: str, q: str = None):
 		self.subreport_header(title, q)
@@ -91,101 +92,118 @@ class LaTeXRenderer():
 	#
 
 	def inventory(self, inventory_report: InventoryReport):
-		fmt = "| X[-1l] X[-1rp] X[-1r] X[-1r] |"
-		with self.doc.create(Tabu(fmt, spread="0pt")) as table:
-			table.add_hline()
-			table.add_row((MultiColumn(4,
-				data=MediumText(f"Inventory as of {inventory_report.date}\n")), ))
-			for acct in inventory_report.accounts:
+		with self.doc.create(MiniPage(width=r"0.25\textwidth")) as page:
+			fmt = "| X[-1l] X[-1rp] X[-1r] X[-1r] |"
+			with self.doc.create(Tabu(fmt, spread="0pt")) as table:
+				table.add_row((MultiColumn(4,
+					data=MediumText(f"Inventory on {inventory_report.date}\n")), ))
+				if not inventory_report.accounts:
+					table.add_hline()
+					table.add_row((MultiColumn(4, data="No inventory to report"),))
+					table.add_hline()
+				for acct in inventory_report.accounts:
+					table.add_hline()
+
+					acct_name = acct.account.replace("Assets:Xfer:", "Xfer ")
+					table.add_row((MultiColumn(4, data=bold(acct_name)),))
+					table.add_hline()
+
+					n_lots = len(acct.positions_and_ids)
+
+					table.add_row((
+						"",
+						dec6(acct.total.number),
+						(MultiColumn(2, align="l|", data=f"total in {n_lots} lot(s)")),
+						))
+					table.add_hline()
+
+					last_line_added = 0
+					for (line_no, (pos, lot_id)) in enumerate(acct.positions_and_ids):
+						if (line_no < 10 or lot_id):
+							ref = disposals.disposal_inventory_ref(pos, lot_id)
+							table.add_row((
+								lot_id if lot_id else "",
+								dec6(pos.units.number),
+								dec2(pos.cost.number),
+								pos.cost.date))
+							last_line_added = line_no
+						elif line_no == last_line_added + 1:
+							table.add_row((MultiColumn(4, align="|c|", data=NoEscape(r'\cdots')),))
+
 				table.add_hline()
-
-				table.add_row((MultiColumn(4, data=bold(acct.account)),))
-				table.add_hline()
-
-				last_line_added = 0
-				for (line_no, (pos, lot_id)) in enumerate(acct.positions_and_ids):
-					if (line_no < 12 or lot_id):
-						ref = disposals.disposal_inventory_ref(pos, lot_id)
-						table.add_row((
-							lot_id if lot_id else "",
-							dec6(pos.units.number),
-							dec2(pos.cost.number),
-							pos.cost.date))
-						last_line_added = line_no
-					elif line_no == last_line_added + 1:
-						table.add_row((MultiColumn(4, data=NoEscape(r'\cdots')),))
-
-
-				table.add_hline()
-				table.add_row((
-					"",
-					dec6(acct.total.number),
-					"",  # TODO: This isn't set correctly : dec2(acct.total_cost.number),
-					"Total"))
-			table.add_hline()
 
 	#
 	# Disposals report
 	#
 
 	def disposals(self, disposals_report: DisposalsReport):
-		fmt = " X[-1r] X[-1l] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r]"
-		with self.doc.create(Tabu(fmt, spread="0pt")) as table:
-			table.add_hline()
-			table.add_row((
-				"Date",
-				"Narration",
-				"Proceeds",
-				"Other, FMV",
-				"Cost",
-				"Gain",
-				"STCG",
-				"(cumul)",
-				"LTCG",
-				"(cumul)",
-				))
-
-			for (rownum, row) in enumerate(disposals_report.rows):
-				if rownum % 1 == 0:
-					table.add_hline()
+		with self.doc.create(MiniPage(width=r"0.74\textwidth")) as page:
+			fmt = " X[-1r] X[-1l] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r]"
+			with self.doc.create(Tabu(fmt, spread="0pt")) as table:
+				table.add_hline()
 				table.add_row((
-					row.date,
-					row.narration[:20] + "...",  # Hack for now
-					dec2(row.numeraire_proceeds.number),
-					dec2(row.other_proceeds.number),
-					dec2(row.disposed_cost),
-					dec2(row.gain),
-					dec2(row.stcg),
-					dec2(row.cum_stcg),
-					dec2(row.ltcg),
-					dec2(row.cum_ltcg),
+					"Date",
+					"Narration",
+					"Proceeds",
+					"Cost",
+					"Gain",
+					"STCG",
+					"(cumul)",
+					"LTCG",
+					"(cumul)",
 					))
 
-				if disposals_report.extended:
-					for leg in row.numeraire_proceeds_legs:
-						table.add_row(("+", leg.units, "", "", "", "", "", "", "", ""))
-
-					for leg in row.other_proceeds_legs:
-						msg = f"{leg.units} value ea {dec4(leg.cost.number)}"
-						table.add_row(("+", MultiColumn(6, align="l", data=msg), "", "", ""))
+				for (rownum, row) in enumerate(disposals_report.rows):
+					if rownum % 1 == 0:
+						table.add_hline()
 					
-					for (leg, id) in row.disposal_legs_and_ids:
-						msg = f"{disposals.disposal_inventory_ref(leg, id)}"
-						table.add_row(("-", MultiColumn(6, align="l", data=msg), "", "", ""))
+					# Put true USD proceeds and FMV of other proceeds in the
+					# same column, with the latter italicized.
+					proceeds = ""
+					if row.numeraire_proceeds:
+						proceeds += dec2(row.numeraire_proceeds.number)
+					if row.other_proceeds:
+						if proceeds:
+							proceeds += " + "
+						proceeds += italic(dec2(row.other_proceeds.number), escape=False)
+
+						dec2(row.other_proceeds.number),
+					table.add_row((
+						row.date,
+						row.narration[:25] + "...",  # Hack for now
+						NoEscape(proceeds),
+						dec2(row.disposed_cost),
+						dec2(row.gain),
+						dec2(row.stcg),
+						TextColor("gray", dec2(row.cum_stcg)),
+						dec2(row.ltcg),
+						TextColor("gray", dec2(row.cum_ltcg)),
+						))
+
+					if disposals_report.extended:
+						for leg in row.numeraire_proceeds_legs:
+							table.add_row(("+", f"{dec4(leg.units.number)} {leg.units.currency}", "", "", "", "", "", "", ""))
+
+						for leg in row.other_proceeds_legs:
+							msg = f"{dec4(leg.units.number)} {leg.units.currency} value ea {dec4(leg.cost.number)}"
+							table.add_row(("+", MultiColumn(5, align="l", data=msg), "", "", ""))
+						
+						for (leg, id) in row.disposal_legs_and_ids:
+							msg = f"{disposals.disposal_inventory_ref(leg, id)}"
+							table.add_row(("-", MultiColumn(5, align="l", data=msg), "", "", ""))
 
 
-			table.add_hline()
+				table.add_hline()
 
-			table.add_row((
-				"",
-				"Total",
-				"",
-				"",
-				"",
-				"",
-				"",
-				dec2(disposals_report.cumulative_stcg),
-				"",
-				dec2(disposals_report.cumulative_ltcg),
-				))
+				table.add_row((
+					"",
+					"Total",
+					"",
+					"",
+					"",
+					"",
+					dec2(disposals_report.cumulative_stcg),
+					"",
+					dec2(disposals_report.cumulative_ltcg),
+					))
 

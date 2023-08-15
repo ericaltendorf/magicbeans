@@ -160,8 +160,8 @@ def disposal_inventory_desc(pos: Position, id: int) -> str:
 	return result
 
 def disposal_inventory_ref(posting: Posting, id: int) -> str:
-	result = (f"{posting.units.number:f} x "
-			  f"{posting.cost.number:.4f} {posting.cost.currency}"
+	result = (f"{posting.units.number:f} {posting.units.currency} "
+			  f"{{ {posting.cost.number:.4f} {posting.cost.currency} }}"
 			  f" {posting.cost.date}")
 	if id:
 		result += f" (#{id})"

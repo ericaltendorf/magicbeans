@@ -140,13 +140,13 @@ class ReportDriver:
 				for (cur, inventory) in currency_to_inventory.items():
 					items = inventory_idx.get_inventory_w_ids(account)
 					total = sum_amounts(cur, [pos.units for (pos, id) in items])
-					acct_inv_rep = AccountInventoryReport(account, total, [])
+					# TODO: this is incorrect
+					total_cost = None # sum_amounts(numeraire, [pos.cost for (pos, id) in items])
+					acct_inv_rep = AccountInventoryReport(account, total, total_cost, [])
 					sorted_pairs = sorted(items, key=lambda x: -abs(x[0].units.number))
 					for (pos, lot_id) in sorted_pairs:
 						acct_inv_rep.positions_and_ids.append((pos, lot_id))
 					account_inventory_reports.append(acct_inv_rep)
-					for (pos, lot_id) in acct_inv_rep.positions_and_ids:
-						print(f"{pos} {lot_id}")
 			inv_report = InventoryReport(start, account_inventory_reports)
 
 			self.renderer.inventory(inv_report)

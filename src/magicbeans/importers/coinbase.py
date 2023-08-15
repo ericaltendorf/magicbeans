@@ -16,6 +16,8 @@ import dateutil.parser
 
 import beangulp
 from beancount.core import account, amount, data, flags, position
+from beancount.core.position import Cost
+from beancount.core.amount import Amount
 from beancount.core.number import ZERO, D
 from beangulp.testing import main
 from magicbeans import common
@@ -128,31 +130,25 @@ class CoinbaseImporter(beangulp.Importer):
                     meta['fee-info'] = f"(fees={fees}, total={total}, subtotal={subtotal}); "\
                         f"fee-adjusted per-unit value: {fee_adjusted_value} {asset_price_currency}"
 
-                    sign = Decimal(1 if (rtype == "Buy") else -1)
-
-                    asset_cost = None
-                    asset_price_amount = None
                     if rtype == "Buy":
-                        asset_cost = position.Cost(
-                            fee_adjusted_value, asset_price_currency, None, None
-                        )
-                    else:
-                        asset_cost = position.Cost(None, None, None, None)
-                        asset_price_amount = amount.Amount(
-                            fee_adjusted_value, asset_price_currency)
-
-                    postings = [
-                        data.Posting(account_inst, amount.mul(units, sign),
-                                     asset_cost, asset_price_amount, None, None),
-                        data.Posting(account_cash, amount.mul(total_amount, -sign),
-                                     None, None, None, None),
-                        # data.Posting(self.account_fees, fees, None, None, None, None),
+                        postings = [
+                            data.Posting(account_inst, units,
+                                        Cost(fee_adjusted_value, asset_price_currency, None, None),
+                                        None, None, None),
+                            data.Posting(account_cash, -total_amount,
+                                         None, None, None, None),
                         ]
-                    if rtype == "Sell":
-                        postings.append(
+                    else:
+                        postings = [
+                            data.Posting(account_inst, -units,
+                                        Cost(None, None, None, None),
+                                        Amount(fee_adjusted_value, asset_price_currency),
+                                        None, None),
+                            data.Posting(account_cash, total_amount,
+                                        None, None, None, None),
                             data.Posting(self.account_gains,
                                          None, None, None, None, None),
-                        )
+                        ]
 
                     txn = data.Transaction(meta, date, flags.FLAG_OKAY, None,
                                            desc, data.EMPTY_SET, links, postings)

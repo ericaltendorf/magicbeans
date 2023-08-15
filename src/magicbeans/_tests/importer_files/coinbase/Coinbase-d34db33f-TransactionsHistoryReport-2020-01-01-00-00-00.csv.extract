@@ -1,36 +1,36 @@
 
 2020-01-08 * "CB: Buy 0.1000 BTC for $810.40 USD (@\"8000.40\" or ~8000.4000 USD)"
   timestamp: "2020-01-08T00:51:12Z"
-  Assets:Coinbase:BTC          0.1 BTC {8000.4 USD}
-  Assets:Coinbase:USD      -810.04 USD
-  Expenses:Financial:Fees    10.00 USD
+  Assets:Coinbase:BTC      0.10000000 BTC {8000.4 USD}
+  Assets:Coinbase:USD       -810.0400 USD
+  Expenses:Financial:Fees     10.0000 USD
 
 2020-02-20 * "CB: Sent 0.01BTC to adh547SDFhs7SDKJFkdfh4KS95hsdkfs6s"
   timestamp: "2020-02-20T03:20:45Z"
-  Assets:Coinbase:BTC  -0.01 BTC {USD}
-  Assets:Ledger:BTC     0.01 BTC {USD}
+  Assets:Coinbase:BTC  -0.01000000 BTC {USD}
+  Assets:Ledger:BTC     0.01000000 BTC {USD}
 
 2020-03-23 * "CB: Received 0.0050 BTC from an external account"
   timestamp: "2020-03-23T03:49:33Z"
-  Assets:Coinbase:BTC   0.005 BTC {USD}
-  Assets:Ledger:BTC    -0.005 BTC {USD}
+  Assets:Coinbase:BTC   0.00500000 BTC {USD}
+  Assets:Ledger:BTC    -0.00500000 BTC {USD}
 
 2020-04-25 * "CB: Buy 0.5000 BTC for $4,500.00 USD (@\"9000.00\" or ~9000.0000 USD)"
   timestamp: "2020-04-25T16:20:34Z"
-  Assets:Coinbase:BTC           0.5 BTC {9000.0 USD}
-  Assets:Coinbase:USD      -4500.00 USD
-  Expenses:Financial:Fees      0.00 USD
+  Assets:Coinbase:BTC      0.50000000 BTC {9000.0 USD}
+  Assets:Coinbase:USD      -4500.0000 USD
+  Expenses:Financial:Fees      0.0000 USD
 
 2020-05-22 * "CB: Sell 0.2000 BTC for $1,900.00 USD (@\"10000.00\" or ~10000.0000 USD)"
   timestamp: "2020-05-22T17:09:23Z"
-  Assets:Coinbase:BTC         -0.2 BTC {} @ 10000.0 USD
-  Assets:Coinbase:USD      1900.00 USD
-  Expenses:Financial:Fees   100.00 USD
+  Assets:Coinbase:BTC      -0.20000000 BTC {} @ 10000.0 USD
+  Assets:Coinbase:USD        1900.0000 USD
+  Expenses:Financial:Fees     100.0000 USD
   Income:PnL
 
 2020-06-23 * "CB: Sell 0.01 BTC for $110.00 USD on BTC-USD (@\"12000.00\" or ~12000.0000 USD)"
   timestamp: "2020-06-23T11:12:52Z"
-  Assets:Coinbase:BTC       -0.01 BTC {} @ 12000 USD
-  Assets:Coinbase:USD      110.00 USD
-  Expenses:Financial:Fees   10.00 USD
+  Assets:Coinbase:BTC      -0.01000000 BTC {} @ 12000 USD
+  Assets:Coinbase:USD         110.0000 USD
+  Expenses:Financial:Fees      10.0000 USD
   Income:PnL

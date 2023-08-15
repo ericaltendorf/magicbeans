@@ -57,8 +57,8 @@ class ReportDriver:
 		"""Load the beancount file at the given path and parse it for queries, 
 		and initialize the output report file."""
 		
-		self.renderer = TextRenderer(out_path)
-		# self.renderer = LaTeXRenderer(out_path)
+		# self.renderer = TextRenderer(out_path)
+		self.renderer = LaTeXRenderer(out_path)
 
 		entries, _errors, options = loader.load_file(ledger_path)
 		self.entries = entries
@@ -134,18 +134,20 @@ class ReportDriver:
 
 		# Write ante-inventory with IDs
 		if extended:
-			acct_inv_reps = [] 
+			account_inventory_reports = [] 
 			for account in inventory_idx.get_accounts():
-				cur_to_inventory = account_to_inventory[account].split()
-				for (cur, inventory) in cur_to_inventory.items():
+				currency_to_inventory = account_to_inventory[account].split()
+				for (cur, inventory) in currency_to_inventory.items():
 					items = inventory_idx.get_inventory_w_ids(account)
 					total = sum_amounts(cur, [pos.units for (pos, id) in items])
-					acct_inv_rep = AccountInventoryReport(account, total, items)
+					acct_inv_rep = AccountInventoryReport(account, total, [])
 					sorted_pairs = sorted(items, key=lambda x: -abs(x[0].units.number))
 					for (pos, lot_id) in sorted_pairs:
 						acct_inv_rep.positions_and_ids.append((pos, lot_id))
-					acct_inv_reps.append(acct_inv_rep)
-			inv_report = InventoryReport(start, acct_inv_reps)
+					account_inventory_reports.append(acct_inv_rep)
+					for (pos, lot_id) in acct_inv_rep.positions_and_ids:
+						print(f"{pos} {lot_id}")
+			inv_report = InventoryReport(start, account_inventory_reports)
 
 			self.renderer.inventory(inv_report)
 
@@ -182,6 +184,7 @@ class ReportDriver:
 		self.renderer.disposals(disposals_report)
 
 
+	# TODO: migrate this to the renderers
 	def run_mining_summary_subreport(self, title: str, ty: int):
 		self.renderer.subreport_header(title)
 
@@ -250,3 +253,4 @@ class ReportDriver:
 		self.write_text(f"\n{'':6}{'':8}"
 				f"{'Total cumulative fair market value of all mined tokens:':>{24 + 20 + 24 + 20 + 20}}"
 				f"{common.format_money(cumulative_fmv, 'USD', 2, 20)}")
+		self.write_text("\n\n")

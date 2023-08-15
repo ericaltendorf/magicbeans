@@ -120,10 +120,13 @@ class CoinbaseImporter(beangulp.Importer):
                     )
 
                 elif rtype in ("Buy", "Sell"):
-                    imputed_asset_price = subtotal / quantity
-                    desc += f' (@"{reported_asset_price}" ' \
-                            f"or ~{imputed_asset_price:.4f} " \
-                            f"{asset_price_currency})"
+                    # Used as cost for buys, proceeds for sells.
+                    fee_adjusted_value = total / quantity
+                    desc += f' (@{reported_asset_price}, ' \
+                            f"w fees ~{fee_adjusted_value:.4f})"
+                            
+                    meta['fee-info'] = f"(fees={fees}, total={total}, subtotal={subtotal}); "\
+                        f"fee-adjusted per-unit value: {fee_adjusted_value} {asset_price_currency}"
 
                     sign = Decimal(1 if (rtype == "Buy") else -1)
 
@@ -131,20 +134,19 @@ class CoinbaseImporter(beangulp.Importer):
                     asset_price_amount = None
                     if rtype == "Buy":
                         asset_cost = position.Cost(
-                            # TODO: should we impute ourselves, or can Beancount do it automatically?
-                            imputed_asset_price, asset_price_currency, None, None
+                            fee_adjusted_value, asset_price_currency, None, None
                         )
                     else:
                         asset_cost = position.Cost(None, None, None, None)
                         asset_price_amount = amount.Amount(
-                            imputed_asset_price, asset_price_currency)
+                            fee_adjusted_value, asset_price_currency)
 
                     postings = [
                         data.Posting(account_inst, amount.mul(units, sign),
                                      asset_cost, asset_price_amount, None, None),
                         data.Posting(account_cash, amount.mul(total_amount, -sign),
                                      None, None, None, None),
-                        data.Posting(self.account_fees, fees, None, None, None, None),
+                        # data.Posting(self.account_fees, fees, None, None, None, None),
                         ]
                     if rtype == "Sell":
                         postings.append(

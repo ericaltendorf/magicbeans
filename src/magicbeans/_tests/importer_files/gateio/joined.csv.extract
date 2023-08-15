@@ -1,70 +1,46 @@
 
-2021-01-31 * "Receive 5.0000 XCH tx:2467345"
+2021-01-31 * "GIO: Receive 5.0000 XCH tx:2467345"
   timestamp: "2021-01-31T20:35:10Z"
   Assets:GateIO:XCH                   5.0000000000000000 XCH {USD}
   Assets:Xfer:ChiaWallet-GateIO:XCH  -5.0000000000000000 XCH {USD}
 
-2021-02-02 * "Receive 1000.0000 USDT tx:2645835"
+2021-02-02 * "GIO: Receive 1000.0000 USDT tx:2645835"
   timestamp: "2021-02-02T09:47:27Z"
   Assets:GateIO:USDT                 1000.0000000000000000 USDT {USD}
   Assets:Xfer:Coinbase-GateIO:USDT  -1000.0000000000000000 USDT {USD}
 
-2021-03-01 * "Buy 20 XCH with 400 USDT tx:462845726"
+2021-03-01 * "GIO: Buy 20 XCH with 400 USDT fees: 0.2000 XCH tx:462845726"
+  fee-info: "(fees=0.2000000000 XCH, rcvd-total=19.8000000000000000 XCH, rcvd-subtotal=20.0000000000000000 XCH)"
   timestamp: "2021-03-01T06:52:23Z"
-  Assets:GateIO:XCH     20.0000000000000000 XCH {50.0 USD}
+  Assets:GateIO:XCH     19.8000000000000000 XCH {50.0 USD}
   Assets:GateIO:USDT  -400.0000000000000000 USDT {} @ 1.0001 USD
   Income:PnL
 
-2021-03-01 * "Fees for Buy 20 XCH with 400 USDT tx:462845726"
-  timestamp: "2021-03-01T06:52:23.001Z"
-  Assets:GateIO:XCH         -0.2000000000 XCH {} @ 50.0 USD
-    is_fee: TRUE
-  Expenses:Financial:Fees  10.00000000000 USD
-    is_fee: TRUE
-  Income:PnL
-    is_fee: TRUE
-
-2021-04-01 * "Send 8.0000 XCH tx:24567229"
+2021-04-01 * "GIO: Send 8.0000 XCH tx:24567229"
   timestamp: "2021-04-01T07:44:08Z"
   Assets:GateIO:XCH                  -8.0000000000000000 XCH {USD}
   Assets:Xfer:GateIO-ChiaWallet:XCH   8.0000000000000000 XCH {USD}
 
-2021-04-30 * "Buy 10 XCH with 250 USDT tx:32475432626"
+2021-04-30 * "GIO: Buy 10 XCH with 250 USDT fees: 0.2000 XCH tx:32475432626"
+  fee-info: "(fees=0.2000000000000000 XCH, rcvd-total=9.8000000000000000 XCH, rcvd-subtotal=10.0000000000000000 XCH)"
   timestamp: "2021-04-30T16:18:55Z"
-  Assets:GateIO:XCH     10.0000000000000000 XCH {50.0 USD}
+  Assets:GateIO:XCH      9.8000000000000000 XCH {50.0 USD}
   Assets:GateIO:USDT  -250.0000000000000000 USDT {} @ 1.0001 USD
   Income:PnL
 
-2021-04-30 * "Fees for Buy 10 XCH with 250 USDT tx:32475432626"
-  timestamp: "2021-04-30T16:18:55.001Z"
-  Assets:GateIO:XCH         -0.2000000000000000 XCH {} @ 50.0 USD
-    is_fee: TRUE
-  Expenses:Financial:Fees  10.00000000000000000 USD
-    is_fee: TRUE
-  Income:PnL
-    is_fee: TRUE
-
-2021-05-31 * "Receive 5.0000 XCH tx:2456237"
+2021-05-31 * "GIO: Receive 5.0000 XCH tx:2456237"
   timestamp: "2021-05-31T21:46:20Z"
   Assets:GateIO:XCH                   5.0000000000000000 XCH {USD}
   Assets:Xfer:ChiaWallet-GateIO:XCH  -5.0000000000000000 XCH {USD}
 
-2021-07-01 * "Sell 20 XCH for 600 USDT tx:234765643"
+2021-07-01 * "GIO: Sell 20 XCH for 600 USDT fees: 0.5000 USDT tx:234765643"
+  fee-info: "(fees=0.5000000000000000 USDT, rcvd-total=599.5000000000000000 USDT, rcvd-subtotal=600.0000000000000000 USDT)"
   timestamp: "2021-07-01T10:46:21Z"
-  Assets:GateIO:USDT  600.0000000000000000 USDT {1.0001 USD}
+  Assets:GateIO:USDT  599.5000000000000000 USDT {1.0001 USD}
   Assets:GateIO:XCH   -20.0000000000000000 XCH {} @ 50.0 USD
   Income:PnL
 
-2021-07-01 * "Fees for Sell 20 XCH for 600 USDT tx:234765643"
-  timestamp: "2021-07-01T10:46:21.001Z"
-  Assets:GateIO:USDT          -0.5000000000000000 USDT {} @ 1.0001 USD
-    is_fee: TRUE
-  Expenses:Financial:Fees  0.50005000000000000000 USD
-    is_fee: TRUE
-  Income:PnL
-    is_fee: TRUE
-
-2021-08-01 * "Send 100.0000 USDT tx:26435237"
+2021-08-01 * "GIO: Send 100.0000 USDT tx:26435237"
   timestamp: "2021-08-01T06:07:42Z"
   Assets:GateIO:USDT                -100.0000000000000000 USDT {USD}
   Assets:Xfer:GateIO-Coinbase:USDT   100.0000000000000000 USDT {USD}

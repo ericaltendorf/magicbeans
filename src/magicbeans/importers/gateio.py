@@ -223,7 +223,7 @@ class GateIOImporter(beangulp.Importer):
                                 fees_amt=fees_amt[oid],
                                 fees_cur=fees_cur[oid])
                 
-                desc = f'{tripod.narrate()} tx:{oid}'
+                desc = f'GIO: {tripod.narrate()} tx:{oid}'
                 links = set()
 
                 postings = []
@@ -249,12 +249,30 @@ class GateIOImporter(beangulp.Importer):
                             Posting(remote_acct, xfer_amt, xfer_cost, None, None, None))
 
                 elif tripod.is_transaction():
+                    fee_adjusted_rcvd_amt = tripod.rcvd_amt
+                    if tripod.fees_amt:
+                        # GateIO seems to do this, and assuming it lets us keep our logic simple.
+                        if tripod.fees_cur != tripod.rcvd_cur:
+                            raise Exception(f"fee currency {tripod.fees_cur} doesn't match "
+                                            f"received currency {tripod.rcvd_cur}")
+                        fee_adjusted_rcvd_amt -= tripod.fees_amt
+
+                        meta["fee-info"] = f"(fees={tripod.fees_amt} {tripod.fees_cur}, " \
+                            f"rcvd-total={fee_adjusted_rcvd_amt} {tripod.rcvd_cur}, " \
+                            f"rcvd-subtotal={tripod.rcvd_amt} {tripod.rcvd_cur})"
+
+                    # We're dealing with two floating currencies (sent and recieved), and
+                    # we could compute their values (for cost and price) either by looking
+                    # up both their prices, or by looking up one and computing the other
+                    # by our sent/recieved exchange ratio.  In this file we do the former,
+                    # but in CoinbasePro we do the latter.
+
                     credit_acct = account.join(self.account_root, tripod.rcvd_cur)
                     debit_acct = account.join(self.account_root, tripod.sent_cur)
 
                     postings.append(
                         Posting(credit_acct, 
-                                amount.Amount(tripod.rcvd_amt, tripod.rcvd_cur),
+                                amount.Amount(fee_adjusted_rcvd_amt, tripod.rcvd_cur),
                                 rcvd_cost(rcvd_cur[oid], sent_cur[oid], timestamp, self.config),
                                 None, None, None))
                     postings.append(
@@ -266,43 +284,6 @@ class GateIOImporter(beangulp.Importer):
 
                 else:
                     assert False, "Unexpected tripod type"
-
-                # We'll set this to true if we dispose of an asset, either by a
-                # sale or an implicit sale by paying fees in non-USD.
-                has_disposal = False
-
-                # Gate.io charges fees in crypto.  So what we need to do is take
-                # the crypto fee amount, book it as a "sale" at current FMV, and
-                # the book a fee expense for that amount of USD.  We attach
-                # metadata to mark these transactions because as a workaround
-                # for now we need to split them out (see below).
-                if tripod.fees_amt:
-                    if tripod.fees_cur == "USD":
-                        raise Exception("not expecting USD feeds in GateIO")
-
-                    # Price to use for the virtual exchange
-                    fee_cur_price = self.config.get_price_fetcher().get_price(tripod.fees_cur, timestamp)
-                    fees_in_usd = tripod.fees_amt * fee_cur_price
-
-                    # Book the sale
-                    postings.append(
-                        Posting(account.join(self.account_root, tripod.fees_cur),
-                                amount.Amount(-fees_amt[oid], tripod.fees_cur),
-                                Cost(None, None, None, None),
-                                amount.Amount(fee_cur_price, "USD"),
-                                None, {'is_fee': True}))
-
-                    # Book the fee
-                    postings.append(
-                        Posting(self.account_fees,   #account.join(self.account_fees, "USD"),
-                                amount.Amount(fees_in_usd, "USD"),
-                                None,
-                                None,
-                                None, {'is_fee': True}))
-
-                    # "sale" of the asset may accrue PnL
-                    postings.append(
-                        Posting(self.account_pnl, None, None, None, None, {'is_fee': True}))
 
                 # PnL
                 if tripod.is_transaction():
@@ -321,11 +302,11 @@ class GateIOImporter(beangulp.Importer):
                 # workaround we currently split out the fees as a separate
                 # transaction that happens immediately after the primary
                 # transaction.
-                (reg_tx, fee_tx) = common.split_out_marked_fees(tx, self.account_pnl)
-                if reg_tx and fee_tx:
-                    entries.append(reg_tx)
-                    entries.append(fee_tx)
-                else:
-                    entries.append(tx)
+                # (reg_tx, fee_tx) = common.split_out_marked_fees(tx, self.account_pnl)
+                # if reg_tx and fee_tx:
+                #     entries.append(reg_tx)
+                #     entries.append(fee_tx)
+                # else:
+                entries.append(tx)
 
         return entries

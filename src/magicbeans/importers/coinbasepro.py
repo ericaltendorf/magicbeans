@@ -130,6 +130,7 @@ class CoinbaseProImporter(beangulp.Importer):
                 title = ' '
                 trade_type = None
                 tx_ts = None
+                metadata = {}
 
                 for transfer in transfers:
                     if tx_ts is None:
@@ -157,15 +158,30 @@ class CoinbaseProImporter(beangulp.Importer):
                             if trade_type is None:
                                 trade_type = 'Swap'
 
+                    # TODO: it looks like we accumulte reduce_amount as a
+                    # positive number but fee_amount as a negative, which makes
+                    # later processing code a bit confusing.
                     if transfer['type'] == 'fee':
                         fee_amount += value
                         if fee_currency is None:
                             fee_currency = currency
 
+                has_fee = fee_currency is not None
 
                 if trade_type == 'Buy':
-                    cost_amount = Cost(reduce_amount/increase_amount, 'USD', None, None)
-                    title = f' {increase_amount} {increase_currency} with {reduce_amount} {reduce_currency}'
+                    # CoinbasePro seems to charge fees in a matching currency, and our
+                    # logic is simpler if we can rely on this.
+                    if has_fee and reduce_currency != fee_currency:
+                        raise Exception(f"Mismatched fee currency: {reduce_currency} != {fee_currency}")
+
+                    title = f' {increase_amount:.4f} {increase_currency} ' \
+                            f'w {reduce_amount:.2f} {reduce_currency}, ' + \
+                            f'{-fee_amount:.2f} {fee_currency} fees' if fee_currency else ''
+
+                    # Fee is neg, so we sub it.  These amounts are in the same currency.
+                    reduce_amount_w_fees = reduce_amount - fee_amount if has_fee else reduce_amount
+                    fee_adjusted_cost = reduce_amount_w_fees / increase_amount
+                    cost_amount = Cost(fee_adjusted_cost, 'USD', None, None)
                     postings.append(
                         Posting(f'{self.account_root}:{increase_currency}',
                                 common.rounded_amt(increase_amount, increase_currency),
@@ -173,31 +189,38 @@ class CoinbaseProImporter(beangulp.Importer):
                     )
                     postings.append(
                         Posting(f'{self.account_root}:{reduce_currency}',
-                                common.rounded_amt(-reduce_amount + fee_amount, reduce_currency),
+                                common.rounded_amt(-reduce_amount_w_fees, reduce_currency),
                                 None, None, None, None)
                     )
-                    if fee_currency:
-                        if fee_currency != "USD":
-                            raise Exception("Haven't implemented non-USD fee disposal here yet")
-                        postings.append(
-                            Posting(self.account_fees,
-                                    common.rounded_amt(-fee_amount, fee_currency),
-                                    None, None, None, None)
-                        )
+                    if has_fee:
+                        metadata['fee-info'] = f"(fees={fee_amount}, total={reduce_amount_w_fees}, " \
+                            f"subtotal={reduce_amount})" \
+                            f"fee-adjusted per-unit value: {fee_adjusted_cost}"
 
                 else: # Sell or Swap
-                    if trade_type == 'Sell':
-                        price = common.rounded_amt(increase_amount/reduce_amount, 'USD')
-                        title = f' {reduce_amount} {reduce_currency} for {increase_amount} {increase_currency}'
-                    else:
-                        price = None
-                        title = f' {reduce_amount} {reduce_currency} ' \
-                                f'for {increase_amount} {increase_currency}'
+                    # CoinbasePro seems to charge fees in a matching currency, and our
+                    # logic is simpler if we can rely on this.
+                    if has_fee and increase_currency != fee_currency:
+                        raise Exception(f"Mismatched fee currency: {increase_currency} != {fee_currency}")
+
+                    title = f' {reduce_amount:.4f} {reduce_currency} ' \
+                        f'for {increase_amount:.2f} {increase_currency}, ' \
+                        f'{-fee_amount:.2f} {fee_currency} fees'
+
+                    # Fee is neg, so we add it.  These amounts are in the same currency.
+                    increase_amount_w_fees = increase_amount + fee_amount if has_fee else increase_amount
+                    fee_adjusted_price = increase_amount_w_fees / reduce_amount
+                    fee_adjusted_price_usd = fee_adjusted_price
+                    if increase_currency != "USD":
+                        fee_adjusted_price_usd = (fee_adjusted_price *
+                            self.config.get_price_fetcher().get_price(fee_currency, tx_ts))
+                    
                     postings.append(
                         Posting(f'{self.account_root}:{reduce_currency}',
                                 common.rounded_amt(-reduce_amount, reduce_currency),
                                 Cost(None, None, None, None),
-                                price, None, None),
+                                common.rounded_amt(fee_adjusted_price_usd, 'USD'),
+                                None, None)
                     )
 
                     increase_currency_cost_entry = None
@@ -208,45 +231,10 @@ class CoinbaseProImporter(beangulp.Importer):
 
                     postings.append(
                         Posting(f'{self.account_root}:{increase_currency}',
-                                common.rounded_amt(increase_amount, increase_currency),
+                                common.rounded_amt(increase_amount_w_fees, increase_currency),
                                 increase_currency_cost_entry, None, None, None),
                     )
-                    if fee_currency:
-                        # TODO: clarify this comment:
-                        # Fees don't show up in the reduce amount for some reason,
-                        # so we add an extra posting to cover the debiting of fees.
-
-                        fee_metadata = None if fee_currency == "USD" else {'is_fee': True}
-                        
-                        # This is the decrease in the account which paid the fee.  If not
-                        # in USD, we must supply a cost.
-                        postings.append(
-                            Posting(account.join(self.account_root, fee_currency),
-                                    common.rounded_amt(fee_amount, fee_currency),
-                                    None if fee_currency == "USD" else Cost(None, None, None, None),
-                                    None, None, fee_metadata)
-                        )
-                        
-                        assert fee_currency in ["USD", "USDT"]
-                        fee_currency_price_in_usd = D('1.0')
-                        if fee_currency == "USDT":
-                            fee_currency_price_in_usd = (self.config.get_price_fetcher()
-                                                         .get_price(fee_currency, tx_ts))
-
-                        usd_fee_amount = fee_amount * fee_currency_price_in_usd
-
-                        # This is the increase in the account that accumulates all fees,
-                        # and must be recorded in USD.
-                        postings.append(
-                            Posting(self.account_fees,
-                                    common.rounded_amt(-usd_fee_amount, "USD"),
-                                    None, None, None, fee_metadata)
-                        )
-                        if fee_metadata:
-                            postings.append(
-                                Posting(self.account_pnl, None, None, None, None, fee_metadata)
-                            )
-                        
+                       
                     postings.append(
                         Posting(self.account_pnl, None, None, None, None, None)
                     )
@@ -263,12 +251,7 @@ class CoinbaseProImporter(beangulp.Importer):
                 )
                 common.attach_timestamp(tx, tx_ts)
 
-                (reg_tx, fee_tx) = common.split_out_marked_fees(tx, self.account_pnl)
-                if reg_tx and fee_tx:
-                    entries.append(reg_tx)
-                    entries.append(fee_tx)
-                else:
-                    entries.append(tx)
+                entries.append(tx)
 
         return entries
     

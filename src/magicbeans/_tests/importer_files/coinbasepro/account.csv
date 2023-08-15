@@ -11,3 +11,6 @@ default,match,2020-08-03T10:08:30.629Z,12000.000,101900.0000,USD,,20056248,aaaaa
 default,match,2020-08-03T10:08:34.583Z,-0.40000,0.700000,BTC,,20056248,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaa555555
 default,match,2020-08-03T10:08:34.664Z,8000.000,101900.00000,USD,,20056248,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaa555555
 default,fee,2020-08-03T10:08:36.781Z,-100.00,101800.000,USD,,20056248,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaa555555
+default,match,2020-09-14T17:45:33.335Z,10000.00,100000.00,USDT,,32487352,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaa666666
+default,match,2020-09-19T20:52:24.365Z,-0.5000000,0.200000,BTC,,32487352,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaa666666
+default,fee,2020-09-19T21:49:24.356Z,-100.0,89900.00,USDT,,32487352,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaa666666

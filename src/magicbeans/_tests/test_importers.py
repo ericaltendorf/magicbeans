@@ -13,7 +13,7 @@ class TestCoinbaseImporter(regression_pytest.ImporterTestBase):
     pass
 
 # CoinbasePro
-@regression_pytest.with_importer(CoinbaseProImporter.test_instance())
+@regression_pytest.with_importer(mocks.coinbasepro_importer_for_testing())
 @regression_pytest.with_testdir("_tests/importer_files/coinbasepro/")
 class TestCoinbaseProImporter(regression_pytest.ImporterTestBase):
     pass

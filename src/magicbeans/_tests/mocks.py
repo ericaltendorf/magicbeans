@@ -3,6 +3,7 @@ from decimal import Decimal
 from magicbeans import prices, transfers
 from magicbeans.config import Config
 from magicbeans.importers.chiawallet import ChiaWalletImporter
+from magicbeans.importers.coinbasepro import CoinbaseProImporter
 from magicbeans.importers.gateio import GateIOImporter
 
 # TODO: this is just code -- is there a pytest mocking framework we should be using?
@@ -37,6 +38,15 @@ def chia_wallet_importer_for_testing():
             }
     )
 
+def coinbasepro_importer_for_testing():
+    return CoinbaseProImporter(
+        account_root="Assets:Coinbase",
+        account_pnl="Income:PnL",
+        account_fees="Expenses:Fees",
+        network=MockConfig().get_network(),
+        config=MockConfig(),
+    )
+
 # TODO: mocks for other importer configs
 
 class MockPriceFetcher():
@@ -59,8 +69,11 @@ class MockConfig(Config):
 
     def get_network(self):
         return transfers.Network([transfers.Link("GateIO", "Coinbase", "USDT"),
-                                  transfers.Link("GateIO", "ChiaWallet", "XCH")],
-                                 untracked_institutions=[])  # not particularly relevant
+                                  transfers.Link("GateIO", "ChiaWallet", "XCH"),
+                                  transfers.Link("Coinbase", "Bank", "USD"),
+                                  transfers.Link("Coinbase", "Ledger", "BTC"),
+                                  ],
+                                 untracked_institutions=["Bank", "Ledger"])  # not particularly relevant
 
     def get_price_fetcher(self) -> prices.PriceFetcher:
         return self.price_fetcher

@@ -15,10 +15,8 @@ from magicbeans import disposals
 from magicbeans.disposals import check_and_sort_lots, format_money, get_disposal_postings, is_disposal_tx, mk_disposal_summary, sum_amounts
 from magicbeans.mining import MINING_BENEFICIARY_ACCOUNT, MINING_INCOME_ACCOUNT, MiningStats, is_mining_tx
 from magicbeans.reports.data import DisposalsReport, DisposalsReportRow, AccountInventoryReport, InventoryReport
+from magicbeans.reports.latex import LaTeXRenderer
 from magicbeans.reports.text import TextRenderer
-
-from pyfiglet import Figlet
-from tabulate import tabulate
 
 from beancount import loader
 from beancount.core.amount import Amount
@@ -30,6 +28,20 @@ from beanquery.query_render import render_text
 def beancount_quarter(ty: int, quarter_n: int):
 	return f"{ty}-Q{quarter_n}"
 
+REPORT_ABSTRACT = """\
+The first section of this report contains annual summaries.  For each year, it shows
+asset disposals, specifying the lots disposed (their size, original per-unit cost, and
+date of acquisition), the proceeds, and the short and long term capital gains or losses
+(gains shown as positive numbers, losses as negative).
+
+The second section contains more detailed quarterly summaries.  At each quarter, we show
+the starting inventory (the set of held lots for each type of asset).  Then we show
+disposals of assets, followed by new acquisitions of assets via purchase, and finally a
+summary assets acquired via mining.
+
+The third and final section contains a complete history of all mining rewards, for
+reference.
+"""
 
 class ReportDriver:
 	"""Wraps a beancount file and facilitates reporting with BQL queries.
@@ -44,7 +56,9 @@ class ReportDriver:
 	def __init__(self, ledger_path: str, out_path: str) -> None:
 		"""Load the beancount file at the given path and parse it for queries, 
 		and initialize the output report file."""
+		
 		self.renderer = TextRenderer(out_path)
+		# self.renderer = LaTeXRenderer(out_path)
 
 		entries, _errors, options = loader.load_file(ledger_path)
 		self.entries = entries
@@ -56,6 +70,15 @@ class ReportDriver:
 	
 	def close(self):
 		self.renderer.close()
+
+	def preamble(self, timestamp: datetime.date,
+				 tax_years: List[int], cryptos: List[str]):
+		self.renderer.header("Magicbeans Tax Report")
+		self.renderer.write_paragraph(f"Generated {timestamp}")
+		tys_str = ", ".join([str(ty) for ty in tax_years])
+		self.renderer.write_paragraph(f"Covering tax years {tys_str}")
+		self.renderer.write_paragraph(f"Reporting on cryptocurrencies {cryptos}")
+		self.renderer.write_paragraph(REPORT_ABSTRACT)
 	
 	#
 	# Old report methods, mostly for bean-query driven reports

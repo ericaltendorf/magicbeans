@@ -9,21 +9,31 @@ from beanquery.query_render import render_text
 from magicbeans import disposals
 from magicbeans.disposals import abbrv_disposal, format_money
 from magicbeans.reports.data import AccountInventoryReport, InventoryReport
+from pyfiglet import Figlet
 
+# TODO: parameterize the width of this report
 class TextRenderer():
 	def __init__(self, out_path) -> None:
 		"""Initialize with the file to write to."""
 		# TODO: verify this is closed on destruction
 		self.file = open(out_path, 'w')
+		self.fig = Figlet(width=120)
 
 	def close(self):
 		self.file.close()
 
+	def write_paragraph(self, text: str):
+		self.file.write(text + "\n\n")
+
 	def write_text(self, text: str):
 		self.file.write(text)
 
-	# TODO: parameterize the width of this header, probably
-	# via an argument on ReportDriver.
+	def header(self, title: str):
+		self.file.write(self.fig.renderText(title))
+		
+	def subheader(self, title: str, q: str = None):
+		self.subreport_header(title, q)
+
 	def subreport_header(self, title: str, q: str = None):
 		result = " " + ("_" * 140) + f" \n|{title:_^140}|\n"
 		if q:

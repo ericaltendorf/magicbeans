@@ -38,7 +38,7 @@ class LaTeXRenderer():
 		self.path = path
 		
 		geometry_options = {
-			"landscape": False,
+			"landscape": True,
 			"margin": "0.3in",
 		}
 
@@ -92,7 +92,7 @@ class LaTeXRenderer():
 	#
 
 	def inventory(self, inventory_report: InventoryReport):
-		with self.doc.create(MiniPage(width=r"0.25\textwidth")) as page:
+		with self.doc.create(MiniPage(width=r"0.2\textwidth")) as page:
 			fmt = "| X[-1l] X[-1rp] X[-1r] X[-1r] |"
 			with self.doc.create(Tabu(fmt, spread="0pt")) as table:
 				table.add_row((MultiColumn(4,
@@ -137,7 +137,7 @@ class LaTeXRenderer():
 	#
 
 	def disposals(self, disposals_report: DisposalsReport):
-		with self.doc.create(MiniPage(width=r"0.74\textwidth")) as page:
+		with self.doc.create(MiniPage(width=r"0.8\textwidth")) as page:
 			fmt = " X[-1r] X[-1l] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r]"
 			with self.doc.create(Tabu(fmt, spread="0pt")) as table:
 				table.add_hline()
@@ -170,7 +170,7 @@ class LaTeXRenderer():
 						dec2(row.other_proceeds.number),
 					table.add_row((
 						row.date,
-						row.narration[:25] + "...",  # Hack for now
+						row.narration[:80] + "...",  # Hack for now
 						NoEscape(proceeds),
 						dec2(row.disposed_cost),
 						dec2(row.gain),

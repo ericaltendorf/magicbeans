@@ -148,9 +148,7 @@ class ReportDriver:
 
 		# Define the list of transactions to process on this page
 		page_entries = summarize.truncate(self.entries[index:], end)
-		print(f"Before filter, {len(page_entries)} entries")
 		page_entries = list(filter(is_disposal_tx, page_entries))
-		print(f"After filter, {len(page_entries)} entries")
 
 		# Index reduced lots with IDs
 		for e in page_entries:

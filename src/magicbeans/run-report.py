@@ -99,7 +99,7 @@ if __name__ == '__main__':
 		start = datetime.date(ty, 1, 1)
 		end = datetime.date(ty+1, 1, 1)
 		last_date = start
-		for date in db.paginate_entries(start, end, 12):
+		for date in db.paginate_entries(start, end, 15):
 			print(f"  {ty} {date}", end="", flush=True)
 			db.disposals(last_date, date, True)
 			last_date = date

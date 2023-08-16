@@ -18,6 +18,14 @@ class InventoryReport(NamedTuple):
     date: datetime.date
     accounts: List[AccountInventoryReport]
 
+class AcquisitionsReportRow(NamedTuple):
+    date: datetime.date
+    narration: str
+    amount: Decimal
+    cur: str
+    cost_ea: Decimal
+    total_cost: Decimal
+
 class DisposalsReportRow(NamedTuple):
     date: datetime.date
     narration: str

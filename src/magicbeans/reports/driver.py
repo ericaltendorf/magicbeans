@@ -146,14 +146,10 @@ class ReportDriver:
 		else:
 			self.renderer.subheader(f"Asset Disposals and Capital Gains/Losses, {start} - {inclusive_end}")
 
-		first_disposal_after_start = next(filter(
-			lambda e: is_disposal_tx(e) and e.date >= start, self.entries))
-		first_disposal_date = first_disposal_after_start.date
-	
 		numeraire = "USD"
 
 		(account_to_inventory, index) = summarize.balance_by_account(
-			self.entries, first_disposal_date)
+			self.entries, start)
 
 		# Remove numeraire-only accounts; we don't need to track those
 		for (account, inventory) in list(account_to_inventory.items()):
@@ -198,7 +194,7 @@ class ReportDriver:
 						acct_inv_rep.positions_and_ids.append((pos, lot_id))
 					account_inventory_reports.append(acct_inv_rep)
 				account_inventory_reports.sort(key=lambda x: (x.total.currency, x.account))
-			inv_report = InventoryReport(first_disposal_date, account_inventory_reports)
+			inv_report = InventoryReport(start, account_inventory_reports)
 
 			self.renderer.inventory(inv_report)
 

@@ -134,6 +134,21 @@ class ReportDriver:
 	# New report methods, using direct analysis of the entries
 	#
 
+	def get_inventory_and_entries(self, start: datetime.date, end: datetime.date, numeraire: str):
+		(inventories_by_acct, index) = summarize.balance_by_account(
+			self.entries, start)
+
+		# Remove numeraire-only accounts; we don't need to track those
+		for (account, inventory) in list(inventories_by_acct.items()):
+			if all([p.units.currency == numeraire for p in inventory]):
+				inventories_by_acct.pop(account)
+
+		# Define the list of transactions to process on this page
+		all_entries = summarize.truncate(self.entries[index:], end)
+
+		return (inventories_by_acct, all_entries)
+
+
  	# TODO: this isn't just disposals anymore, it's inventory, acquisitions,
  	# and disposals.  rename
 	def disposals(self, start: datetime.date, end: datetime.date, extended: bool):
@@ -148,19 +163,11 @@ class ReportDriver:
 
 		numeraire = "USD"
 
-		(account_to_inventory, index) = summarize.balance_by_account(
-			self.entries, start)
-
-		# Remove numeraire-only accounts; we don't need to track those
-		for (account, inventory) in list(account_to_inventory.items()):
-			if all([p.units.currency == numeraire for p in inventory]):
-				account_to_inventory.pop(account)
+		(inventories_by_acct, all_entries) = self.get_inventory_and_entries(start, end, numeraire)
 
 		# Define the inventory and get it set up for indexing
-		inventory_idx = disposals.ReductionIndexedInventory(account_to_inventory)
+		inventory_idx = disposals.ReductionIndexedInventory(inventories_by_acct)
 
-		# Define the list of transactions to process on this page
-		all_entries = summarize.truncate(self.entries[index:], end)
 		page_entries = list(filter(is_disposal_tx, all_entries))
 		non_mining_entries = list(filter(lambda e: not is_mining_tx(e), all_entries))
 		print(f"Num entries for year: {len(all_entries)}, num disposals: {len(page_entries)}, "
@@ -177,7 +184,7 @@ class ReportDriver:
 		if extended:
 			account_inventory_reports = [] 
 			for account in inventory_idx.get_accounts():
-				currency_to_inventory = account_to_inventory[account].split()
+				currency_to_inventory = inventories_by_acct[account].split()
 				for (cur, inventory) in currency_to_inventory.items():
 					items = inventory_idx.get_inventory_w_ids(account)
 					total = sum_amounts(cur, [pos.units for (pos, id) in items])

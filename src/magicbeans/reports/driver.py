@@ -14,7 +14,7 @@ from magicbeans import common
 from magicbeans import disposals
 from magicbeans.disposals import check_and_sort_lots, format_money, get_disposal_postings, is_disposal_tx, mk_disposal_summary, sum_amounts
 from magicbeans.mining import MINING_BENEFICIARY_ACCOUNT, MINING_INCOME_ACCOUNT, MiningStats, is_mining_tx
-from magicbeans.reports.data import DisposalsReport, DisposalsReportRow, AccountInventoryReport, InventoryReport
+from magicbeans.reports.data import DisposalsReport, DisposalsReportRow, AccountInventoryReport, InventoryReport, MiningSummaryRow
 from magicbeans.reports.latex import LaTeXRenderer
 from magicbeans.reports.text import TextRenderer
 
@@ -127,12 +127,15 @@ class ReportDriver:
 	#
 
 	def disposals(self, start: datetime.date, end: datetime.date, extended: bool):
-		self.renderer.header(f"{start} - {end - datetime.timedelta(days=1)}")
+		if extended:
+			self.renderer.header(f"{start} - {end - datetime.timedelta(days=1)}")
+		else:
+			self.renderer.subheader(f"{start} - {end - datetime.timedelta(days=1)}")
 
 		first_disposal_after_start = next(filter(
 			lambda e: is_disposal_tx(e) and e.date >= start, self.entries))
 		first_disposal_date = first_disposal_after_start.date
-
+	
 		numeraire = "USD"
 
 		(account_to_inventory, index) = summarize.balance_by_account(
@@ -147,8 +150,11 @@ class ReportDriver:
 		inventory_idx = disposals.ReductionIndexedInventory(account_to_inventory)
 
 		# Define the list of transactions to process on this page
-		page_entries = summarize.truncate(self.entries[index:], end)
-		page_entries = list(filter(is_disposal_tx, page_entries))
+		all_entries = summarize.truncate(self.entries[index:], end)
+		page_entries = list(filter(is_disposal_tx, all_entries))
+		non_mining_entries = list(filter(lambda e: not is_mining_tx(e), all_entries))
+		print(f"Num entries for year: {len(all_entries)}, num disposals: {len(page_entries)}, "
+			f"num non-mining entries: {len(non_mining_entries)}")
 
 		# Index reduced lots with IDs
 		for e in page_entries:
@@ -215,7 +221,6 @@ class ReportDriver:
 		self.renderer.disposals(disposals_report)
 
 
-	# TODO: migrate this to the renderers
 	def run_mining_summary_subreport(self, title: str, ty: int):
 		self.renderer.subreport_header(title)
 
@@ -246,42 +251,19 @@ class ReportDriver:
 				if income_posting:
 					stats.total_fmv -= Decimal(income_posting.units.number)
 
-
-		if not any(stats.n_events for stats in mining_stats_by_month):
-			self.write_text("\n(No mining income)\n")
-			return
-
-		# TODO: this one might actually be better rendered by beanquery query rendering....
-
-		self.write_text("\n"
-			f"{'Month':<6}"
-			f"{'#Awards':>8}"
-			f"{'Amount mined':>24}"
-			f"{'Avg award size':>20}"
-			f"{'Cumulative total':>24}"
-			f"{'Avg. cost':>20}"
-			f"{'FMV earned':>20}"
-			f"{'Cumulative FMV':>20}\n\n")
-
+		# TODO: MiningSummaryRow and MiningStats are pretty similar.  Collapse?
 		cumulative_mined = Decimal(0)
 		cumulative_fmv = Decimal(0)
-		token = "XCH"
-		tok_price_units = f"USD/{token}"
 		for (month, stats) in enumerate(mining_stats_by_month):
 			cumulative_mined += stats.total_mined
 			cumulative_fmv += stats.total_fmv
-			self.write_text(
-				f"{calendar.month_abbr[month + 1]:<6}"
-				f"{stats.n_events:>8}"
-				f"{common.format_money(stats.total_mined, token, 8, 24)}"
-				f"{common.format_money(stats.avg_award_size(), token, 8, 20)}"
-				f"{common.format_money(cumulative_mined, token, 4, 24)}"
-				f"{common.format_money(stats.avg_price(), tok_price_units, 4, 20)}"
-				f"{common.format_money(stats.total_fmv, 'USD', 4, 20)}"
-				f"{common.format_money(cumulative_fmv, 'USD', 2, 20)}"
-				"\n")
-
-		self.write_text(f"\n{'':6}{'':8}"
-				f"{'Total cumulative fair market value of all mined tokens:':>{24 + 20 + 24 + 20 + 20}}"
-				f"{common.format_money(cumulative_fmv, 'USD', 2, 20)}")
-		self.write_text("\n\n")
+			row = MiningSummaryRow(
+				currency,
+				month + 1,
+				stats.n_events,
+				stats.total_mined,
+				stats.avg_award_size(),
+				cumulative_mined,
+				stats.avg_price(),
+				stats.total_fmv,
+				cumulative_fmv)

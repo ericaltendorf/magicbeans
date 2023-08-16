@@ -42,3 +42,13 @@ class DisposalsReport(NamedTuple):
     cumulative_stcg: Decimal
     cumulative_ltcg: Decimal
     extended: bool
+
+class MiningSummaryRow(NamedTuple):
+    currency: str
+    month: int
+    n_awards: int
+    avg_award_size: Decimal
+    cumul_total: Decimal
+    avg_cost: Decimal
+    fmv_earned: Decimal
+    cumulative_fmv: Decimal

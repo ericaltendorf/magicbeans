@@ -1,3 +1,4 @@
+import calendar
 from contextlib import contextmanager
 import datetime
 from decimal import Decimal
@@ -6,7 +7,7 @@ from typing import List
 from beancount.core.amount import Amount
 from beancount.core.data import Posting
 from beanquery.query_render import render_text
-from magicbeans import disposals
+from magicbeans import common, disposals
 from magicbeans.disposals import abbrv_disposal, format_money
 from magicbeans.reports.data import AccountInventoryReport, InventoryReport
 from pyfiglet import Figlet
@@ -156,3 +157,39 @@ class TextRenderer():
 			f"{cum_stcg:>11.2f} "
 			f"{'LTCG':>10} "
 			f"{cum_ltcg:>11.2f}\n")
+
+
+	# TODO: placeholder pseudocode, untested
+	def mining_summary(self, rows: List[MiningSummaryRow]):
+		self.write_text("\n"
+			f"{'Month':<6}"
+			f"{'#Awards':>8}"
+			f"{'Amount mined':>24}"
+			f"{'Avg award size':>20}"
+			f"{'Cumulative total':>24}"
+			f"{'Avg. cost':>20}"
+			f"{'FMV earned':>20}"
+			f"{'Cumulative FMV':>20}\n\n")
+
+		if len(rows) == 0:
+			self.write_text("\n(No mining income)\n")
+			return
+
+		for row in rows:
+			tok_price_units = f"USD/{token}"
+			self.write_text(
+				f"{calendar.month_abbr[row.month + 1]:<6}"
+				f"{row.n_events:>8}"
+				f"{common.format_money(row.total_mined, token, 8, 24)}"
+				f"{common.format_money(row.avg_award_size(), token, 8, 20)}"
+				f"{common.format_money(row.cumulative_mined, token, 4, 24)}"
+				f"{common.format_money(row.avg_price(), tok_price_units, 4, 20)}"
+				f"{common.format_money(row.total_fmv, 'USD', 4, 20)}"
+				f"{common.format_money(row.cumulative_fmv, 'USD', 2, 20)}"
+				"\n")
+			last_row = row  # Remember the last row for printing the summary line
+
+		self.write_text(f"\n{'':6}{'':8}"
+				f"{'Total cumulative fair market value of all mined tokens:':>{24 + 20 + 24 + 20 + 20}}"
+				f"{common.format_money(last_row.cumulative_fmv, 'USD', 2, 20)}")
+		self.write_text("\n\n")

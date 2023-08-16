@@ -13,7 +13,7 @@ from beancount.ops import summarize
 from magicbeans import common
 from magicbeans.disposals import BookedDisposal, check_and_sort_lots, format_money, get_disposal_postings, is_disposal_tx, mk_disposal_summary, sum_amounts, ReductionIndexedInventory
 from magicbeans.mining import MINING_BENEFICIARY_ACCOUNT, MINING_INCOME_ACCOUNT, MiningStats, is_mining_tx
-from magicbeans.reports.data import DisposalsReport, DisposalsReportRow, AccountInventoryReport, InventoryReport, MiningSummaryRow
+from magicbeans.reports.data import AcquisitionsReportRow, DisposalsReport, DisposalsReportRow, AccountInventoryReport, InventoryReport, MiningSummaryRow
 from magicbeans.reports.latex import LaTeXRenderer
 from magicbeans.reports.text import TextRenderer
 
@@ -98,14 +98,46 @@ class ReportDriver:
 		self.query_and_render(query, footer)
 
 
+	#
+	# Utilities for managing entries
+	#
+
+	# TODO: consoldiate this with is_disposal_tx() and is_mining_tx()
+	def is_acquisition_tx(self, e: Transaction, numeraire: str):
+		"""Return true if the given transaction is an acquisition of an asset."""
+		if not isinstance(e, Transaction):
+			return False
+		if is_mining_tx(e):
+			return False
+		if len(e.postings) != 2:
+			return False
+		if len([p for p in e.postings if p.units.currency != numeraire]) != 1:
+			return False
+		if len([p for p in e.postings if p.units.currency == numeraire]) != 1:
+			return False
+		return True
+
+	def partition_entries(self, entries, numeraire: str):
+		"""Return a tuple of entry lists, one for each type of entry:
+		disposals, non-mining acquisitions, and mining acquisitions."""
+		disposals = list(filter(is_disposal_tx, entries))
+		mining_awards = list(filter(is_mining_tx, entries))
+		acquisitions = list(filter(lambda e: self.is_acquisition_tx(e, numeraire), entries))
+		return (disposals, acquisitions, mining_awards)
+
 	# TODO: unittest
 	def paginate_entries(self, start: datetime.date, end: datetime.date, page_size: int):
-		"""Yield dates which segment the provide entries into groups containing at
-		   most page_size entries, unless more than that many entries occur on one day."""
+		"""Yield dates which segment the provide entries into groups intended to fit on
+		   one page.  The supplied 
+		   most page_size entries, unless more than that many entries occur on one day.
+		   This is currently called from the run script, which then uses the pages to 
+		   call disposals_report() for each page, which is all a bit confusing. """
 		entered_range = False
 		last_partition = 0
 		last_date_change = 0
-		filtered_entries = list(filter(is_disposal_tx, self.entries))
+		numeraire = "USD"  # TODO: a hack!
+		filtered_entries = list(filter(lambda x: is_disposal_tx(x) or self.is_acquisition_tx(x, numeraire), self.entries))
+		vweight = 0  # Accumulate vertical space taken by entries
 		for i in range(0, len(filtered_entries)):
 			if not entered_range and filtered_entries[i].date >= start:
 				entered_range = True
@@ -117,9 +149,15 @@ class ReportDriver:
 					break
 				if i > 0 and filtered_entries[i].date != filtered_entries[i-1].date:
 					last_date_change = i
-				if i - last_partition >= page_size and last_partition != last_date_change:
+
+				vweight += 1
+				if is_disposal_tx(filtered_entries[i]):
+					vweight += len(filtered_entries[i].postings)
+
+				if vweight >= page_size and last_partition != last_date_change:
 					yield filtered_entries[last_date_change].date
 					last_partition = last_date_change
+					vweight = 0
 
 	#
 	# High level reporting functions
@@ -134,6 +172,7 @@ class ReportDriver:
 	#
 
 	def get_inventory_and_entries(self, start: datetime.date, end: datetime.date, numeraire: str):
+		"""For a time period, get the inventory at the start and all entries in the period"""
 		(inventories_by_acct, index) = summarize.balance_by_account(
 			self.entries, start)
 
@@ -145,16 +184,9 @@ class ReportDriver:
 		# Define the list of transactions to process on this page
 		all_entries = summarize.truncate(self.entries[index:], end)
 
+		# TODO: could we construct the inventory index here and return it?  does
+		# the caller really need this raw inventories_by_acct dict?
 		return (inventories_by_acct, all_entries)
-
-	def partition_entries(self, entries):
-		"""Return a tuple of entry lists, one for each type of entry:
-		disposals, non-mining acquisitions, and mining acquisitions."""
-		disposals = list(filter(is_disposal_tx, entries))
-		mining_awards = list(filter(is_mining_tx, entries))
-		acquisitions = list(filter(
-			lambda e: not is_disposal_tx(e) and not is_mining_tx(e), entries))
-		return (disposals, acquisitions, mining_awards)
 
  	# TODO: this isn't just disposals anymore, it's inventory, acquisitions,
  	# and disposals.  rename
@@ -177,7 +209,7 @@ class ReportDriver:
 		(inventories_by_acct, all_entries) = self.get_inventory_and_entries(start, end, numeraire)
 
 		# Partition entries into disposals, acquisitions, and mining awards
-		(disposals, acquisitions, mining_awards) = self.partition_entries(all_entries)
+		(disposals, acquisitions, mining_awards) = self.partition_entries(all_entries, numeraire)
 
 		# Define the inventory and get it set up for indexing
 		inventory_idx = ReductionIndexedInventory(inventories_by_acct)
@@ -189,7 +221,7 @@ class ReportDriver:
 				if inventory_idx.index_contains(account, p.cost):
 					lot_id = inventory_idx.index_lot(account, p.cost)
 
-		# Write ante-inventory with IDs
+		# Collect inventory and acquisition reports
 		if extended:
 			account_inventory_reports = [] 
 			for account in inventory_idx.get_accounts():
@@ -207,9 +239,17 @@ class ReportDriver:
 				account_inventory_reports.sort(key=lambda x: (x.total.currency, x.account))
 			inv_report = InventoryReport(start, account_inventory_reports)
 
-			self.renderer.inventory(inv_report)
+			acquisitions_report_rows = []
+			for e in acquisitions:
+				# These should be safe, should have been checked by is_acquisition_tx()
+				rcvd = [p for p in e.postings if p.units.currency != numeraire][0]
+				sent = [p for p in e.postings if p.units.currency == numeraire][0]
+				acquisitions_report_rows.append(AcquisitionsReportRow(
+					e.date, e.narration, rcvd.units.number, rcvd.units.currency,
+					rcvd.cost.number, rcvd.cost.number * rcvd.units.number
+				))
 
-		# Write disposal transactions referencing IDs
+		# Collect disposal transactions referencing IDs
 		cumulative_stcg = Decimal("0")
 		cumulative_ltcg = Decimal("0")
 		disposals_report_rows = []
@@ -239,8 +279,11 @@ class ReportDriver:
 		disposals_report = DisposalsReport(start, end, numeraire,
 				disposals_report_rows, cumulative_stcg, cumulative_ltcg, extended)
 		
-		self.renderer.disposals(disposals_report)
-
+		# Render.
+		if extended:
+			self.renderer.details_page(inv_report, acquisitions_report_rows, disposals_report)
+		else:
+			self.renderer.disposals(disposals_report)
 
 	def mining_summary(self, title: str, ty: int):
 		self.renderer.subreport_header(title)

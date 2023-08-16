@@ -7,9 +7,9 @@ from beancount.core.data import Posting
 from beanquery.query_render import render_text
 from magicbeans import disposals
 from magicbeans.disposals import abbrv_disposal, format_money
-from magicbeans.reports.data import DisposalsReport, InventoryReport, MiningSummaryRow
+from magicbeans.reports.data import AcquisitionsReportRow, DisposalsReport, InventoryReport, MiningSummaryRow
 
-from pylatex import Document, Section, Subsection, Command, LongTabu, Tabu, Center, MultiColumn, MiniPage, TextColor, Package
+from pylatex import Document, Section, Subsection, Command, LongTabu, Tabu, Center, MultiColumn, MiniPage, TextColor, Package, VerticalSpace, HFill, NewLine, Tabularx
 from pylatex.utils import italic, NoEscape, bold
 from pylatex.basic import HugeText, LargeText, MediumText, SmallText, NewPage
 from pylatex.math import Math
@@ -55,9 +55,10 @@ class LaTeXRenderer():
 		    geometry_options=geometry_options)
 
 		self.doc.preamble.append(Command('usepackage', 'helvet'))
+
 		# self.doc.preamble.append(NoEscape(r"\renewc
 		# self.doc.preamble.append(Package("helvet"))
-		# self.doc.preamble.append(NoEscape(r"\renewcommand{\familydefault}{\helvet}"))
+		self.doc.preamble.append(NoEscape(r"\renewcommand{\familydefault}{\sfdefault}"))
 		self.doc.change_length(r"\tabcolsep", "2pt")
 
 	def close(self):
@@ -96,16 +97,35 @@ class LaTeXRenderer():
 		pass
 
 	#
+	# Wrapper
+	#
+
+	def details_page(self,
+			inventory_report: InventoryReport,
+			acquisitions_report_rows: List[AcquisitionsReportRow],
+			disposals_report: DisposalsReport):
+
+		with self.doc.create(MiniPage(width=r"0.2\textwidth", pos="t")) as page:
+			self.inventory(inventory_report)
+
+		self.doc.append(HFill())
+		with self.doc.create(MiniPage(width=r"0.8\textwidth", pos="t")) as page:
+			self.acquisitions(acquisitions_report_rows)
+			self.doc.append(VerticalSpace("16pt"))
+			self.doc.append(NewLine())
+			self.disposals(disposals_report)
+
+	#
 	# Inventory report
 	#
 
 	def inventory(self, inventory_report: InventoryReport):
-		# with self.doc.create(MiniPage(width=r"0.2\textwidth", pos="t")) as page:
 		if True:
 			fmt = "| X[-1l] X[-1rp] X[-1r] X[-1r] |"
 			with self.doc.create(Tabu(fmt, pos="t", spread="0pt")) as table:
-				table.add_row((MultiColumn(4,
-					data=MediumText(f"Inventory on {inventory_report.date}\n")), ))
+				table.add_hline()
+				table.add_row((MultiColumn(4, align="|c|",
+					data=MediumText(f"Starting Inventory")), ))
 				if not inventory_report.accounts:
 					table.add_hline()
 					table.add_row((MultiColumn(4, data="No inventory to report"),))
@@ -142,15 +162,43 @@ class LaTeXRenderer():
 				table.add_hline()
 
 	#
+	# Acquisitions report
+	#
+
+	def acquisitions(self, acquisitions_report_rows: List[AcquisitionsReportRow]):
+		width = r"0.8\textwidth"
+		fmt = " X[-1l] X[-1l] X[-1r] X[-1l] X[-1r] X[-1r]"
+		with self.doc.create(Tabu(fmt, pos="t", spread="0pt")) as table:
+			table.add_hline()
+			table.add_row((
+				"Date",
+				"Description",
+				MultiColumn(2, data="Assets Acquired", align="r"),
+				"Cost ea.",
+				"Total cost"
+				))
+			table.add_hline()
+
+			for row in acquisitions_report_rows:
+				table.add_row((
+					row.date,
+					row.narration,
+					dec6(row.amount),
+					row.cur,
+					dec4(row.cost_ea),
+					dec2(row.total_cost),
+					))
+			
+			table.add_hline()
+
+	#
 	# Disposals report
 	#
 
 	def disposals(self, disposals_report: DisposalsReport):
-		width = r"0.8\textwidth" if disposals_report.extended else r"1.0\textwidth"
-		# with self.doc.create(MiniPage(width=width, pos="t")) as page:
 		if True:
-			fmt = " X[-1r] X[-1l] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r]"
-			with self.doc.create(Tabu(fmt, pos="t", spread="0pt")) as table:
+			fmt = "X[-1r] X[-1l] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r]"
+			with self.doc.create(Tabularx(fmt, pos="t", spread="0pt")) as table:
 				table.add_hline()
 				table.add_row((
 					MultiColumn(1, align="l", data="Date"),   # Just for the align override.

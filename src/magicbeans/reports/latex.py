@@ -65,14 +65,13 @@ class LaTeXRenderer():
 
 	def header(self, title: str):
 		self.doc.append(NewPage())
-		with self.doc.create(Center()):
-			self.doc.append(LargeText(title))
+		self.doc.append(Section(title, numbering=False))
 		
 	def subheader(self, title: str, q: str = None):
-		self.subreport_header(title, q)
+		self.doc.append(Subsection(title, numbering=False))
 
 	def subreport_header(self, title: str, q: str = None):
-		self.doc.append(MediumText(title) + "\n\n")
+		self.subheader(title)
 		if q:
 			self.doc.append('Query: {q}')
 

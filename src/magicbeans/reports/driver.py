@@ -172,11 +172,6 @@ class ReportDriver:
 				account = p.account
 				if inventory_idx.index_contains(account, p.cost):
 					lot_id = inventory_idx.index_lot(account, p.cost)
-				else:
-					# TODO: this disposal may be of something acquired after
-					# the inventory-index was created.
-					#print(f"Warning: cost {p.cost} not found in inventory")
-					pass
 
 		# Write ante-inventory with IDs
 		if extended:

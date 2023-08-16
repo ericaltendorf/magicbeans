@@ -176,7 +176,8 @@ class CoinbaseProImporter(beangulp.Importer):
 
                     title = f' {increase_amount:.4f} {increase_currency} ' \
                             f'w {reduce_amount:.2f} {reduce_currency}, ' + \
-                            f'{-fee_amount:.2f} {fee_currency} fees' if fee_currency else ''
+                            (f'{-fee_amount:.2f} {fee_currency} fees' if fee_currency
+                             else '(no fees)')
 
                     # Fee is neg, so we sub it.  These amounts are in the same currency.
                     reduce_amount_w_fees = reduce_amount - fee_amount if has_fee else reduce_amount

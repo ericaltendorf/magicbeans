@@ -149,7 +149,6 @@ class LaTeXRenderer():
 					last_line_added = 0
 					for (line_no, (pos, lot_id)) in enumerate(acct.positions_and_ids):
 						if (line_no < 10 or lot_id):
-							ref = disposals.disposal_inventory_ref(pos, lot_id)
 							table.add_row((
 								lot_id if lot_id else "",
 								dec6(pos.units.number),

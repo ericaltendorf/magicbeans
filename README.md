@@ -37,16 +37,16 @@ Data importers which have been (mostly) implemented include:
 - Write some more detailed documentation with tips, tricks, gotchas, examples, and war stories of real-life data
 
 ### Necessary and missing functionality
-- Add option for folding trading fees into cost basis and proceeds
-- Ensure prices and acquisition dates are being tracked through transfers (they might be?)
-- Figure out plan for identifying, applying, saving, and applying in the future, booking decisions.
+- Track prices and acquisition dates are being through transfers https://github.com/beancount/beancount/issues/614
+- Write tax-minimizing booking algo
   Ref: [minimizegains](https://github.com/redstreet/fava_investor/tree/main/fava_investor/modules/minimizegains)
   and [match_trades](https://github.com/beancount/beanlabs/blob/master/beanlabs/trades/match_trades.py)
+- Figure out plan for saving booking decisions and applying in the future
 
 ### Cleanup
 - Existing price fetcher isn't ideal, see if we can get higher-resolution historical data, and 
   corroborate across multiple sources
-- Make all importers fill out narration field with a human readable description of the transaction, with amounts and ID when possible (helps a lot when inspecting with bean-query)
+- Record in narration CoinbasePro order/transfer IDs (and clean up handling of those)
 - Set up continuous integration w/ typechecking and unit tests
 - Create a canonical way to automatically apply registered fix-ups on imported data
 - Address TODOs throughout code

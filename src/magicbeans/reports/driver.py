@@ -134,16 +134,17 @@ class ReportDriver:
 	# New report methods, using direct analysis of the entries
 	#
 
+ 	# TODO: this isn't just disposals anymore, it's inventory, acquisitions,
+ 	# and disposals.  rename
 	def disposals(self, start: datetime.date, end: datetime.date, extended: bool):
 		inclusive_end = end - datetime.timedelta(days=1)
 		assert start.year == inclusive_end.year
 		ty = start.year
 
-		title = f"Asset Disposals and Capital Gains/Losses, {start} - {inclusive_end}"
 		if extended:
-			self.renderer.header(f"{ty} " + title)
+			self.renderer.header(f"{ty} Inventory, Acquisitions, and Disposals, {start} - {inclusive_end}")
 		else:
-			self.renderer.subheader(title)
+			self.renderer.subheader(f"Asset Disposals and Capital Gains/Losses, {start} - {inclusive_end}")
 
 		first_disposal_after_start = next(filter(
 			lambda e: is_disposal_tx(e) and e.date >= start, self.entries))

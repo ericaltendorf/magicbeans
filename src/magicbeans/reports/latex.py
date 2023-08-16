@@ -9,7 +9,7 @@ from magicbeans import disposals
 from magicbeans.disposals import abbrv_disposal, format_money
 from magicbeans.reports.data import DisposalsReport, InventoryReport, MiningSummaryRow
 
-from pylatex import Document, Section, Subsection, Command, LongTabu, Tabu, Center, MultiColumn, MiniPage, TextColor
+from pylatex import Document, Section, Subsection, Command, LongTabu, Tabu, Center, MultiColumn, MiniPage, TextColor, Package
 from pylatex.utils import italic, NoEscape, bold
 from pylatex.basic import HugeText, LargeText, MediumText, SmallText, NewPage
 from pylatex.math import Math
@@ -51,7 +51,13 @@ class LaTeXRenderer():
 		self.doc = Document(
 			page_numbers=True,
 			font_size="scriptsize",
+			lmodern=False,
 		    geometry_options=geometry_options)
+
+		self.doc.preamble.append(Command('usepackage', 'helvet'))
+		# self.doc.preamble.append(NoEscape(r"\renewc
+		# self.doc.preamble.append(Package("helvet"))
+		# self.doc.preamble.append(NoEscape(r"\renewcommand{\familydefault}{\helvet}"))
 		self.doc.change_length(r"\tabcolsep", "2pt")
 
 	def close(self):

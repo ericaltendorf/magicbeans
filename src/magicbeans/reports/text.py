@@ -9,7 +9,7 @@ from beancount.core.data import Posting
 from beanquery.query_render import render_text
 from magicbeans import common, disposals
 from magicbeans.disposals import abbrv_disposal, format_money
-from magicbeans.reports.data import AccountInventoryReport, InventoryReport
+from magicbeans.reports.data import AccountInventoryReport, InventoryReport, MiningSummaryRow
 from pyfiglet import Figlet
 
 # TODO: parameterize the width of this report
@@ -176,13 +176,13 @@ class TextRenderer():
 			return
 
 		for row in rows:
-			tok_price_units = f"USD/{token}"
+			tok_price_units = f"USD/{row.currency}"
 			self.write_text(
 				f"{calendar.month_abbr[row.month + 1]:<6}"
 				f"{row.n_events:>8}"
-				f"{common.format_money(row.total_mined, token, 8, 24)}"
-				f"{common.format_money(row.avg_award_size(), token, 8, 20)}"
-				f"{common.format_money(row.cumulative_mined, token, 4, 24)}"
+				f"{common.format_money(row.amount_mined, row.currency, 8, 24)}"
+				f"{common.format_money(row.avg_award_size(), row.currency, 8, 20)}"
+				f"{common.format_money(row.cumulative_mined, row.currency, 4, 24)}"
 				f"{common.format_money(row.avg_price(), tok_price_units, 4, 20)}"
 				f"{common.format_money(row.total_fmv, 'USD', 4, 20)}"
 				f"{common.format_money(row.cumulative_fmv, 'USD', 2, 20)}"

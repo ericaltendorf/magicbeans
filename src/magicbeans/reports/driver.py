@@ -123,6 +123,15 @@ class ReportDriver:
 					last_partition = last_date_change
 
 	#
+	# High level reporting functions
+	#
+	def tax_year_summary(self, ty: int):
+		self.renderer.header(f"{ty} Tax Summary")
+		self.renderer.subheader("Asset Disposals and Capital Gains/Losses")
+		self.disposals(datetime.date(ty, 1, 1), datetime.date(ty+1, 1, 1), False)
+		self.mining_summary("Mining Operations and Income", ty)
+
+	#
 	# New report methods, using direct analysis of the entries
 	#
 
@@ -221,7 +230,7 @@ class ReportDriver:
 		self.renderer.disposals(disposals_report)
 
 
-	def run_mining_summary_subreport(self, title: str, ty: int):
+	def mining_summary(self, title: str, ty: int):
 		self.renderer.subreport_header(title)
 
 		# see this: 
@@ -251,13 +260,15 @@ class ReportDriver:
 				if income_posting:
 					stats.total_fmv -= Decimal(income_posting.units.number)
 
+		rows = []
+
 		# TODO: MiningSummaryRow and MiningStats are pretty similar.  Collapse?
 		cumulative_mined = Decimal(0)
 		cumulative_fmv = Decimal(0)
 		for (month, stats) in enumerate(mining_stats_by_month):
 			cumulative_mined += stats.total_mined
 			cumulative_fmv += stats.total_fmv
-			row = MiningSummaryRow(
+			rows.append(MiningSummaryRow(
 				currency,
 				month + 1,
 				stats.n_events,
@@ -266,4 +277,6 @@ class ReportDriver:
 				cumulative_mined,
 				stats.avg_price(),
 				stats.total_fmv,
-				cumulative_fmv)
+				cumulative_fmv))
+		
+		self.renderer.mining_summary(rows)

@@ -76,10 +76,7 @@ if __name__ == '__main__':
 	print("Generating tax summaries:")
 	for ty in tax_years:
 		print(f"  {ty}", end="", flush=True)
-		db.renderer.header(f"{ty} Tax Summary")
-		db.renderer.subheader("Asset Disposals and Capital Gains/Losses")
-		db.disposals(datetime.date(ty, 1, 1), datetime.date(ty+1, 1, 1), False)
-		db.run_mining_summary_subreport("Mining Operations and Income", ty)
+		db.tax_year_summary(ty)
 
 	print()
 

@@ -7,7 +7,7 @@ from beancount.core.data import Posting
 from beanquery.query_render import render_text
 from magicbeans import disposals
 from magicbeans.disposals import abbrv_disposal, format_money
-from magicbeans.reports.data import DisposalsReport, InventoryReport
+from magicbeans.reports.data import DisposalsReport, InventoryReport, MiningSummaryRow
 
 from pylatex import Document, Section, Subsection, Command, LongTabu, Tabu, Center, MultiColumn, MiniPage, TextColor
 from pylatex.utils import italic, NoEscape, bold
@@ -25,6 +25,10 @@ def dec4(n) -> str:
 	return decn(n, 4)
 def dec6(n) -> str:
 	return decn(n, 6)
+
+def dec8(n) -> str:
+	return decn(n, 8)
+
 def decn(n, d):
 	if not n:
 		return ""
@@ -91,7 +95,8 @@ class LaTeXRenderer():
 	#
 
 	def inventory(self, inventory_report: InventoryReport):
-		with self.doc.create(MiniPage(width=r"0.2\textwidth", pos="t")) as page:
+		# with self.doc.create(MiniPage(width=r"0.2\textwidth", pos="t")) as page:
+		if True:
 			fmt = "| X[-1l] X[-1rp] X[-1r] X[-1r] |"
 			with self.doc.create(Tabu(fmt, pos="t", spread="0pt")) as table:
 				table.add_row((MultiColumn(4,
@@ -137,7 +142,8 @@ class LaTeXRenderer():
 
 	def disposals(self, disposals_report: DisposalsReport):
 		width = r"0.8\textwidth" if disposals_report.extended else r"1.0\textwidth"
-		with self.doc.create(MiniPage(width=width, pos="t")) as page:
+		# with self.doc.create(MiniPage(width=width, pos="t")) as page:
+		if True:
 			fmt = " X[-1r] X[-1l] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r]"
 			with self.doc.create(Tabu(fmt, pos="t", spread="0pt")) as table:
 				table.add_hline()
@@ -208,4 +214,36 @@ class LaTeXRenderer():
 					))
 
 	def mining_summary(self, rows: List[MiningSummaryRow]):
+		fmt = "X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r]"
+		with self.doc.create(Tabu(fmt, pos="t", spread="0pt")) as table:
+			table.add_hline()
+			table.add_row((
+				"Month",
+				"#Awards",
+				"Amount mined",
+				"Avg award size",
+				"Cumulative total",
+				"Avg. cost",
+				"FMV earned",
+				"Cumulative FMV"))
 
+			for row in rows:
+				tok_price_units = f"USD/{row.currency}"
+				table.add_hline()
+				table.add_row((
+					row.month,
+					row.n_awards,
+					dec8(row.amount_mined),
+					dec8(row.avg_award_size),
+					dec4(row.cumul_total),
+					dec4(row.avg_cost),
+					dec4(row.fmv_earned),
+					dec2(row.cumulative_fmv),
+					))
+				last_row = row
+
+			table.add_hline()
+			table.add_row((
+				MultiColumn(5, align="r", data="Total cumulative fair market value of all mined tokens:"),
+				"", "", dec2(last_row.cumulative_fmv)
+			))

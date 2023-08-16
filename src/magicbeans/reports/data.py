@@ -47,6 +47,7 @@ class MiningSummaryRow(NamedTuple):
     currency: str
     month: int
     n_awards: int
+    amount_mined: Decimal
     avg_award_size: Decimal
     cumul_total: Decimal
     avg_cost: Decimal

@@ -90,7 +90,6 @@ if __name__ == '__main__':
 	# 		db.renderer.header(f"{ty} Q {q}")
 	# 		db.disposals(quarter_start(ty, q), quarter_end(ty, q), True)
 
-	db.renderer.header("Detailed Disposals")
 	print("Generating detailed disposals reports:")
 	for ty in tax_years:
 		start = datetime.date(ty, 1, 1)

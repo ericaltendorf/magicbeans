@@ -127,7 +127,6 @@ class ReportDriver:
 	#
 	def tax_year_summary(self, ty: int):
 		self.renderer.header(f"{ty} Tax Summary")
-		self.renderer.subheader("Asset Disposals and Capital Gains/Losses")
 		self.disposals(datetime.date(ty, 1, 1), datetime.date(ty+1, 1, 1), False)
 		self.mining_summary("Mining Operations and Income", ty)
 
@@ -136,10 +135,15 @@ class ReportDriver:
 	#
 
 	def disposals(self, start: datetime.date, end: datetime.date, extended: bool):
+		inclusive_end = end - datetime.timedelta(days=1)
+		assert start.year == inclusive_end.year
+		ty = start.year
+
+		title = f"Asset Disposals and Capital Gains/Losses, {start} - {inclusive_end}"
 		if extended:
-			self.renderer.header(f"{start} - {end - datetime.timedelta(days=1)}")
+			self.renderer.header(f"{ty} " + title)
 		else:
-			self.renderer.subheader(f"{start} - {end - datetime.timedelta(days=1)}")
+			self.renderer.subheader(title)
 
 		first_disposal_after_start = next(filter(
 			lambda e: is_disposal_tx(e) and e.date >= start, self.entries))

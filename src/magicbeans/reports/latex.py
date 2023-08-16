@@ -9,7 +9,7 @@ from magicbeans import disposals
 from magicbeans.disposals import abbrv_disposal, format_money
 from magicbeans.reports.data import AcquisitionsReportRow, DisposalsReport, InventoryReport, MiningSummaryRow
 
-from pylatex import Document, Section, Subsection, Command, LongTabu, Tabu, Center, MultiColumn, MiniPage, TextColor, Package, VerticalSpace, HFill, NewLine, Tabularx
+from pylatex import Document, Section, Subsection, Command, LongTabu, Tabu, Center, MultiColumn, MiniPage, TextColor, Package, VerticalSpace, HFill, NewLine
 from pylatex.utils import italic, NoEscape, bold
 from pylatex.basic import HugeText, LargeText, MediumText, SmallText, NewPage
 from pylatex.math import Math
@@ -198,7 +198,7 @@ class LaTeXRenderer():
 	def disposals(self, disposals_report: DisposalsReport):
 		if True:
 			fmt = "X[-1r] X[-1l] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r]"
-			with self.doc.create(Tabularx(fmt, pos="t", spread="0pt")) as table:
+			with self.doc.create(Tabu(fmt, pos="t", spread="0pt")) as table:
 				table.add_hline()
 				table.add_row((
 					MultiColumn(1, align="l", data="Date"),   # Just for the align override.

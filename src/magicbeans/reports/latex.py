@@ -12,6 +12,7 @@ from magicbeans.reports.data import DisposalsReport, InventoryReport
 from pylatex import Document, Section, Subsection, Command, LongTabu, Tabu, Center, MultiColumn, MiniPage, TextColor
 from pylatex.utils import italic, NoEscape, bold
 from pylatex.basic import HugeText, LargeText, MediumText, SmallText, NewPage
+from pylatex.math import Math
 
 
 # TODO: get the tabudecimal thing working, or maybe siunitx, which is
@@ -66,8 +67,6 @@ class LaTeXRenderer():
 	def subheader(self, title: str, q: str = None):
 		self.subreport_header(title, q)
 
-	# TODO: parameterize the width of this header, probably
-	# via an argument on ReportDriver.
 	def subreport_header(self, title: str, q: str = None):
 		self.doc.append(MediumText(title) + "\n\n")
 		if q:
@@ -92,9 +91,9 @@ class LaTeXRenderer():
 	#
 
 	def inventory(self, inventory_report: InventoryReport):
-		with self.doc.create(MiniPage(width=r"0.2\textwidth")) as page:
+		with self.doc.create(MiniPage(width=r"0.2\textwidth", pos="t")) as page:
 			fmt = "| X[-1l] X[-1rp] X[-1r] X[-1r] |"
-			with self.doc.create(Tabu(fmt, spread="0pt")) as table:
+			with self.doc.create(Tabu(fmt, pos="t", spread="0pt")) as table:
 				table.add_row((MultiColumn(4,
 					data=MediumText(f"Inventory on {inventory_report.date}\n")), ))
 				if not inventory_report.accounts:
@@ -113,7 +112,7 @@ class LaTeXRenderer():
 					table.add_row((
 						"",
 						dec6(acct.total.number),
-						(MultiColumn(2, align="l|", data=f"total in {n_lots} lot(s)")),
+						(MultiColumn(2, align="l|", data=f"total in {n_lots} lot{'s' if n_lots > 1 else ''}")),
 						))
 					table.add_hline()
 
@@ -128,7 +127,7 @@ class LaTeXRenderer():
 								pos.cost.date))
 							last_line_added = line_no
 						elif line_no == last_line_added + 1:
-							table.add_row((MultiColumn(4, align="|c|", data=NoEscape(r'\cdots')),))
+							table.add_row((MultiColumn(4, align="|c|", data=NoEscape(r'$\cdots$')),))
 
 				table.add_hline()
 
@@ -137,13 +136,14 @@ class LaTeXRenderer():
 	#
 
 	def disposals(self, disposals_report: DisposalsReport):
-		with self.doc.create(MiniPage(width=r"0.8\textwidth")) as page:
+		width = r"0.8\textwidth" if disposals_report.extended else r"1.0\textwidth"
+		with self.doc.create(MiniPage(width=width, pos="t")) as page:
 			fmt = " X[-1r] X[-1l] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r]"
-			with self.doc.create(Tabu(fmt, spread="0pt")) as table:
+			with self.doc.create(Tabu(fmt, pos="t", spread="0pt")) as table:
 				table.add_hline()
 				table.add_row((
-					"Date",
-					"Narration",
+					MultiColumn(1, align="l", data="Date"),   # Just for the align override.
+					NoEscape("Description, augmentations (+), disposals with cost ($-$)"),
 					"Proceeds",
 					"Cost",
 					"Gain",
@@ -154,7 +154,7 @@ class LaTeXRenderer():
 					))
 
 				for (rownum, row) in enumerate(disposals_report.rows):
-					if rownum % 1 == 0:
+					if disposals_report.extended or rownum % 5 == 0:
 						table.add_hline()
 					
 					# Put true USD proceeds and FMV of other proceeds in the
@@ -170,7 +170,7 @@ class LaTeXRenderer():
 						dec2(row.other_proceeds.number),
 					table.add_row((
 						row.date,
-						row.narration[:80] + "...",  # Hack for now
+						row.narration,
 						NoEscape(proceeds),
 						dec2(row.disposed_cost),
 						dec2(row.gain),
@@ -190,7 +190,7 @@ class LaTeXRenderer():
 						
 						for (leg, id) in row.disposal_legs_and_ids:
 							msg = f"{disposals.disposal_inventory_ref(leg, id)}"
-							table.add_row(("-", MultiColumn(5, align="l", data=msg), "", "", ""))
+							table.add_row((NoEscape("$-$"), MultiColumn(5, align="l", data=msg), "", "", ""))
 
 
 				table.add_hline()
@@ -206,4 +206,6 @@ class LaTeXRenderer():
 					"",
 					dec2(disposals_report.cumulative_ltcg),
 					))
+
+	def mining_summary(self, rows: List[MiningSummaryRow]):
 

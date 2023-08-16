@@ -201,7 +201,7 @@ class LaTeXRenderer():
 				table.add_hline()
 				table.add_row((
 					MultiColumn(1, align="l", data="Date"),   # Just for the align override.
-					NoEscape("Description, augmentations (+), disposals with cost ($-$)"),
+					NoEscape("Description, augmentations ($+$), disposals with cost ($-$)"),
 					"Proceeds",
 					"Cost",
 					"Gain",

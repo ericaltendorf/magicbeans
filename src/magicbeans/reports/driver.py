@@ -11,8 +11,7 @@ from beancount.core.data import Transaction
 from beancount.core.number import ZERO
 from beancount.ops import summarize
 from magicbeans import common
-from magicbeans import disposals
-from magicbeans.disposals import check_and_sort_lots, format_money, get_disposal_postings, is_disposal_tx, mk_disposal_summary, sum_amounts
+from magicbeans.disposals import BookedDisposal, check_and_sort_lots, format_money, get_disposal_postings, is_disposal_tx, mk_disposal_summary, sum_amounts, ReductionIndexedInventory
 from magicbeans.mining import MINING_BENEFICIARY_ACCOUNT, MINING_INCOME_ACCOUNT, MiningStats, is_mining_tx
 from magicbeans.reports.data import DisposalsReport, DisposalsReportRow, AccountInventoryReport, InventoryReport, MiningSummaryRow
 from magicbeans.reports.latex import LaTeXRenderer
@@ -127,7 +126,7 @@ class ReportDriver:
 	#
 	def tax_year_summary(self, ty: int):
 		self.renderer.header(f"{ty} Tax Summary")
-		self.disposals(datetime.date(ty, 1, 1), datetime.date(ty+1, 1, 1), False)
+		self.disposals_report(datetime.date(ty, 1, 1), datetime.date(ty+1, 1, 1), False)
 		self.mining_summary("Mining Operations and Income", ty)
 
 	#
@@ -148,33 +147,43 @@ class ReportDriver:
 
 		return (inventories_by_acct, all_entries)
 
+	def partition_entries(self, entries):
+		"""Return a tuple of entry lists, one for each type of entry:
+		disposals, non-mining acquisitions, and mining acquisitions."""
+		disposals = list(filter(is_disposal_tx, entries))
+		mining_awards = list(filter(is_mining_tx, entries))
+		acquisitions = list(filter(
+			lambda e: not is_disposal_tx(e) and not is_mining_tx(e), entries))
+		return (disposals, acquisitions, mining_awards)
 
  	# TODO: this isn't just disposals anymore, it's inventory, acquisitions,
  	# and disposals.  rename
-	def disposals(self, start: datetime.date, end: datetime.date, extended: bool):
+	def disposals_report(self, start: datetime.date, end: datetime.date, extended: bool):
 		inclusive_end = end - datetime.timedelta(days=1)
-		assert start.year == inclusive_end.year
+		if start.year != inclusive_end.year:
+			raise ValueError(f"Start and end dates must be in same tax year: {start}, {end}")
 		ty = start.year
 
-		if extended:
-			self.renderer.header(f"{ty} Inventory, Acquisitions, and Disposals, {start} - {inclusive_end}")
+		if extended:   # This logic maybe belongs in the renderer?
+			self.renderer.header(
+				f"{ty} Inventory, Acquisitions, and Disposals, {start} - {inclusive_end}")
 		else:
-			self.renderer.subheader(f"Asset Disposals and Capital Gains/Losses, {start} - {inclusive_end}")
+			self.renderer.subheader(
+				f"Asset Disposals and Capital Gains/Losses, {start} - {inclusive_end}")
 
 		numeraire = "USD"
 
+		# Get inventory (balances) at start, and entries for [start, end)
 		(inventories_by_acct, all_entries) = self.get_inventory_and_entries(start, end, numeraire)
 
-		# Define the inventory and get it set up for indexing
-		inventory_idx = disposals.ReductionIndexedInventory(inventories_by_acct)
+		# Partition entries into disposals, acquisitions, and mining awards
+		(disposals, acquisitions, mining_awards) = self.partition_entries(all_entries)
 
-		page_entries = list(filter(is_disposal_tx, all_entries))
-		non_mining_entries = list(filter(lambda e: not is_mining_tx(e), all_entries))
-		print(f"Num entries for year: {len(all_entries)}, num disposals: {len(page_entries)}, "
-			f"num non-mining entries: {len(non_mining_entries)}")
+		# Define the inventory and get it set up for indexing
+		inventory_idx = ReductionIndexedInventory(inventories_by_acct)
 
 		# Index reduced lots with IDs
-		for e in page_entries:
+		for e in disposals:
 			for p in get_disposal_postings(e):
 				account = p.account
 				if inventory_idx.index_contains(account, p.cost):
@@ -204,8 +213,8 @@ class ReportDriver:
 		cumulative_stcg = Decimal("0")
 		cumulative_ltcg = Decimal("0")
 		disposals_report_rows = []
-		for e in page_entries:
-			bd = disposals.BookedDisposal(e, numeraire)
+		for e in disposals:
+			bd = BookedDisposal(e, numeraire)
 
 			numer_proc = bd.total_numeriare_proceeds()
 			other_proc = bd.total_other_proceeds_value()

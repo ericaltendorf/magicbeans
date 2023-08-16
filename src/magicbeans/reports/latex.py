@@ -240,14 +240,15 @@ class LaTeXRenderer():
 
 					if disposals_report.extended:
 						for leg in row.numeraire_proceeds_legs:
-							table.add_row(("+", f"{dec4(leg.units.number)} {leg.units.currency}", "", "", "", "", "", "", ""))
+							table.add_row((NoEscape("$+$"), f"{dec4(leg.units.number)} {leg.units.currency}", "", "", "", "", "", "", ""))
 
 						for leg in row.other_proceeds_legs:
 							msg = f"{dec4(leg.units.number)} {leg.units.currency} value ea {dec4(leg.cost.number)}"
-							table.add_row(("+", MultiColumn(5, align="l", data=msg), "", "", ""))
+							table.add_row((NoEscape("$+$"), MultiColumn(5, align="l", data=msg), "", "", ""))
 						
 						for (leg, id) in row.disposal_legs_and_ids:
-							msg = f"{disposals.disposal_inventory_ref(leg, id)}"
+							# Negated since we render a special neg sign separate from the number.
+							msg = f"{disposals.disposal_inventory_ref_neg(leg, id)}"
 							table.add_row((NoEscape("$-$"), MultiColumn(5, align="l", data=msg), "", "", ""))
 
 

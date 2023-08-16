@@ -152,7 +152,7 @@ class BookedDisposal():
 		else:
 			return Decimal(0)
 
-# TODO: Consolidate tehse four functions
+# TODO: Consolidate these functions
 def disposal_inventory_desc(pos: Position, id: int) -> str:
 	result = (f"{pos.units.number:.8f} {pos.units.currency} "
 			  f"{{{pos.cost.number:0.4f} {pos.cost.date}}}")
@@ -162,6 +162,13 @@ def disposal_inventory_desc(pos: Position, id: int) -> str:
 
 def disposal_inventory_ref(posting: Posting, id: int) -> str:
 	result = (f"{posting.units.number:.4f} {posting.units.currency} {{"
+	    	  + (f"#{id} " if id else "") +
+			  f"{posting.cost.number:.4f} {posting.cost.currency}"
+			  f" {posting.cost.date}}}")
+	return result
+
+def disposal_inventory_ref_neg(posting: Posting, id: int) -> str:
+	result = (f"{-posting.units.number:.4f} {posting.units.currency} {{"
 	    	  + (f"#{id} " if id else "") +
 			  f"{posting.cost.number:.4f} {posting.cost.currency}"
 			  f" {posting.cost.date}}}")

@@ -46,7 +46,6 @@ Data importers which have been (mostly) implemented include:
 ### Cleanup
 - Existing price fetcher isn't ideal, see if we can get higher-resolution historical data, and 
   corroborate across multiple sources
-- Record in narration CoinbasePro order/transfer IDs (and clean up handling of those)
 - Set up continuous integration w/ typechecking and unit tests
 - Create a canonical way to automatically apply registered fix-ups on imported data
 - Address TODOs throughout code

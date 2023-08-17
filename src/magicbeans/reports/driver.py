@@ -11,7 +11,7 @@ from beancount.core.data import Transaction
 from beancount.core.number import ZERO
 from beancount.ops import summarize
 from magicbeans import common
-from magicbeans.disposals import BookedDisposal, format_money, get_disposal_postings, is_disposal_tx, mk_disposal_summary, sum_amounts, LotIndex
+from magicbeans.disposals import BookedDisposal, format_money, get_disposal_postings, is_disposal_tx, is_other_proceeds_leg, mk_disposal_summary, sum_amounts, LotIndex
 from magicbeans.mining import MINING_BENEFICIARY_ACCOUNT, MINING_INCOME_ACCOUNT, MiningStats, is_mining_tx
 from magicbeans.reports.data import AcquisitionsReportRow, DisposalsReport, DisposalsReportRow, AccountInventoryReport, InventoryReport, MiningSummaryRow
 from magicbeans.reports.latex import LaTeXRenderer
@@ -207,7 +207,7 @@ class ReportDriver:
 
 		# Get inventory (balances) at start, and entries for [start, end)
 		(inventories_by_acct, all_entries) = self.get_inventory_and_entries(start, end, numeraire)
-		all_txs = list(filter(lambda x: isinstance(x, Transaction), all_entries))
+		all_txs = list(filter(lambda x: isinstance(x, Transaction) and not is_mining_tx(x), all_entries))
 
 		# Partition entries into disposals, acquisitions, and mining awards
 		(disposals, acquisitions, mining_awards) = self.partition_entries(all_txs, numeraire)
@@ -225,26 +225,28 @@ class ReportDriver:
 			for account in lot_index.get_accounts():
 				currency_to_inventory = inventories_by_acct[account].split()
 				for (cur, inventory) in currency_to_inventory.items():
-					items = [(pos, lot_index.get_lotid(account, pos.cost))
-							for pos in inventories_by_acct[account]]
-					total = sum_amounts(cur, [pos.units for (pos, id) in items])
+					positions = inventory.values()
+					total = sum_amounts(cur, [pos.units for pos in positions])
+
 					acct_inv_rep = AccountInventoryReport(account, total, [])
-					sorted_pairs = sorted(items, key=lambda x: -abs(x[0].units.number))
-					for (pos, lot_id) in sorted_pairs:
-						acct_inv_rep.positions_and_ids.append((pos, lot_id))
+					for pos in sorted(positions, key=lambda x: -abs(x.units.number)):
+						acct_inv_rep.positions_and_ids.append((pos, lot_index.get_lotid(account, pos.cost)))
 					account_inventory_reports.append(acct_inv_rep)
 				account_inventory_reports.sort(key=lambda x: (x.total.currency, x.account))
 			inv_report = InventoryReport(start, account_inventory_reports)
 
 			acquisitions_report_rows = []
 			for e in acquisitions:
-				# These should be safe, should have been checked by is_acquisition_tx()
-				rcvd = [p for p in e.postings if p.units.currency != numeraire][0]
-				sent = [p for p in e.postings if p.units.currency == numeraire][0]
+				# This should be safe, should have been checked by is_acquisition_tx()
+				rcvd = next(filter(lambda p: is_other_proceeds_leg(p, numeraire), e.postings))
 				acquisitions_report_rows.append(AcquisitionsReportRow(
 					e.date, e.narration, rcvd.units.number, rcvd.units.currency,
-					rcvd.cost.number, rcvd.cost.number * rcvd.units.number
+					rcvd.cost.number, rcvd.cost.number * rcvd.units.number,
+					lot_index.get_lotid(rcvd.account, rcvd.cost)
 				))
+		# Debug
+		# if extended and start == datetime.date(2022, 1, 1):
+		# 	print(lot_index.debug_str())
 
 		# Collect disposal transactions referencing IDs
 		cumulative_stcg = Decimal("0")

@@ -219,7 +219,7 @@ class ReportDriver:
 			for p in get_disposal_postings(e):
 				account = p.account
 				if inventory_idx.index_contains(account, p.cost):
-					lot_id = inventory_idx.index_lot(account, p.cost)
+					inventory_idx.index_lot(account, p.cost)
 
 		# Collect inventory and acquisition reports
 		if extended:

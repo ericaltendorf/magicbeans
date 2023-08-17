@@ -46,16 +46,10 @@ class ReductionIndexedInventory():
 	def index_lot(self, account: str, cost: Cost):
 		"""Finds the lot in the inventory, assigns an index number to it
 		   if it doesn't already have one, remembers that and returns it"""
-		if not (account, cost) in self.index:
-			# print(f"warning: Lot not found in inventory: {account} {cost}")
-			pass
-			
 		(position, id) = self.index[(account, cost)]
 		if id is None:
 			self.index[(account, cost)] = (position, self.next_id)
 			self.next_id += 1
-
-		return self.index[(account, cost)][1]
 
 	def index_contains(self, account: str, cost: Cost):
 		"""Return True if this lot has been indexed"""
@@ -63,12 +57,9 @@ class ReductionIndexedInventory():
 
 	def lookup_lot_id(self, account: str, cost: Cost):
 		"""If this lot has been indexed, return the index, otherwise None"""
-		if not (account, cost) in self.index:
-			# print(f"Lot not found in inventory: {account} {cost}")
-			return None
-			# raise Exception(f"Lot not found in inventory: {account} {cost} "
-			#                 f"Available: {self.index.keys()}")
-		return self.index[(account, cost)][1]
+		if (account, cost) in self.index:
+			return self.index[(account, cost)][1]
+		return None
 
 	def get_accounts(self):
 		return self.accounts

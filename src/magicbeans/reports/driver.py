@@ -225,7 +225,8 @@ class ReportDriver:
 			for account in lot_index.get_accounts():
 				currency_to_inventory = inventories_by_acct[account].split()
 				for (cur, inventory) in currency_to_inventory.items():
-					items = lot_index.get_inventory_w_ids(account)
+					items = [(pos, lot_index.get_lotid(account, pos.cost))
+							for pos in inventories_by_acct[account]]
 					total = sum_amounts(cur, [pos.units for (pos, id) in items])
 					acct_inv_rep = AccountInventoryReport(account, total, [])
 					sorted_pairs = sorted(items, key=lambda x: -abs(x[0].units.number))

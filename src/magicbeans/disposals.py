@@ -49,10 +49,8 @@ class LotIndex():
 		#   (account name, Cost) to (Position, ID number or None)
 		self.index = {}
 
-		self.account_to_inventory = account_to_inventory
-
 		self.accounts = set()
-		for (account, inventory) in self.account_to_inventory.items():
+		for (account, inventory) in account_to_inventory.items():
 			for position in inventory:
 				self.index[(account, position.cost)] = (position, None)
 			self.accounts.add(account)
@@ -92,13 +90,6 @@ class LotIndex():
 
 	def get_accounts(self):
 		return self.accounts
-	
-	# TODO: if we move this out of this class, then this class doesn't
-	# need to remember account_to_inventory, which might simplify things.
-	def get_inventory_w_ids(self, account: str):
-		"""For a given account, return a list of (position, id) pairs."""
-		return [(pos, self.get_lotid(account, pos.cost))
-				for pos in self.account_to_inventory[account]]
 
 
 class BookedDisposal():

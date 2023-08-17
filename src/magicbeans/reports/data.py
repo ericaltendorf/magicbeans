@@ -11,7 +11,6 @@ from beancount.core.position import Position
 class AccountInventoryReport(NamedTuple):
     account: str
     total: Amount
-    total_cost: Amount
     positions_and_ids: List[Tuple[Position, int]]
 
 class InventoryReport(NamedTuple):

@@ -11,7 +11,7 @@ from beancount.core.data import Transaction
 from beancount.core.number import ZERO
 from beancount.ops import summarize
 from magicbeans import common
-from magicbeans.disposals import BookedDisposal, format_money, get_disposal_postings, is_disposal_tx, mk_disposal_summary, sum_amounts, ReductionIndexedInventory
+from magicbeans.disposals import BookedDisposal, format_money, get_disposal_postings, is_disposal_tx, mk_disposal_summary, sum_amounts, LotIndex
 from magicbeans.mining import MINING_BENEFICIARY_ACCOUNT, MINING_INCOME_ACCOUNT, MiningStats, is_mining_tx
 from magicbeans.reports.data import AcquisitionsReportRow, DisposalsReport, DisposalsReportRow, AccountInventoryReport, InventoryReport, MiningSummaryRow
 from magicbeans.reports.latex import LaTeXRenderer
@@ -212,14 +212,14 @@ class ReportDriver:
 		(disposals, acquisitions, mining_awards) = self.partition_entries(all_entries, numeraire)
 
 		# Define the inventory and get it set up for indexing
-		inventory_idx = ReductionIndexedInventory(inventories_by_acct)
+		inventory_idx = LotIndex(inventories_by_acct)
 
 		# Index reduced lots with IDs
 		for e in disposals:
 			for p in get_disposal_postings(e):
 				account = p.account
-				if inventory_idx.index_contains(account, p.cost):
-					inventory_idx.index_lot(account, p.cost)
+				if inventory_idx.has_lot(account, p.cost):
+					inventory_idx.assign_lotid(account, p.cost)
 
 		# Collect inventory and acquisition reports
 		if extended:
@@ -264,7 +264,7 @@ class ReportDriver:
 			cumulative_ltcg += bd.ltcg()
 
 			disposal_legs_and_ids = [
-				(p, inventory_idx.lookup_lot_id(p.account, p.cost))
+				(p, inventory_idx.get_lotid(p.account, p.cost))
 			    for p in bd.disposal_legs]
 
 			disposals_report_rows.append(DisposalsReportRow(

@@ -15,13 +15,21 @@ ASSETS_ACCOUNT = "Assets"
 STCG_ACCOUNT = "Income:CapGains:Short"
 LTCG_ACCOUNT = "Income:CapGains:Long"
 
-class ReductionIndexedInventory():
-	"""A wrapper around beancount Inventory objects for reporting disposals.
+class LotIndex():
+	"""Tracks lots from inventories or acquisitions and enables ID assignment.
 
-	This class aggregates inventories of multiple accounts and also provides
-	a way to assign user-reportable index numbers to lots in the inventory(s) in
-	order to generate reports which associate reductions in disposal transactions
-	back to lots in an inventory list."""
+	This class enables us to create an index of lots (i.e., positions) from
+	multiple accounts with an inventory snapshot, as well as from lots obtained
+	in subsequent acquisition transactions.  It also enables us to assign unique
+	user-reportable IDs to select lots of interest (e.g., those referenced by
+	booking decisions in disposals).
+
+	Usage:
+	1) Add lots/positions from inventories and/or acquisition transactions
+		how?  constructor?  or add method?
+	2) Call assign_lotid() to mark lots we wish to reference later
+	3) Call getters to access the index
+	"""
 
 	# TODO: filter out numeraire accounts
 
@@ -43,7 +51,11 @@ class ReductionIndexedInventory():
 			
 		self.next_id = 1
 
-	def index_lot(self, account: str, cost: Cost):
+	def has_lot(self, account: str, cost: Cost) -> bool:
+		"""Return True if this lot has been indexed"""
+		return (account, cost) in self.index
+
+	def assign_lotid(self, account: str, cost: Cost) -> None:
 		"""Finds the lot in the inventory, assigns an index number to it
 		   if it doesn't already have one, remembers that and returns it"""
 		(position, id) = self.index[(account, cost)]
@@ -51,11 +63,7 @@ class ReductionIndexedInventory():
 			self.index[(account, cost)] = (position, self.next_id)
 			self.next_id += 1
 
-	def index_contains(self, account: str, cost: Cost):
-		"""Return True if this lot has been indexed"""
-		return (account, cost) in self.index
-
-	def lookup_lot_id(self, account: str, cost: Cost):
+	def get_lotid(self, account: str, cost: Cost) -> int:
 		"""If this lot has been indexed, return the index, otherwise None"""
 		if (account, cost) in self.index:
 			return self.index[(account, cost)][1]
@@ -68,7 +76,7 @@ class ReductionIndexedInventory():
 	# need to remember account_to_inventory, which might simplify things.
 	def get_inventory_w_ids(self, account: str):
 		"""For a given account, return a list of (position, id) pairs."""
-		return [(pos, self.lookup_lot_id(account, pos.cost))
+		return [(pos, self.get_lotid(account, pos.cost))
 				for pos in self.account_to_inventory[account]]
 
 

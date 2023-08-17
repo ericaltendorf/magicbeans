@@ -217,15 +217,9 @@ class ReportDriver:
 
 		# Collect inventory and acquisition reports
 		if extended:
-			# Populate the lot index
+			# Populate the lot index, and assign IDs to the interesting lots
 			lot_index = LotIndex(inventories_by_acct, all_txs, numeraire)
-
-			# Then assign IDs to the interesting lots
-			for e in disposals:
-				for p in get_disposal_postings(e):
-					account = p.account
-					if lot_index.has_lot(account, p.cost):
-						lot_index.assign_lotid(account, p.cost)
+			lot_index.assign_lotids_for_disposals(disposals)
 
 			account_inventory_reports = [] 
 			for account in lot_index.get_accounts():

@@ -26,9 +26,9 @@ class LotIndex():
 	booking decisions in disposals).
 
 	Usage:
-	1) Add lots/positions from inventories and/or acquisition transactions
-		how?  constructor?  or add method?
-	2) Call assign_lotid() to mark lots we wish to reference later
+	1) Initialize index with lots/positions from inventories and/or transactions
+	2) Call assign_lotid() to mark lots we wish to reference later, or assign
+	   IDs for all disposal-referenced lots with assign_lotids_for_disposals()
 	3) Call getters to access the index
 	"""
 
@@ -76,6 +76,13 @@ class LotIndex():
 		if id is None:
 			self.index[(account, cost)] = (position, self.next_id)
 			self.next_id += 1
+
+	def assign_lotids_for_disposals(self, disposals: List[Posting]) -> None:
+		for e in disposals:
+			for p in get_disposal_postings(e):
+				account = p.account
+				if self.has_lot(account, p.cost):
+					self.assign_lotid(account, p.cost)
 
 	def get_lotid(self, account: str, cost: Cost) -> int:
 		"""If this lot has been indexed, return the index, otherwise None"""

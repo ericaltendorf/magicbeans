@@ -68,10 +68,12 @@ class CoinbaseProImporter(beangulp.Importer):
         with open(file, 'r') as _file:
             transactions = list(csv.DictReader(_file))
         entries = []
-        sorted_transactions = sorted(
-            transactions,
-            key=lambda tx: (tx['time'], tx['type']),
-        )
+        # Multiple rows representing legs or execution of the same logical transaction
+        # are grouped by "order id".  Transfers have no order id, but instead, a
+        # "transfer id", which seems to be unique (transfers do not seem to need
+        # grouping).  We group by order id, to aggregate each logical
+        # transaction, and separately iterate over all the order-id-free rows to
+        # process the transfers.
         transactions_by_order = groupby(
             transactions,
             lambda tx: tx['order id'],
@@ -80,7 +82,6 @@ class CoinbaseProImporter(beangulp.Importer):
             if order_id == '':
                 for transfer in transfers:
                     tx_ts = dateutil.parser.parse(transfer["time"]).astimezone(pytz.utc)
-                    
 
                     value = D(transfer['amount'])
                     currency = transfer['amount/balance unit']
@@ -89,10 +90,10 @@ class CoinbaseProImporter(beangulp.Importer):
                     title = ""
                     remote_account = "UNDETERMINED"
                     if transfer['type'] == 'deposit':
-                        title = f"CBP: Deposit {currency}"
+                        title = f"CBP: Deposit {currency} tx:{transfer['transfer id'][:8]}"
                         remote_account = self.network.source(local_account, currency)
                     if transfer['type'] == 'withdrawal':
-                        title = f"CBP: Withdraw {currency}"
+                        title = f"CBP: Withdraw {currency} tx:{transfer['transfer id'][:8]}"
                         remote_account = self.network.target(local_account, currency)
 
                     # value appears to be negated for withdrawals already
@@ -128,6 +129,7 @@ class CoinbaseProImporter(beangulp.Importer):
                 reduce_currency = None
                 postings = []
                 title = ' '
+                tx_identifier = None
                 trade_type = None
                 tx_ts = None
                 metadata = {}
@@ -177,7 +179,8 @@ class CoinbaseProImporter(beangulp.Importer):
                     title = f' {increase_amount:.4f} {increase_currency} ' \
                             f'w {reduce_amount:.2f} {reduce_currency}, ' + \
                             (f'{-fee_amount:.2f} {fee_currency} fees' if fee_currency
-                             else '(no fees)')
+                             else '(no fees)') + \
+                            f' tx:{transfer["order id"][:8]}'
 
                     # Fee is neg, so we sub it.  These amounts are in the same currency.
                     reduce_amount_w_fees = reduce_amount - fee_amount if has_fee else reduce_amount
@@ -204,9 +207,12 @@ class CoinbaseProImporter(beangulp.Importer):
                     if has_fee and increase_currency != fee_currency:
                         raise Exception(f"Mismatched fee currency: {increase_currency} != {fee_currency}")
 
+                    # TODO: reconcile this with the "buy" title above
                     title = f' {reduce_amount:.4f} {reduce_currency} ' \
                         f'for {increase_amount:.2f} {increase_currency}, ' \
-                        f'{-fee_amount:.2f} {fee_currency} fees'
+                        f'{-fee_amount:.2f} {fee_currency} fees' + \
+                        f' tx:{transfer["order id"][:8]}'
+
 
                     # Fee is neg, so we add it.  These amounts are in the same currency.
                     increase_amount_w_fees = increase_amount + fee_amount if has_fee else increase_amount

@@ -24,6 +24,7 @@ class AcquisitionsReportRow(NamedTuple):
     cur: str
     cost_ea: Decimal
     total_cost: Decimal
+    lotid: int
 
 class DisposalsReportRow(NamedTuple):
     date: datetime.date

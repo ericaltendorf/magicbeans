@@ -166,12 +166,13 @@ class LaTeXRenderer():
 
 	def acquisitions(self, acquisitions_report_rows: List[AcquisitionsReportRow]):
 		width = r"0.8\textwidth"
-		fmt = " X[-1l] X[-1l] X[-1r] X[-1l] X[-1r] X[-1r]"
+		fmt = " X[-1l] X[-1l] X[-1r] X[-1r] X[-1l] X[-1r] X[-1r]"
 		with self.doc.create(Tabu(fmt, pos="t", spread="0pt")) as table:
 			table.add_hline()
 			table.add_row((
 				"Date",
 				"Description",
+				"Lot ID",
 				MultiColumn(2, data="Assets Acquired", align="r"),
 				"Cost ea.",
 				"Total cost"
@@ -182,6 +183,7 @@ class LaTeXRenderer():
 				table.add_row((
 					row.date,
 					row.narration,
+					row.lotid if row.lotid else "",
 					dec6(row.amount),
 					row.cur,
 					dec4(row.cost_ea),

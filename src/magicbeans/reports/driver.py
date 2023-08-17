@@ -222,7 +222,7 @@ class ReportDriver:
 			lot_index.assign_lotids_for_disposals(disposals)
 
 			account_inventory_reports = [] 
-			for account in lot_index.get_accounts():
+			for account in inventories_by_acct.keys():
 				currency_to_inventory = inventories_by_acct[account].split()
 				for (cur, inventory) in currency_to_inventory.items():
 					positions = inventory.values()
@@ -230,7 +230,8 @@ class ReportDriver:
 
 					acct_inv_rep = AccountInventoryReport(account, total, [])
 					for pos in sorted(positions, key=lambda x: -abs(x.units.number)):
-						acct_inv_rep.positions_and_ids.append((pos, lot_index.get_lotid(account, pos.cost)))
+						lotid = lot_index.get_lotid(pos.units.currency, pos.cost)
+						acct_inv_rep.positions_and_ids.append((pos, lotid))
 					account_inventory_reports.append(acct_inv_rep)
 				account_inventory_reports.sort(key=lambda x: (x.total.currency, x.account))
 			inv_report = InventoryReport(start, account_inventory_reports)
@@ -242,11 +243,12 @@ class ReportDriver:
 				acquisitions_report_rows.append(AcquisitionsReportRow(
 					e.date, e.narration, rcvd.units.number, rcvd.units.currency,
 					rcvd.cost.number, rcvd.cost.number * rcvd.units.number,
-					lot_index.get_lotid(rcvd.account, rcvd.cost)
+					lot_index.get_lotid(rcvd.units.currency, rcvd.cost)
 				))
 		# Debug
-		# if extended and start == datetime.date(2022, 1, 1):
-		# 	print(lot_index.debug_str())
+		if extended:
+			print(f"Lot index for period {start} - {end}")
+			print(lot_index.debug_str())
 
 		# Collect disposal transactions referencing IDs
 		cumulative_stcg = Decimal("0")
@@ -266,7 +268,7 @@ class ReportDriver:
 			disposal_legs_and_ids = []
 			if extended:
 				disposal_legs_and_ids = [
-					(p, lot_index.get_lotid(p.account, p.cost))
+					(p, lot_index.get_lotid(p.units.currency, p.cost))
 					for p in bd.disposal_legs]
 
 			disposals_report_rows.append(DisposalsReportRow(

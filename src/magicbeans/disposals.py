@@ -30,8 +30,7 @@ class ReductionIndexedInventory():
 		as returned by beancount.ops.summarize.balance_by_account()"""
 
 		# Our index is a dict mapping
-		# keys: (account str, cost)
-		# value: (position, id or None)
+		#   (account name, Cost) to (Position, ID number or None)
 		self.index = {}
 
 		self.account_to_inventory = account_to_inventory
@@ -74,6 +73,8 @@ class ReductionIndexedInventory():
 	def get_accounts(self):
 		return self.accounts
 	
+	# TODO: if we move this out of this class, then this class doesn't
+	# need to remember account_to_inventory, which might simplify things.
 	def get_inventory_w_ids(self, account: str):
 		"""For a given account, return a list of (position, id) pairs."""
 		return [(pos, self.lookup_lot_id(account, pos.cost))
@@ -100,12 +101,23 @@ class BookedDisposal():
 		self.numeraire_zero = Amount(ZERO, numeraire)
 
 		# TODO: expect that this is a complete nonoverlapping partition?
-		self.disposal_legs = list(filter(self.is_disposal_leg, entry.postings))
-		self.numeraire_proceeds_legs = list(filter(self.is_numeraire_proceeds_leg, entry.postings))
-		self.other_proceeds_legs = list(filter(self.is_other_proceeds_leg, entry.postings))
+		self.disposal_legs = self._filter_and_sort_legs(entry, self.is_disposal_leg)
+		self.numeraire_proceeds_legs = self._filter_and_sort_legs(entry, self.is_numeraire_proceeds_leg)
+		self.other_proceeds_legs = self._filter_and_sort_legs(entry, self.is_other_proceeds_leg)
+
+		# Sanity check that all disposals are of the same currency, and hang on to it.
+		disposed_currencies = set([d.units.currency for d in self.disposal_legs])
+		if len(disposed_currencies) > 1:
+			raise Exception(f"Disposals should be of one currency; got: {disposed_currencies}")
+		self.disposed_currency = disposed_currencies.pop()
 
 		# TODO: verify these add up to the gains we compute ourselves?
 		(self.short_term, self.long_term) = get_capgains_postings(entry)
+
+	@staticmethod
+	def _filter_and_sort_legs(tx: Transaction, predicate):
+		return sorted(filter(predicate, tx.postings),
+				key=lambda p: p.units.number)
 
 	def total_numeriare_proceeds(self) -> Amount:
 		"""Return the total proceeds obtained natively in the numeraire"""
@@ -264,15 +276,6 @@ def get_capgains_postings(entry: Transaction):
 
 def get_disposal_postings(entry: Transaction):
 	return [p for p in entry.postings if is_disposal_posting(p)]
-
-def check_and_sort_lots(lots: List[Posting]):
-	"""Check that all disposals are of the same currency, sort them, and return with currency"""
-	disposed_currencies = set([d.units.currency for d in lots])
-	if len(disposed_currencies) > 1:
-		raise Exception(f"Disposals should be of one currency; got: {disposed_currencies}")
-	disposed_currency = disposed_currencies.pop()
-	sorted_lots = sorted(lots, key=lambda d: d.units.number)  # Don't mutate args
-	return (disposed_currency, sorted_lots)
 
 def mk_disposal_summary(entry: Transaction):
 	(st, lt) = get_capgains_postings(entry)

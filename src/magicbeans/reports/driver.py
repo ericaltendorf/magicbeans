@@ -11,7 +11,7 @@ from beancount.core.data import Transaction
 from beancount.core.number import ZERO
 from beancount.ops import summarize
 from magicbeans import common
-from magicbeans.disposals import BookedDisposal, check_and_sort_lots, format_money, get_disposal_postings, is_disposal_tx, mk_disposal_summary, sum_amounts, ReductionIndexedInventory
+from magicbeans.disposals import BookedDisposal, format_money, get_disposal_postings, is_disposal_tx, mk_disposal_summary, sum_amounts, ReductionIndexedInventory
 from magicbeans.mining import MINING_BENEFICIARY_ACCOUNT, MINING_INCOME_ACCOUNT, MiningStats, is_mining_tx
 from magicbeans.reports.data import AcquisitionsReportRow, DisposalsReport, DisposalsReportRow, AccountInventoryReport, InventoryReport, MiningSummaryRow
 from magicbeans.reports.latex import LaTeXRenderer
@@ -263,7 +263,6 @@ class ReportDriver:
 			cumulative_stcg += bd.stcg()
 			cumulative_ltcg += bd.ltcg()
 
-			(disposed_currency, lots) = check_and_sort_lots(bd.disposal_legs)
 			disposal_legs_and_ids = [
 				(p, inventory_idx.lookup_lot_id(p.account, p.cost))
 			    for p in bd.disposal_legs]
@@ -271,7 +270,7 @@ class ReportDriver:
 			disposals_report_rows.append(DisposalsReportRow(
 				e.date, e.narration, numer_proc, other_proc, disposed_cost, gain,
 				bd.stcg(), cumulative_stcg, bd.ltcg(), cumulative_ltcg,
-				disposed_currency,
+				bd.disposed_currency,
 				bd.numeraire_proceeds_legs,
 				bd.other_proceeds_legs,
 				disposal_legs_and_ids))

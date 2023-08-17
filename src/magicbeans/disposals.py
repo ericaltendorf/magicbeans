@@ -2,6 +2,7 @@
 
 import datetime
 from decimal import Decimal
+from functools import partial
 from typing import List, NamedTuple
 from beancount.core import amount
 from beancount.core.amount import Amount
@@ -33,9 +34,16 @@ class LotIndex():
 
 	# TODO: filter out numeraire accounts
 
-	def __init__(self, account_to_inventory):
-		"""account_to_inventory is a dict mapping account names to inventories,
-		as returned by beancount.ops.summarize.balance_by_account()"""
+	def __init__(self, account_to_inventory, transactions, numeraire):
+		"""Initialize the index by adding lots from all inventories, and
+		from the augmentation legs of all transactions.
+
+		Args:
+		- account_to_inventory: a dict mapping account names to inventories,
+			as returned by beancount.ops.summarize.balance_by_account()
+		- transactions: a list of transactions
+		- numeraire: needed to ignore cash-proceeds augmentations
+		"""
 
 		# Our index is a dict mapping
 		#   (account name, Cost) to (Position, ID number or None)
@@ -45,9 +53,15 @@ class LotIndex():
 
 		self.accounts = set()
 		for (account, inventory) in self.account_to_inventory.items():
-			for pos in inventory:
-				self.index[(account, pos.cost)] = (pos, None)
+			for position in inventory:
+				self.index[(account, position.cost)] = (position, None)
 			self.accounts.add(account)
+
+		for tx in transactions:
+			for posting in tx.postings:
+				if is_other_proceeds_leg(posting, numeraire):
+					self.index[(posting.account, posting.cost)] = (posting, None)
+					self.accounts.add(posting.account)
 			
 		self.next_id = 1
 
@@ -100,9 +114,9 @@ class BookedDisposal():
 		self.numeraire_zero = Amount(ZERO, numeraire)
 
 		# TODO: expect that this is a complete nonoverlapping partition?
-		self.disposal_legs = self._filter_and_sort_legs(entry, self.is_disposal_leg)
-		self.numeraire_proceeds_legs = self._filter_and_sort_legs(entry, self.is_numeraire_proceeds_leg)
-		self.other_proceeds_legs = self._filter_and_sort_legs(entry, self.is_other_proceeds_leg)
+		self.disposal_legs = self._filter_and_sort_legs(entry, is_disposal_leg)
+		self.numeraire_proceeds_legs = self._filter_and_sort_legs(entry, is_numeraire_proceeds_leg)
+		self.other_proceeds_legs = self._filter_and_sort_legs(entry, is_other_proceeds_leg)
 
 		# Sanity check that all disposals are of the same currency, and hang on to it.
 		disposed_currencies = set([d.units.currency for d in self.disposal_legs])
@@ -113,9 +127,9 @@ class BookedDisposal():
 		# TODO: verify these add up to the gains we compute ourselves?
 		(self.short_term, self.long_term) = get_capgains_postings(entry)
 
-	@staticmethod
-	def _filter_and_sort_legs(tx: Transaction, predicate):
-		return sorted(filter(predicate, tx.postings),
+	def _filter_and_sort_legs(self, tx: Transaction, filter_pred):
+		filter_pred_w_numeraire = partial(filter_pred, numeraire=self.numeraire)
+		return sorted(filter(filter_pred_w_numeraire, tx.postings),
 				key=lambda p: p.units.number)
 
 	def total_numeriare_proceeds(self) -> Amount:
@@ -133,24 +147,6 @@ class BookedDisposal():
 		costs = [amount.mul(p.cost, -p.units.number) for p in self.disposal_legs]
 		return sum_amounts(self.numeraire, costs)
 
-	def is_disposal_leg(self, posting: Posting) -> bool:
-		return (posting.account.startswith(ASSETS_ACCOUNT)
-			and posting.units.number < 0
-			and posting.units.currency != self.numeraire
-			)
-
-	def is_numeraire_proceeds_leg(self, posting: Posting) -> bool:
-		return (posting.account.startswith(ASSETS_ACCOUNT)
-			and posting.units.number > 0
-			and posting.units.currency == self.numeraire
-			)
-
-	def is_other_proceeds_leg(self, posting: Posting) -> bool:
-		return (posting.account.startswith(ASSETS_ACCOUNT)
-			and posting.units.number > 0
-			and posting.units.currency != self.numeraire
-			)
-
 	def stcg(self) -> Decimal:
 		if self.short_term:
 			return - self.short_term.units.number
@@ -162,6 +158,24 @@ class BookedDisposal():
 			return - self.long_term.units.number
 		else:
 			return Decimal(0)
+
+def is_disposal_leg(posting: Posting, numeraire: str) -> bool:
+	return (posting.account.startswith(ASSETS_ACCOUNT)
+		and posting.units.number < 0
+		and posting.units.currency != numeraire
+		)
+
+def is_numeraire_proceeds_leg(posting: Posting, numeraire: str) -> bool:
+	return (posting.account.startswith(ASSETS_ACCOUNT)
+		and posting.units.number > 0
+		and posting.units.currency == numeraire
+		)
+
+def is_other_proceeds_leg(posting: Posting, numeraire: str) -> bool:
+	return (posting.account.startswith(ASSETS_ACCOUNT)
+		and posting.units.number > 0
+		and posting.units.currency != numeraire
+		)
 
 # TODO: Consolidate these functions
 def disposal_inventory_desc(pos: Position, id: int) -> str:

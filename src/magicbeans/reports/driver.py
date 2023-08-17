@@ -207,27 +207,31 @@ class ReportDriver:
 
 		# Get inventory (balances) at start, and entries for [start, end)
 		(inventories_by_acct, all_entries) = self.get_inventory_and_entries(start, end, numeraire)
+		all_txs = list(filter(lambda x: isinstance(x, Transaction), all_entries))
 
 		# Partition entries into disposals, acquisitions, and mining awards
-		(disposals, acquisitions, mining_awards) = self.partition_entries(all_entries, numeraire)
+		(disposals, acquisitions, mining_awards) = self.partition_entries(all_txs, numeraire)
 
-		# Define the inventory and get it set up for indexing
-		inventory_idx = LotIndex(inventories_by_acct)
-
-		# Index reduced lots with IDs
-		for e in disposals:
-			for p in get_disposal_postings(e):
-				account = p.account
-				if inventory_idx.has_lot(account, p.cost):
-					inventory_idx.assign_lotid(account, p.cost)
+		# In 'extended' mode, we will populate this, and use it, later.
+		lot_index = None
 
 		# Collect inventory and acquisition reports
 		if extended:
+			# Populate the lot index
+			lot_index = LotIndex(inventories_by_acct, all_txs, numeraire)
+
+			# Then assign IDs to the interesting lots
+			for e in disposals:
+				for p in get_disposal_postings(e):
+					account = p.account
+					if lot_index.has_lot(account, p.cost):
+						lot_index.assign_lotid(account, p.cost)
+
 			account_inventory_reports = [] 
-			for account in inventory_idx.get_accounts():
+			for account in lot_index.get_accounts():
 				currency_to_inventory = inventories_by_acct[account].split()
 				for (cur, inventory) in currency_to_inventory.items():
-					items = inventory_idx.get_inventory_w_ids(account)
+					items = lot_index.get_inventory_w_ids(account)
 					total = sum_amounts(cur, [pos.units for (pos, id) in items])
 					# TODO: this is incorrect
 					total_cost = None # sum_amounts(numeraire, [pos.cost for (pos, id) in items])
@@ -263,9 +267,12 @@ class ReportDriver:
 			cumulative_stcg += bd.stcg()
 			cumulative_ltcg += bd.ltcg()
 
-			disposal_legs_and_ids = [
-				(p, inventory_idx.get_lotid(p.account, p.cost))
-			    for p in bd.disposal_legs]
+			# We only report legs in extended mode
+			disposal_legs_and_ids = []
+			if extended:
+				disposal_legs_and_ids = [
+					(p, lot_index.get_lotid(p.account, p.cost))
+					for p in bd.disposal_legs]
 
 			disposals_report_rows.append(DisposalsReportRow(
 				e.date, e.narration, numer_proc, other_proc, disposed_cost, gain,

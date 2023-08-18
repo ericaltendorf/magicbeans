@@ -71,7 +71,7 @@ if __name__ == '__main__':
 	currencies = config.get_covered_currencies()
 	tax_years = range(2018, 2022 + 1)
 
-	db.preamble(datetime.datetime.now(), tax_years, currencies)
+	db.coverpage(datetime.datetime.now(), tax_years, currencies)
 
 	print("Generating tax summaries:")
 	for ty in tax_years:

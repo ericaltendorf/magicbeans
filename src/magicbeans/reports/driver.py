@@ -13,7 +13,7 @@ from beancount.ops import summarize
 from magicbeans import common
 from magicbeans.disposals import BookedDisposal, format_money, get_disposal_postings, is_disposal_tx, is_other_proceeds_leg, mk_disposal_summary, sum_amounts, LotIndex
 from magicbeans.mining import MINING_BENEFICIARY_ACCOUNT, MINING_INCOME_ACCOUNT, MiningStats, is_mining_tx
-from magicbeans.reports.data import AcquisitionsReportRow, DisposalsReport, DisposalsReportRow, AccountInventoryReport, InventoryReport, MiningSummaryRow
+from magicbeans.reports.data import AcquisitionsReportRow, CoverPage, DisposalsReport, DisposalsReportRow, AccountInventoryReport, InventoryReport, MiningSummaryRow
 from magicbeans.reports.latex import LaTeXRenderer
 from magicbeans.reports.text import TextRenderer
 
@@ -29,17 +29,37 @@ def beancount_quarter(ty: int, quarter_n: int):
 
 REPORT_ABSTRACT = """\
 The first section of this report contains annual summaries.  For each year, it shows
-asset disposals, specifying the lots disposed (their size, original per-unit cost, and
-date of acquisition), the proceeds, and the short and long term capital gains or losses
+asset disposals, the proceeds, and the short and long term capital gains or losses
 (gains shown as positive numbers, losses as negative).
 
-The second section contains more detailed quarterly summaries.  At each quarter, we show
-the starting inventory (the set of held lots for each type of asset).  Then we show
-disposals of assets, followed by new acquisitions of assets via purchase, and finally a
-summary assets acquired via mining.
+The second section contains more detailed summaries of activity during each
+year.  Each year is broken down into periods containing one page's worth of
+activity.  Each period (i.e., page) shows: (1) the starting inventory (the set
+of held lots for each type of asset), (2) pure acquisitions (receipt of assets
+in exchange for USD payment, i.e., nontaxable events), and finally (3) disposals,
+i.e., receipt of USD or other assets of value, in exchange for the disposal of
+some other assets of value.
 
-The third and final section contains a complete history of all mining rewards, for
-reference.
+This disposals table identifies the received or augmented assets.  If these assets
+are USD, the USD amount is shown as "Proceeds".  If the assets are not USD, then
+the "Proceeds" column is italicized and shows the fair market value of the
+received assets at the time of receipt.  For example, if 1 BTC were exchanged for
+10,000 USDT (Tether), the proceeds column might show "10,007" or something
+similar, since the value of USDT can fluctuate slightly around 1 USD.
+
+The disposals table also identifies the disposed lots.  It shows the quantity of
+assets from that lot, and identifies the lot by the original cost basis (per unit)
+and date of acquisition.  To facilitate auditing, where possible the report will
+show a "lot ID" for the disposed lot, to cross reference against either the
+starting inventory table, or previous transactions (e.g., acquisitions, transfers,
+or disposals).  This lot ID is unique only within one page of the report.
+
+Finally, the disposals table shows the sum of the cost bases of all disposed lots
+in the "Cost" column, and in additional columns, the overall gain and loss, 
+the short term and long term capital gains/losses, and the cumulative totals.
+
+The third and final section (perhaps omitted in abbreviated versions of the report)
+contains a complete history of all mining rewards, for reference.
 """
 
 class ReportDriver:
@@ -70,15 +90,16 @@ class ReportDriver:
 	def close(self):
 		self.renderer.close()
 
-	def preamble(self, timestamp: datetime.date,
-				 tax_years: List[int], cryptos: List[str]):
-		self.renderer.header("Magicbeans Tax Report")
-		self.renderer.write_paragraph(f"Generated {timestamp}")
-		tys_str = ", ".join([str(ty) for ty in tax_years])
-		self.renderer.write_paragraph(f"Covering tax years {tys_str}")
-		self.renderer.write_paragraph(f"Reporting on cryptocurrencies {', '.join(cryptos)}")
-		self.renderer.write_paragraph(REPORT_ABSTRACT)
-	
+	def coverpage(self, timestamp: datetime.date,
+				  tax_years: List[int], cryptos: List[str]):
+		page = CoverPage("Magicbeans Tax Report", [
+			f"Generated {timestamp}",
+			f"Covering tax years {', '.join([str(ty) for ty in tax_years])}",
+			f"Reporting on cryptocurrencies {', '.join(cryptos)}"
+		   ],
+		   REPORT_ABSTRACT)
+		self.renderer.coverpage(page)
+
 	#
 	# Old report methods, mostly for bean-query driven reports
 	#

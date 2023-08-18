@@ -8,6 +8,11 @@ from beancount.core.amount import Amount
 from beancount.core.data import Posting
 from beancount.core.position import Position
 
+class CoverPage(NamedTuple):
+    title: str
+    summary_lines: List[str]
+    text: str
+
 class AccountInventoryReport(NamedTuple):
     account: str
     total: Amount

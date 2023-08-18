@@ -7,9 +7,10 @@ from beancount.core.data import Posting
 from beanquery.query_render import render_text
 from magicbeans import disposals
 from magicbeans.disposals import abbrv_disposal, format_money
-from magicbeans.reports.data import AcquisitionsReportRow, DisposalsReport, InventoryReport, MiningSummaryRow
+from magicbeans.reports.data import AcquisitionsReportRow, CoverPage, DisposalsReport, InventoryReport, MiningSummaryRow
 
-from pylatex import Document, Section, Subsection, Command, LongTabu, Tabu, Center, MultiColumn, MiniPage, TextColor, Package, VerticalSpace, HFill, NewLine
+from pylatex import Document, Section, Subsection, Command, Center, MultiColumn, MiniPage, TextColor, Package, VerticalSpace, HFill, NewLine, Tabularx
+from pylatex.base_classes import Environment
 from pylatex.utils import italic, NoEscape, bold
 from pylatex.basic import HugeText, LargeText, MediumText, SmallText, NewPage
 from pylatex.math import Math
@@ -36,6 +37,13 @@ def decn(n, d):
 		n = n.number
 	return f"{n:.{d}f}"
 
+class Multicols(Environment):
+	packages = [Package('multicol')]
+	escape = False
+	_latex_name = "multicols*"  # The star prevents column balancing.
+
+class Small(Environment):
+	pass
 
 class LaTeXRenderer():
 	def __init__(self, path: str) -> None:
@@ -47,25 +55,28 @@ class LaTeXRenderer():
 			"margin": "0.3in",
 		}
 
-		# TODO: How to do sans-serif font?
 		self.doc = Document(
 			page_numbers=True,
 			font_size="scriptsize",
 			lmodern=False,
 		    geometry_options=geometry_options)
 
+		# Use helvetica font
 		self.doc.preamble.append(Command('usepackage', 'helvet'))
-
-		# self.doc.preamble.append(NoEscape(r"\renewc
-		# self.doc.preamble.append(Package("helvet"))
 		self.doc.preamble.append(NoEscape(r"\renewcommand{\familydefault}{\sfdefault}"))
+		
+		# Paragraph spacing
+		self.doc.preamble.append(Command('usepackage', 'parskip'))
+		
+		# Keep the tables real tight
 		self.doc.change_length(r"\tabcolsep", "2pt")
 
 	def close(self):
 		self.doc.generate_pdf(self.path, clean_tex=False)
 
 	def write_paragraph(self, text: str):
-		self.doc.append(text + "\n\n")
+		self.doc.append(NoEscape(text))
+		self.doc.append("\n\n")
 
 	def write_text(self, text: str):
 		self.doc.append(text)
@@ -96,9 +107,13 @@ class LaTeXRenderer():
 		# self.file.write('\n')
 		pass
 
-	#
-	# Wrapper
-	#
+	def coverpage(self, page: CoverPage):
+		with self.doc.create(Multicols(arguments="2")):
+			self.header(page.title)
+			with self.doc.create(Small()):
+				for line in page.summary_lines:
+					self.write_paragraph(line)
+				self.write_paragraph(page.text)
 
 	def details_page(self,
 			inventory_report: InventoryReport,
@@ -121,8 +136,9 @@ class LaTeXRenderer():
 
 	def inventory(self, inventory_report: InventoryReport):
 		if True:
-			fmt = "| X[-1l] X[-1rp] X[-1r] X[-1r] |"
-			with self.doc.create(Tabu(fmt, pos="t", spread="0pt")) as table:
+			# fmt = "| X[-1l] X[-1rp] X[-1r] X[-1r] |"    Old Tabu format
+			fmt = "|r r r X|"
+			with self.doc.create(Tabularx(fmt, pos="t",width_argument=NoEscape(r"0.9\textwidth") )) as table:
 				table.add_hline()
 				table.add_row((MultiColumn(4, align="|c|",
 					data=MediumText(f"Starting Inventory")), ))
@@ -165,9 +181,11 @@ class LaTeXRenderer():
 	#
 
 	def acquisitions(self, acquisitions_report_rows: List[AcquisitionsReportRow]):
-		width = r"0.8\textwidth"
-		fmt = " X[-1l] X[-1l] X[-1r] X[-1r] X[-1l] X[-1r] X[-1r]"
-		with self.doc.create(Tabu(fmt, pos="t", spread="0pt")) as table:
+		# fmt = " X[-1l] X[-1l] X[-1r] X[-1r] X[-1l] X[-1r] X[-1r]"
+		fmt = "X l X r r X X"
+		with self.doc.create(Tabularx(fmt, pos="t")) as table:
+			table.add_hline()
+			table.add_row((MultiColumn(7, align="|c|", data=MediumText(f"Acquisitions")),))
 			table.add_hline()
 			table.add_row((
 				"Date",
@@ -198,8 +216,11 @@ class LaTeXRenderer():
 
 	def disposals(self, disposals_report: DisposalsReport):
 		if True:
-			fmt = "X[-1r] X[-1l] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r]"
-			with self.doc.create(Tabu(fmt, pos="t", spread="0pt")) as table:
+			# fmt = "X[-1r] X[-1l] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r]"
+			fmt = "r l X X X X X X X"
+			with self.doc.create(Tabularx(fmt, pos="t")) as table:
+				table.add_hline()
+				table.add_row((MultiColumn(9, align="|c|", data=MediumText(f"Disposals")),))
 				table.add_hline()
 				table.add_row((
 					MultiColumn(1, align="l", data="Date"),   # Just for the align override.
@@ -270,7 +291,8 @@ class LaTeXRenderer():
 
 	def mining_summary(self, rows: List[MiningSummaryRow]):
 		fmt = "X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r]"
-		with self.doc.create(Tabu(fmt, pos="t", spread="0pt")) as table:
+		fmt = "X X X X X X X X"
+		with self.doc.create(Tabularx(fmt, pos="t")) as table:
 			table.add_hline()
 			table.add_row((
 				"Month",

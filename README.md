@@ -47,6 +47,9 @@ Data importers which have been (mostly) implemented include:
 - Existing price fetcher isn't ideal, see if we can get higher-resolution historical data, and 
   corroborate across multiple sources
 - Set up continuous integration w/ typechecking and unit tests
+- Use `@dataclass` where appropriate
+- Make a clear decision on the use of terms "Buy", "Sell", and "Swap"
 - Create a canonical way to automatically apply registered fix-ups on imported data
 - Address TODOs throughout code
 - Get zerosum plugin working, report these and other errors somewhere in the build pipeline
+- Use `filter_txns()` throughout rather than `filter()` with `isinstance()`

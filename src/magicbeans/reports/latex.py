@@ -68,6 +68,9 @@ class LaTeXRenderer():
 		# Paragraph spacing
 		self.doc.preamble.append(Command('usepackage', 'parskip'))
 		
+		# TOC
+		self.doc.preamble.append(Command('setcounter', ['tocdepth', '2']))
+		
 		# Keep the tables real tight
 		self.doc.change_length(r"\tabcolsep", "2pt")
 
@@ -114,6 +117,9 @@ class LaTeXRenderer():
 				for line in page.summary_lines:
 					self.write_paragraph(line)
 				self.write_paragraph(page.text)
+				self.doc.append(NoEscape(r"\vfill\null"))
+				self.doc.append(NoEscape(r"\columnbreak"))
+				self.doc.append(NoEscape(r"\tableofcontents"))
 
 	def details_page(self,
 			inventory_report: InventoryReport,

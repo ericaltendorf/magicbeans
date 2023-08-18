@@ -186,7 +186,7 @@ class ReportDriver:
 	def tax_year_summary(self, ty: int):
 		self.renderer.header(f"{ty} Tax Summary")
 		self.disposals_report(datetime.date(ty, 1, 1), datetime.date(ty+1, 1, 1), False)
-		self.mining_summary("Mining Operations and Income", ty)
+		self.mining_summary(f"{ty} Mining Operations and Income", ty)
 
 	#
 	# New report methods, using direct analysis of the entries

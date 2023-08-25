@@ -29,7 +29,7 @@ def run(config: Config, input_dir: str, working_dir: str):
     TODO: separate in phases, allow running of subphases
     """
 
-    path_preamble   = os.path.join(working_dir, "00-directives.beancount")
+    path_preamble   = os.path.join(working_dir, "00-preamble.beancount")
     path_directives = os.path.join(working_dir, "01-directives.beancount")
     path_extracted  = os.path.join(working_dir, "02-extracted.beancount")
     path_sorted     = os.path.join(working_dir, "03-extracted-sorted.beancount")

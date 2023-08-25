@@ -104,12 +104,16 @@ class CoinbaseProImporter(beangulp.Importer):
                                        common.rounded_amt(-value, currency),
                                        usd_cost_spec(currency), None, None, None)
 
+                    # Currently, for beancount to pass cost basis info through transfers,
+                    # the reduction posting must be first.  TODO: remove when unneeded.
+                    postings = sorted([posting1, posting2], key=lambda p: p.units.number)
+
                     metadata = {'transferid': transfer['transfer id']}
                     tx = Transaction(
                         new_metadata(file, 0, metadata), tx_ts.date(),
                         flags.FLAG_OKAY, None, title,
                         EMPTY_SET, EMPTY_SET,
-                        [posting1, posting2]
+                        postings
                         # [withdrawal, deposit],
                     )
                     common.attach_timestamp(tx, tx_ts)

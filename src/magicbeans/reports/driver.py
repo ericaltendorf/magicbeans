@@ -326,23 +326,8 @@ class ReportDriver:
 
 		for e in ty_entries:
 			if is_mining_tx(e):
-				income_posting = common.maybe_get_unique_posting_by_account(
-					e, MINING_INCOME_ACCOUNT)
-				if income_posting and income_posting.units.currency != "USD":
-					raise ValueError(f"Unexpected currency: {income_posting.units.currency}")
-
-				beneficiary_posting = common.get_unique_posting_by_account(
-					e, MINING_BENEFICIARY_ACCOUNT)
-				if beneficiary_posting.units.currency != "XCH":
-					raise ValueError(f"Unexpected currency: {beneficiary_posting.units.currency}")
-
 				month = e.date.month - 1
-				stats = mining_stats_by_month[month]
-
-				stats.n_events += 1
-				stats.total_mined += Decimal(beneficiary_posting.units.number)
-				if income_posting:
-					stats.total_fmv -= Decimal(income_posting.units.number)
+				accrue_mining_stats(e, mining_stats_by_month[month])
 
 		rows = []
 
@@ -364,3 +349,19 @@ class ReportDriver:
 				cumulative_fmv))
 		
 		self.renderer.mining_summary(rows)
+
+def accrue_mining_stats(mining_tx, stats_to_update):
+	income_posting = common.maybe_get_unique_posting_by_account(
+		mining_tx, MINING_INCOME_ACCOUNT)
+	if income_posting and income_posting.units.currency != "USD":
+		raise ValueError(f"Unexpected currency: {income_posting.units.currency}")
+
+	beneficiary_posting = common.get_unique_posting_by_account(
+		mining_tx, MINING_BENEFICIARY_ACCOUNT)
+	if beneficiary_posting.units.currency != "XCH":
+		raise ValueError(f"Unexpected currency: {beneficiary_posting.units.currency}")
+
+	stats_to_update.n_events += 1
+	stats_to_update.total_mined += Decimal(beneficiary_posting.units.number)
+	if income_posting:
+		stats_to_update.total_fmv -= Decimal(income_posting.units.number)

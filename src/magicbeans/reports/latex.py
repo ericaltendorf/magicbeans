@@ -52,7 +52,9 @@ class LaTeXRenderer():
 		
 		geometry_options = {
 			"landscape": True,
-			"margin": "0.3in",
+			"hmargin": "0.3in",
+			"top": "0.3in",
+			"bottom": "0.7in",
 		}
 
 		self.doc = Document(
@@ -70,6 +72,7 @@ class LaTeXRenderer():
 		
 		# TOC
 		self.doc.preamble.append(Command('setcounter', ['tocdepth', '2']))
+		self.doc.preamble.append(Command('setcounter', ['secnumdepth', '0']))
 		
 		# Keep the tables real tight
 		self.doc.change_length(r"\tabcolsep", "2pt")
@@ -86,7 +89,7 @@ class LaTeXRenderer():
 
 	def header(self, title: str):
 		self.doc.append(NewPage())
-		self.doc.append(Section(title, numbering=False))
+		self.doc.append(Section(title, numbering=True))
 		
 	def subheader(self, title: str, q: str = None):
 		self.doc.append(Subsection(title, numbering=False))

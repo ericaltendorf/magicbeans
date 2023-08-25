@@ -235,13 +235,14 @@ class GateIOImporter(beangulp.Importer):
                     xfer_amt_neg = amount.Amount(-tripod.xfer_amt(), tripod.xfer_cur())
                     xfer_cost = common.usd_cost_spec(tripod.xfer_cur())
 
-                    # Attach cost basis to the neg outgoing leg.
-                    # TODO: or to both???
+                    # Booking transfers currently requires the reduction leg is
+                    # entered before the augmentation leg.  TODO: remove when
+                    # unneeded.
                     if tripod.is_receive():
                         postings.append(
-                            Posting(local_acct, xfer_amt, xfer_cost, None, None, None))
-                        postings.append(
                             Posting(remote_acct, xfer_amt_neg, xfer_cost, None, None, None))
+                        postings.append(
+                            Posting(local_acct, xfer_amt, xfer_cost, None, None, None))
                     elif tripod.is_send():
                         postings.append(
                             Posting(local_acct, xfer_amt_neg, xfer_cost, None, None, None))

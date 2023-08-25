@@ -67,7 +67,7 @@ class LotIndex():
 
 	# For robustness, round Cost values.  TODO: determine if this is necessary
 	def _mk_key(self, account, currency, cost):
-		num = cost.number.quantize(Decimal("1.000000")).normalize()
+		num = cost.number.quantize(Decimal("1.0000")).normalize()
 		return (account, currency, cost._replace(number=num))
 
 	def _get(self, account, currency, cost):
@@ -96,6 +96,9 @@ class LotIndex():
 				if self._has(p.account, currency, p.cost):
 					self.assign_lotid(p.account, currency, p.cost)
 				else:
+					# TODO: address this -- I think it's mostly currently happening for lots
+					# that were transferred (e.g., USDT bought from CoinbasePro and moved to
+					# GateIO)
 					print(f"WARNING: no lot found for {currency} {{{p.cost.number} {p.cost.date}}}")
 
 	def get_lotid(self, account: str, currency: str, cost: Cost) -> int:

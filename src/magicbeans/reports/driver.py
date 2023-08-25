@@ -228,18 +228,19 @@ class ReportDriver:
 
 		# Get inventory (balances) at start, and entries for [start, end)
 		(inventories_by_acct, all_entries) = self.get_inventory_and_entries(start, end, numeraire)
-		all_txs = list(filter(lambda x: isinstance(x, Transaction) and not is_mining_tx(x), all_entries))
+		all_txs = list(filter(lambda x: isinstance(x, Transaction), all_entries))
 
 		# Partition entries into disposals, acquisitions, and mining awards
 		(disposals, acquisitions, mining_awards) = self.partition_entries(all_txs, numeraire)
 
 		# In 'extended' mode, we will populate this, and use it, later.
 		lot_index = None
+		period_mining_stats = MiningStats("XCH")   # TODO: generalize!
 
 		# Collect inventory and acquisition reports
 		if extended:
 			# Populate the lot index, and assign IDs to the interesting lots
-			lot_index = LotIndex(inventories_by_acct, all_txs, numeraire)
+			lot_index = LotIndex(inventories_by_acct, disposals + acquisitions, numeraire)
 			lot_index.assign_lotids_for_disposals(disposals)
 
 			account_inventory_reports = [] 
@@ -270,6 +271,18 @@ class ReportDriver:
 				# if rcvd.units.currency == "USDT":
 				# 	this_lot_index = lot_index.get_lotid(rcvd.account, rcvd.units.currency, rcvd.cost)
 				# 	print(f"{rcvd.account} {rcvd.units.currency} {rcvd.cost} - {this_lot_index}")
+			
+			for e in mining_awards:
+				accrue_mining_stats(e, period_mining_stats)
+
+			if mining_awards:
+				acquisitions_report_rows.append(AcquisitionsReportRow(
+					"Various",
+					f"Mining rewards ({period_mining_stats.n_events} transactions, cost ea. reported as average)",
+					period_mining_stats.total_mined,
+					period_mining_stats.currency,
+					period_mining_stats.avg_price(),
+					period_mining_stats.total_fmv, None))
 					      
 		# Debug
 		# if extended:

@@ -20,13 +20,14 @@ spent coin).  This heuristic only works for the simple case of a single spend &
 change-receipt transaction in one block.
 
 BUGS:
-- A couple incoming 1.7499..?  XCH transactions that would seem to be farming
-  rewards or change or something are just showing up as random receives; this
-  breaks later tax computation as they appear to be transfers from nowhere, with
-  an unknown cost basis.
+- On my own data, this code is emitting as "receives" a couple incoming 1.7499..
+  XCH transactions that would seem to actually be change for a 1.75 XCH coin
+  during a few-mojo spend.  To avoid breaking things later on, I have a hook 
+  that filters these.  However, we really should more robustly identify change
+  coins (this may require better reporting from the Chia wallet).
 
 OTHER KNOWN ISSUES:
-- The change-coin heuristics are not reliable
+- The change-coin heuristics are not reliable (as just mentioned)
 - Multiple logical transactions that occur in one block will be conflated
 - We don't do anything with transaction fees
 """
@@ -319,6 +320,8 @@ class ChiaWalletImporter(beangulp.Importer):
                     sign = Decimal(1 if tripod.rcvd else -1)
 
                     xch_price = self.config.get_price_fetcher().get_price("XCH", utc_dt)
+                    if xch_price == None:
+                        xch_price = Decimal("0")
                     mined_cost_basis = beancount.core.position.Cost(xch_price, "USD", None, None)
 
                     txn = Transaction(meta, utc_dt.date(), beancount.core.flags.FLAG_OKAY,

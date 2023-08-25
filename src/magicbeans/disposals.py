@@ -30,16 +30,6 @@ class LotIndex():
 	2) Call assign_lotid() to mark lots we wish to reference later, or assign
 	   IDs for all disposal-referenced lots with assign_lotids_for_disposals()
 	3) Call getters to access the index
-
-	Technically dispositions are segregated by account, that is, we need to book
-	a disposition against a position from the same account.  However, from a tax
-	perspective, what actually matters is the Cost (cost basis and date), not
-	the account in which the lot is held.  Because tracking of cost through
-	transfers is currently (2023.08.17) not working, and we might not even want
-	to waste report space by reporting transfers, within this class we index
-	by (currency/asset, Cost).  This decision could be revisited in the future.
-	Note also that this is structurally very similar to beancount's Inventory,
-	which maps (currency, Cost) to Position.
 	"""
 
 	# TODO: filter out numeraire accounts
@@ -61,12 +51,13 @@ class LotIndex():
 
 		for (account, inventory) in account_to_inventory.items():
 			for position in inventory:
-				self._set(position.units.currency, position.cost, (position, None))
+				self._set(account, position.units.currency, position.cost, (position, None))
 
 		for tx in transactions:
 			for posting in tx.postings:
 				if is_other_proceeds_leg(posting, numeraire):
-					self._set(posting.units.currency, posting.cost, (posting, None))
+					self._set(posting.account, posting.units.currency,
+	       					posting.cost, (posting, None))
 			
 		# Use sequential user-visible index IDs starting from 1
 		self.next_id = 1
@@ -74,48 +65,44 @@ class LotIndex():
 		# Prevent unintentional misuse (indexing after lookups)
 		self.has_had_lookup = False
 
-	# Somewhere some values are being rounded, so for robustness on key matching
-	# we normalize all Cost values to 3 decimal places.  This is kinda a problem
-	# since USDT actually distinguishes on even finer grained differences.
-	# TODO: be more principled.
-	def _mk_key(self, currency, cost):
-		num = cost.number.quantize(Decimal("1.000")).normalize()
-		fake_date = datetime.date(2000, 1, 1)
-		return (currency, cost._replace(number=num, date=fake_date))
+	# For robustness, round Cost values.  TODO: determine if this is necessary
+	def _mk_key(self, account, currency, cost):
+		num = cost.number.quantize(Decimal("1.000000")).normalize()
+		return (account, currency, cost._replace(number=num))
 
-	def _get(self, currency, cost):
-		return self._index[self._mk_key(currency, cost)]
+	def _get(self, account, currency, cost):
+		return self._index[self._mk_key(account, currency, cost)]
 
-	def _has(self, currency, cost):
-		return self._mk_key(currency, cost) in self._index
+	def _has(self, account, currency, cost):
+		return self._mk_key(account, currency, cost) in self._index
 
-	def _set(self, currency, cost, new_value):
-		self._index[self._mk_key(currency, cost)] = new_value
+	def _set(self, account, currency, cost, new_value):
+		self._index[self._mk_key(account, currency, cost)] = new_value
 
-	def assign_lotid(self, currency: str, cost: Cost) -> None:
+	def assign_lotid(self, account: str, currency: str, cost: Cost) -> None:
 		"""Finds the lot in the inventory, assigns an index number to it
 		   if it doesn't already have one, remembers that and returns it"""
 		if self.has_had_lookup:
 			raise Exception("Cannot assign lot IDs after lookups have been performed")
-		(position, id) = self._get(currency, cost)
+		(position, id) = self._get(account, currency, cost)
 		if id is None:
-			self._set(currency, cost, (position, self.next_id))
+			self._set(account, currency, cost, (position, self.next_id))
 			self.next_id += 1
 
 	def assign_lotids_for_disposals(self, disposals: List[Transaction]) -> None:
 		for e in disposals:
 			for p in get_disposal_postings(e):
 				currency = p.units.currency
-				if self._has(currency, p.cost):
-					self.assign_lotid(currency, p.cost)
+				if self._has(p.account, currency, p.cost):
+					self.assign_lotid(p.account, currency, p.cost)
 				else:
 					print(f"WARNING: no lot found for {currency} {{{p.cost.number} {p.cost.date}}}")
 
-	def get_lotid(self, currency: str, cost: Cost) -> int:
+	def get_lotid(self, account: str, currency: str, cost: Cost) -> int:
 		"""If this lot has been indexed, return the index, otherwise None"""
 		self.has_had_lookup = True
-		if self._has(currency, cost):
-			return self._get(currency, cost)[1]
+		if self._has(account, currency, cost):
+			return self._get(account, currency, cost)[1]
 		return None
 
 	def debug_str(self, currency=None) -> str:
@@ -124,9 +111,9 @@ class LotIndex():
 			lotid = v[1]
 			if not lotid:
 				continue
-			if currency and k[0] != currency:
+			if currency and k[1] != currency:
 				continue
-			result += f"  ({k[0]:>6}, {k[1].number:>16f} {k[1].currency:<6} {k[1].date}: {lotid} )\n"
+			result += f"  ({k[0]:<15} {k[1]:>6}, {k[2].number:>16f} {k[2].currency:<6} {k[2].date}: {lotid} )\n"
 		return result
 
 class BookedDisposal():

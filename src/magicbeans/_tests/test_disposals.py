@@ -48,12 +48,12 @@ def test_lotindex_from_inventories():
     lotindex.assign_lotids_for_disposals(disposals)
 
     # These should have been assigned IDs
-    assert lotindex.get_lotid('BTC', usd_cost('2000.0', 2016)) == 1
-    assert lotindex.get_lotid('BTC', usd_cost('8000.0', 2020)) == 2
+    assert lotindex.get_lotid('Assets:MtGox', 'BTC', usd_cost('2000.0', 2016)) == 1
+    assert lotindex.get_lotid('Assets:Coinbase', 'BTC', usd_cost('8000.0', 2020)) == 2
 
     # This shouldn't have gotten an ID, but it should be in the index.
-    assert ('BTC', usd_cost('1000.0', 2015)) in lotindex._index
-    assert lotindex.get_lotid('BTC', usd_cost('1000.0', 2015)) == None
+    assert ('Assets:MtGox', 'BTC', usd_cost('1000.0', 2015)) in lotindex._index
+    assert lotindex.get_lotid('Assets:MtGox', 'BTC', usd_cost('1000.0', 2015)) == None
 
 def test_lotindex_misuse_throws():
     account_to_inventory = {
@@ -78,7 +78,7 @@ def test_lotindex_misuse_throws():
     lotindex.assign_lotids_for_disposals(disposals)
 
     # Now look up (it's not there, but that doesn't matter)
-    assert lotindex.get_lotid('BTC', usd_cost('2000.0', 2016)) == None
+    assert lotindex.get_lotid('Assets:MtGox', 'BTC', usd_cost('2000.0', 2016)) == None
 
     # Further assignment should throw error.
     disposals = [

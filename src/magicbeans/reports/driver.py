@@ -251,7 +251,7 @@ class ReportDriver:
 
 					acct_inv_rep = AccountInventoryReport(account, total, [])
 					for pos in sorted(positions, key=lambda x: -abs(x.units.number)):
-						lotid = lot_index.get_lotid(pos.units.currency, pos.cost)
+						lotid = lot_index.get_lotid(account, pos.units.currency, pos.cost)
 						acct_inv_rep.positions_and_ids.append((pos, lotid))
 					account_inventory_reports.append(acct_inv_rep)
 				account_inventory_reports.sort(key=lambda x: (x.total.currency, x.account))
@@ -264,12 +264,17 @@ class ReportDriver:
 				acquisitions_report_rows.append(AcquisitionsReportRow(
 					e.date, e.narration, rcvd.units.number, rcvd.units.currency,
 					rcvd.cost.number, rcvd.cost.number * rcvd.units.number,
-					lot_index.get_lotid(rcvd.units.currency, rcvd.cost)
+					lot_index.get_lotid(rcvd.account, rcvd.units.currency, rcvd.cost)
 				))
+				# Debug
+				# if rcvd.units.currency == "USDT":
+				# 	this_lot_index = lot_index.get_lotid(rcvd.account, rcvd.units.currency, rcvd.cost)
+				# 	print(f"{rcvd.account} {rcvd.units.currency} {rcvd.cost} - {this_lot_index}")
+					      
 		# Debug
-		if extended:
-			print(f"Lot index for period {start} - {end}")
-			print(lot_index.debug_str())
+		# if extended:
+		# 	print(f"Lot index for period {start} - {end}")
+		# 	print(lot_index.debug_str())
 
 		# Collect disposal transactions referencing IDs
 		cumulative_stcg = Decimal("0")
@@ -289,7 +294,7 @@ class ReportDriver:
 			disposal_legs_and_ids = []
 			if extended:
 				disposal_legs_and_ids = [
-					(p, lot_index.get_lotid(p.units.currency, p.cost))
+					(p, lot_index.get_lotid(p.account, p.units.currency, p.cost))
 					for p in bd.disposal_legs]
 
 			disposals_report_rows.append(DisposalsReportRow(

@@ -13,6 +13,7 @@ from beancount.ops.summarize import balance_by_account
 
 # TODO: get these account names from the config
 ASSETS_ACCOUNT = "Assets"
+CG_ACCOUNT = "Income:CapGains"
 STCG_ACCOUNT = "Income:CapGains:Short"
 LTCG_ACCOUNT = "Income:CapGains:Long"
 
@@ -301,8 +302,22 @@ def format_money(num) -> str:
 def get_capgains_postings(entry: Transaction):
 	"""Return a pair of (short term, long term) capital gains postings as Decimal values"""
 	# TODO: get these account names from the config
+	cg = [p for p in entry.postings if p.account == CG_ACCOUNT]
 	st = [p for p in entry.postings if p.account == STCG_ACCOUNT]
 	lt = [p for p in entry.postings if p.account == LTCG_ACCOUNT]
+
+	if len(cg) > 1:
+		raise Exception(f"Expected at most one capital gains posting; got: {cg}")
+	elif len(cg) == 1:
+		# This should only happen when capital gains were zero, since the long_short plugin
+		# will have moved all non-zero gains to the STCG and LTCG accounts.
+		if any ((p.units.number != 0 for p in cg)):
+			raise Exception(f"Unexpected non-zero capital gains posting: {cg}")
+		if len(st) > 0 or len(lt) > 0:
+			raise Exception(f"Unexpected capital gains posting with STCG or LTCG postings: {cg}")
+		assert cg[0].units.currency == "USD"
+		return (cg[0], None)  # Arbitrary, since all are zero
+
 	if len(st) > 1 or len(lt) > 1 or (len(st) == 0 and len(lt) == 0):
 		raise Exception(f"Expected one short term and/or one long term capital gains posting;"
 						f" got:   {st}  ,  {lt}")
@@ -333,4 +348,8 @@ def mk_disposal_summary(entry: Transaction):
 
 # TODO: check logic.  check against red's plugin logic
 def is_disposal_tx(entry: Transaction):
-	return isinstance(entry, Transaction) and any((p.account in [STCG_ACCOUNT, LTCG_ACCOUNT] for p in entry.postings))
+	# Note that if the cap gain were zero (as might happen if USDT is bought and spent on
+	# the same day), the plugin leaves that in the generic CG_ACCOUNT.  We wish
+	# to include those here for reporting even if no tax is due.
+	all_cg_accounts = [CG_ACCOUNT, STCG_ACCOUNT, LTCG_ACCOUNT]
+	return isinstance(entry, Transaction) and any((p.account in all_cg_accounts for p in entry.postings))

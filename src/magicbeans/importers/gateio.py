@@ -267,6 +267,10 @@ class GateIOImporter(beangulp.Importer):
                     # up both their prices, or by looking up one and computing the other
                     # by our sent/recieved exchange ratio.  In this file we do the former,
                     # but in CoinbasePro we do the latter.
+                    #
+                    # TODO: doublecheck this -- does beancount think the
+                    # transactions don't balance if the floating exchange rates
+                    # aren't consistent?
 
                     credit_acct = account.join(self.account_root, tripod.rcvd_cur)
                     debit_acct = account.join(self.account_root, tripod.sent_cur)

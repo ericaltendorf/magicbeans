@@ -9,7 +9,7 @@ from magicbeans import disposals
 from magicbeans.disposals import abbrv_disposal, format_money
 from magicbeans.reports.data import AcquisitionsReportRow, CoverPage, DisposalsReport, InventoryReport, MiningSummaryRow
 
-from pylatex import Document, Table, Section, Subsection, Command, Center, MultiColumn, MiniPage, TextColor, Package, VerticalSpace, HFill, NewLine, Tabular, LongTable
+from pylatex import Document, Table, Section, Subsection, Command, Center, MultiColumn, MiniPage, TextColor, Package, VerticalSpace, HFill, NewLine, Tabular, Tabularx, LongTable
 from pylatex.base_classes import Environment, Float
 from pylatex.utils import italic, NoEscape, bold
 from pylatex.basic import HugeText, LargeText, MediumText, SmallText, NewPage
@@ -107,7 +107,7 @@ class LaTeXRenderer():
 		
 		# Tables
 		self.doc.change_length(r"\tabcolsep", "2pt")  # For tabularx
-		self.doc.preamble.append(NoEscape(r"\SetTblrInner{rowsep=0pt,colsep=2pt}"))  # For tblr
+		# self.doc.preamble.append(NoEscape(r"\SetTblrInner{rowsep=0pt,colsep=2pt}"))  # For tblr
 
 		# Needs a package install
 		# self.doc.preamble.append(NoEscape(r"\UseTblrLibrary{siunitx}"))  # For number formatting
@@ -186,8 +186,8 @@ class LaTeXRenderer():
 	#
 
 	def inventory(self, inventory_report: InventoryReport):
-		fmt = "|r r r X|"
-		with self.doc.create(Tblr(fmt, 4, width=r"0.95\linewidth" )) as table:
+		# with self.doc.create(Tblr("|r r r X|", 4, width=r"0.95\linewidth" )) as table:
+		with self.doc.create(Tabularx("|r r r X|", width_argument=NoEscape(r"0.95\linewidth") )) as table:
 			table.add_hline()
 			table.add_row((MultiColumn(4, align="|c|",
 				data=MediumText(f"Starting Inventory")), ))
@@ -230,8 +230,8 @@ class LaTeXRenderer():
 	#
 
 	def acquisitions(self, acquisitions_report_rows: List[AcquisitionsReportRow]):
-		fmt = "r X[1,l] l r r r r"
-		with self.doc.create(Tblr(fmt, 7, width=r"0.95\linewidth" )) as table:
+		# with self.doc.create(Tblr("r X[1,l] l r r r r", 7, width=r"0.95\linewidth" )) as table:
+		with self.doc.create(Tabularx("r X l r r r r", width_argument=NoEscape(r"0.95\linewidth") )) as table:
 			table.add_hline()
 			table.add_row((MultiColumn(7, align="|c|", data=MediumText(f"Acquisitions")),))
 			table.add_hline()
@@ -263,8 +263,8 @@ class LaTeXRenderer():
 	#
 
 	def disposals(self, disposals_report: DisposalsReport):
-		fmt = "r X[1,l] r r r r r r r"
-		with self.doc.create(Tblr(fmt, 9, width=r"0.95\linewidth" )) as table:
+		# with self.doc.create(Tblr("r X[1,l] r r r r r r r", 9, width=r"0.95\linewidth" )) as table:
+		with self.doc.create(Tabularx("r X r r r r r r r", width_argument=NoEscape(r"0.95\linewidth" ))) as table:
 			table.add_hline()
 			table.add_row((MultiColumn(9, align="|c|", data=MediumText(f"Disposals")),))
 			table.add_hline()
@@ -351,10 +351,8 @@ class LaTeXRenderer():
 				))
 
 	def mining_summary(self, rows: List[MiningSummaryRow]):
-		fmt = "X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r] X[-1r]"
-		fmt = "X X X X X X X X"
-		fmt = "r r r r r r r r"
-		with self.doc.create(Tblr(fmt, 8)) as table:
+		# with self.doc.create(Tblr("X X X X X X X X", 8)) as table:
+		with self.doc.create(Tabularx("X X X X X X X X")) as table:
 			table.add_hline()
 			table.add_row((
 				"Month",

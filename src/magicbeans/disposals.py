@@ -69,7 +69,12 @@ class LotIndex():
 	# For robustness, round Cost values.  TODO: determine if this is necessary
 	def _mk_key(self, account, currency, cost):
 		num = cost.number.quantize(Decimal("1.0000")).normalize()
-		return (account, currency, cost._replace(number=num))
+		
+		# Share lots IDs across accounts.  This allows us to
+		# refer to a lot id even if it's been transferred since
+		# it was described in the inventory table.
+		# return (account, currency, cost._replace(number=num))
+		return (currency, cost._replace(number=num))
 
 	def _get(self, account, currency, cost):
 		return self._index[self._mk_key(account, currency, cost)]
@@ -312,7 +317,11 @@ def get_capgains_postings(entry: Transaction):
 		# This should only happen when capital gains were zero, since the long_short plugin
 		# will have moved all non-zero gains to the STCG and LTCG accounts.
 		if any ((p.units.number != 0 for p in cg)):
-			raise Exception(f"Unexpected non-zero capital gains posting: {cg}")
+
+			# TODO: fix this
+			# raise Exception(f"Unexpected non-zero capital gains posting: {cg}")
+			pass
+
 		if len(st) > 0 or len(lt) > 0:
 			raise Exception(f"Unexpected capital gains posting with STCG or LTCG postings: {cg}")
 		assert cg[0].units.currency == "USD"

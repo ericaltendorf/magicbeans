@@ -165,7 +165,7 @@ class LaTeXRenderer():
 			acquisitions_report_rows: List[AcquisitionsReportRow],
 			disposals_report: DisposalsReport):
 
-		with self.doc.create(MiniPage(width=r"0.20\textwidth", pos="t", content_pos="t")) as page:
+		with self.doc.create(MiniPage(width=r"0.22\textwidth", pos="t", content_pos="t")) as page:
 			# Trick the minipage env to align to this (zero-height) first line
 			self.doc.append(NoEscape(r"\vspace{0pt}"))
 			self.inventory(inventory_report)
@@ -205,7 +205,7 @@ class LaTeXRenderer():
 				n_lots = len(acct.positions_and_ids)
 
 				table.add_row((
-					"",
+					"ID",
 					dec6(acct.total.number),
 					(MultiColumn(2, align="l|", data=f"total in {n_lots} lot{'s' if n_lots > 1 else ''}")),
 					))
@@ -215,9 +215,9 @@ class LaTeXRenderer():
 				for (line_no, (pos, lot_id)) in enumerate(acct.positions_and_ids):
 					if (line_no < 10 or lot_id):
 						table.add_row((
-							lot_id if lot_id else "",
+							f"#{lot_id}" if lot_id else "",
 							dec6(pos.units.number),
-							dec2(pos.cost.number),
+							dec4(pos.cost.number),
 							pos.cost.date))
 						last_line_added = line_no
 					elif line_no == last_line_added + 1:
@@ -249,7 +249,7 @@ class LaTeXRenderer():
 				table.add_row((
 					row.date,
 					row.narration,
-					row.lotid if row.lotid else "",
+					f"#{row.lotid}" if row.lotid else "",
 					dec6(row.amount),
 					row.cur,
 					dec4(row.cost_ea),

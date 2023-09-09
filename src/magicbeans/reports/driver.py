@@ -265,10 +265,6 @@ class ReportDriver:
 					rcvd.cost.number, rcvd.cost.number * rcvd.units.number,
 					lot_index.get_lotid(rcvd.account, rcvd.units.currency, rcvd.cost)
 				))
-				# Debug
-				# if rcvd.units.currency == "USDT":
-				# 	this_lot_index = lot_index.get_lotid(rcvd.account, rcvd.units.currency, rcvd.cost)
-				# 	print(f"{rcvd.account} {rcvd.units.currency} {rcvd.cost} - {this_lot_index}")
 			
 			for e in mining_awards:
 				accrue_mining_stats(e, period_mining_stats)
@@ -282,11 +278,6 @@ class ReportDriver:
 					period_mining_stats.avg_price(),
 					period_mining_stats.total_fmv, None))
 					      
-		# Debug
-		# if extended:
-		# 	print(f"Lot index for period {start} - {end}")
-		# 	print(lot_index.debug_str())
-
 		# Collect disposal transactions referencing IDs
 		cumulative_stcg = Decimal("0")
 		cumulative_ltcg = Decimal("0")

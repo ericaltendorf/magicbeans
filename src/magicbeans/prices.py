@@ -27,12 +27,11 @@ import pytz
 
 import requests
 
-# This soure lacks early price data for XCH, and also has limited resolution for
-# historical data -- although it claims to be hourly, it appears to be daily.
-# See https://min-api.cryptocompare.com/documentation
-# TODO: Consider other sources.
-# TODO: USD is hard-coded here.
-API_URL_TEMPLATE = "https://min-api.cryptocompare.com/data/v2/histohour?fsym={currency}&toTs={ts}&tsym=USD&limit=1"
+class DataSource(Enum):
+    CRYPTOCOMPARE = 1
+    COINCODEX = 2
+
+SELECTED_DATASOURCE = DataSource.COINCODEX
 
 class Resolution(Enum):
     DAY = 1
@@ -154,23 +153,41 @@ class PriceFetcher:
             print()
         self.last_fetch_ts = datetime.datetime.now()
 
-        epoch_ts = int(ts.timestamp())
-        url = API_URL_TEMPLATE.format(currency=currency, ts=epoch_ts)
+        if SELECTED_DATASOURCE == DataSource.CRYPTOCOMPARE:
+            # This soure lacks early price data for XCH, and also has limited resolution for
+            # historical data -- although it claims to be hourly, it appears to be daily.
+            # See https://min-api.cryptocompare.com/documentation
+            # TODO: USD is hard-coded here.
+            api_url_template = "https://min-api.cryptocompare.com/data/v2/histohour?fsym={currency}&toTs={ts}&tsym=USD&limit=1"
+            url = api_url_template.format(currency=currency, ts=int(ts.timestamp()))
+        elif SELECTED_DATASOURCE == DataSource.COINCODEX:
+            api_url_template = "https://coincodex.com/api/coincodex/get_coin_history/{currency}/{start_date}/{end_date}/{samples}"
+            url = api_url_template.format(currency=currency, start_date=ts.date().isoformat(), end_date=ts.date().isoformat(), samples=1)
+        else:
+            raise Exception("Invalid data source")
 
         response = requests.get(url)
         if response.status_code != 200:
             raise ValueError(f"HTTP response {response.status_code}\n"
                              f"request was {url}")
         json = response.json()
-        if json["Response"] != "Success":
-            raise ValueError(f"API call failed with message {json['Message']}\n"
-                             f"request was {url}")
 
-        for record in json.get("Data", {}).get("Data", []):
-            ts = datetime.datetime.fromtimestamp(record["time"], tz=datetime.timezone.utc)
-            high = Decimal(record["high"])
-            low = Decimal(record["low"])
-            self.cache[self._cache_key(ts, currency)] = CacheEntry(ts, currency, high, low)
+        if SELECTED_DATASOURCE == DataSource.CRYPTOCOMPARE:
+            if json["Response"] != "Success":
+                raise ValueError(f"API call failed with message {json['Message']}\n"
+                                f"request was {url}")
+            for record in json.get("Data", {}).get("Data", []):
+                ts = datetime.datetime.fromtimestamp(record["time"], tz=datetime.timezone.utc)
+                high = Decimal(record["high"])
+                low = Decimal(record["low"])
+                self.cache[self._cache_key(ts, currency)] = CacheEntry(ts, currency, high, low)
+        elif SELECTED_DATASOURCE == DataSource.COINCODEX:
+            for (price_ts, price, _volume, _undocumented_value) in json.get(currency, {}):
+                ts = datetime.datetime.fromtimestamp(price_ts, tz=datetime.timezone.utc)
+                price_decimal = Decimal(price)
+                self.cache[self._cache_key(ts, currency)] = CacheEntry(ts, currency, price_decimal, price_decimal)
+        else:
+            raise Exception("Invalid data source")
 
         
 if __name__ == "__main__":

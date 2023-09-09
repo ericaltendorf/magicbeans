@@ -185,7 +185,7 @@ class ReportDriver:
 	#
 	def tax_year_summary(self, ty: int):
 		self.renderer.header(f"{ty} Tax Summary")
-		self.disposals_report(datetime.date(ty, 1, 1), datetime.date(ty+1, 1, 1), False)
+		self.detailed_report(datetime.date(ty, 1, 1), datetime.date(ty+1, 1, 1), False)
 		self.mining_summary(f"{ty} Mining Operations and Income", ty)
 
 	#
@@ -209,9 +209,7 @@ class ReportDriver:
 		# the caller really need this raw inventories_by_acct dict?
 		return (inventories_by_acct, all_entries)
 
- 	# TODO: this isn't just disposals anymore, it's inventory, acquisitions,
- 	# and disposals.  rename
-	def disposals_report(self, start: datetime.date, end: datetime.date, extended: bool):
+	def detailed_report(self, start: datetime.date, end: datetime.date, extended: bool):
 		inclusive_end = end - datetime.timedelta(days=1)
 		if start.year != inclusive_end.year:
 			raise ValueError(f"Start and end dates must be in same tax year: {start}, {end}")

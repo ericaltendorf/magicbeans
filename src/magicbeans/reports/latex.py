@@ -270,7 +270,7 @@ class LaTeXRenderer():
 			table.add_hline()
 			table.add_row((
 				MultiColumn(1, align="l", data="Date"),   # Just for the align override.
-				NoEscape("Description, augmentations ($+$), disposals with cost ($-$)"),
+				NoEscape("Description" + (", augmentations ($+$), disposals with cost ($-$)" if disposals_report.extended else "")),
 				"Proceeds",
 				"Cost",
 				"Gain",
@@ -315,7 +315,7 @@ class LaTeXRenderer():
 						msg = f"{dec4(leg.units.number)} {leg.units.currency} value ea {dec4(leg.cost.number)}"
 						table.add_row((NoEscape("$+$"), MultiColumn(5, align="l", data=msg), "", "", ""))
 					
-					max_disposal_legs = 4
+					max_disposal_legs = 8
 					
 					n_legs = len(row.disposal_legs_and_ids)
 					for (i, (leg, id)) in enumerate(row.disposal_legs_and_ids[:max_disposal_legs]):

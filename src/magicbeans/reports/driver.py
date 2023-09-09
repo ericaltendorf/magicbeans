@@ -211,6 +211,7 @@ class ReportDriver:
 		return (inventories_by_acct, all_entries)
 
 	def make_inventory_report(self, start, inventories_by_acct, lot_index):
+		"""Construct an inventory report object."""
 		account_inventory_reports = [] 
 		for account in inventories_by_acct.keys():
 			currency_to_inventory = inventories_by_acct[account].split()
@@ -227,6 +228,7 @@ class ReportDriver:
 		return InventoryReport(start, account_inventory_reports)
 
 	def make_acquisitions_report(self, acquisitions, mining_awards, lot_index):
+		"""Construct a list of acquisition report rows."""
 		period_mining_stats = MiningStats("XCH")   # TODO: generalize!
 
 		acquisitions_report_rows = []

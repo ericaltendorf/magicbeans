@@ -66,7 +66,10 @@ if __name__ == '__main__':
 
 	print(f"Generating report for beancount file {ledger_path} "
           f"and writing to {out_path}")
-	db = driver.ReportDriver(ledger_path, out_path)
+	
+	numeraire = "USD"  # TODO
+
+	db = driver.ReportDriver(ledger_path, out_path, numeraire)
 
 	currencies = config.get_covered_currencies()
 	tax_years = range(2018, 2022 + 1)

@@ -72,7 +72,7 @@ class ReportDriver:
 
 	# TODO: query(), render(), and query_and_render() may be obsolete now.
 
-	def __init__(self, ledger_path: str, out_path: str) -> None:
+	def __init__(self, ledger_path: str, out_path: str, numeraire: str) -> None:
 		"""Load the beancount file at the given path and parse it for queries, 
 		and initialize the output report file."""
 		
@@ -82,6 +82,8 @@ class ReportDriver:
 		entries, _errors, options = loader.load_file(ledger_path)
 		self.entries = entries
 		self.options = options
+
+		self.numeraire = numeraire
 	
 	def write_text(self, text: str):
 		"""Legacy function to allow caller to write direclty to underlying file"""
@@ -156,8 +158,7 @@ class ReportDriver:
 		entered_range = False
 		last_partition = 0
 		last_date_change = 0
-		numeraire = "USD"  # TODO: a hack!
-		filtered_entries = list(filter(lambda x: is_disposal_tx(x) or self.is_acquisition_tx(x, numeraire), self.entries))
+		filtered_entries = list(filter(lambda x: is_disposal_tx(x) or self.is_acquisition_tx(x, self.numeraire), self.entries))
 		vweight = 0  # Accumulate vertical space taken by entries
 		for i in range(0, len(filtered_entries)):
 			if not entered_range and filtered_entries[i].date >= start:
@@ -192,14 +193,14 @@ class ReportDriver:
 	# New report methods, using direct analysis of the entries
 	#
 
-	def get_inventory_and_entries(self, start: datetime.date, end: datetime.date, numeraire: str):
+	def get_inventory_and_entries(self, start: datetime.date, end: datetime.date):
 		"""For a time period, get the inventory at the start and all entries in the period"""
 		(inventories_by_acct, index) = summarize.balance_by_account(
 			self.entries, start)
 
 		# Remove numeraire-only accounts; we don't need to track those
 		for (account, inventory) in list(inventories_by_acct.items()):
-			if all([p.units.currency == numeraire for p in inventory]):
+			if all([p.units.currency == self.numeraire for p in inventory]):
 				inventories_by_acct.pop(account)
 
 		# Define the list of transactions to process on this page
@@ -208,6 +209,48 @@ class ReportDriver:
 		# TODO: could we construct the inventory index here and return it?  does
 		# the caller really need this raw inventories_by_acct dict?
 		return (inventories_by_acct, all_entries)
+
+	def make_inventory_report(self, start, inventories_by_acct, lot_index):
+		account_inventory_reports = [] 
+		for account in inventories_by_acct.keys():
+			currency_to_inventory = inventories_by_acct[account].split()
+			for (cur, inventory) in currency_to_inventory.items():
+				positions = inventory.values()
+				total = sum_amounts(cur, [pos.units for pos in positions])
+
+				acct_inv_rep = AccountInventoryReport(account, total, [])
+				for pos in sorted(positions, key=lambda x: -abs(x.units.number)):
+					lotid = lot_index.get_lotid(account, pos.units.currency, pos.cost)
+					acct_inv_rep.positions_and_ids.append((pos, lotid))
+				account_inventory_reports.append(acct_inv_rep)
+			account_inventory_reports.sort(key=lambda x: (x.total.currency, x.account))
+		return InventoryReport(start, account_inventory_reports)
+
+	def make_acquisitions_report(self, acquisitions, mining_awards, lot_index):
+		period_mining_stats = MiningStats("XCH")   # TODO: generalize!
+
+		acquisitions_report_rows = []
+		for e in acquisitions:
+			# This should be safe, should have been checked by is_acquisition_tx()
+			rcvd = next(filter(lambda p: is_other_proceeds_leg(p, self.numeraire), e.postings))
+			acquisitions_report_rows.append(AcquisitionsReportRow(
+				e.date, e.narration, rcvd.units.number, rcvd.units.currency,
+				rcvd.cost.number, rcvd.cost.number * rcvd.units.number,
+				lot_index.get_lotid(rcvd.account, rcvd.units.currency, rcvd.cost)
+			))
+		
+		for e in mining_awards:
+			accrue_mining_stats(e, period_mining_stats)
+
+		if mining_awards:
+			acquisitions_report_rows.append(AcquisitionsReportRow(
+				"Various",
+				f"Mining rewards ({period_mining_stats.n_events} transactions, cost ea. reported as average)",
+				period_mining_stats.total_mined,
+				period_mining_stats.currency,
+				period_mining_stats.avg_price(),
+				period_mining_stats.total_fmv, None))
+		return acquisitions_report_rows
 
 	def detailed_report(self, start: datetime.date, end: datetime.date, extended: bool):
 		inclusive_end = end - datetime.timedelta(days=1)
@@ -222,68 +265,30 @@ class ReportDriver:
 			self.renderer.subheader(
 				f"Asset Disposals and Capital Gains/Losses, {start} - {inclusive_end}")
 
-		numeraire = "USD"
-
 		# Get inventory (balances) at start, and entries for [start, end)
-		(inventories_by_acct, all_entries) = self.get_inventory_and_entries(start, end, numeraire)
+		(inventories_by_acct, all_entries) = self.get_inventory_and_entries(start, end)
 		all_txs = list(filter(lambda x: isinstance(x, Transaction), all_entries))
 
 		# Partition entries into disposals, acquisitions, and mining awards
-		(disposals, acquisitions, mining_awards) = self.partition_entries(all_txs, numeraire)
+		(disposals, acquisitions, mining_awards) = self.partition_entries(all_txs, self.numeraire)
 
 		# In 'extended' mode, we will populate this, and use it, later.
 		lot_index = None
-		period_mining_stats = MiningStats("XCH")   # TODO: generalize!
 
 		# Collect inventory and acquisition reports
 		if extended:
 			# Populate the lot index, and assign IDs to the interesting lots
-			lot_index = LotIndex(inventories_by_acct, disposals + acquisitions, numeraire)
+			lot_index = LotIndex(inventories_by_acct, disposals + acquisitions, self.numeraire)
 			lot_index.assign_lotids_for_disposals(disposals)
-
-			account_inventory_reports = [] 
-			for account in inventories_by_acct.keys():
-				currency_to_inventory = inventories_by_acct[account].split()
-				for (cur, inventory) in currency_to_inventory.items():
-					positions = inventory.values()
-					total = sum_amounts(cur, [pos.units for pos in positions])
-
-					acct_inv_rep = AccountInventoryReport(account, total, [])
-					for pos in sorted(positions, key=lambda x: -abs(x.units.number)):
-						lotid = lot_index.get_lotid(account, pos.units.currency, pos.cost)
-						acct_inv_rep.positions_and_ids.append((pos, lotid))
-					account_inventory_reports.append(acct_inv_rep)
-				account_inventory_reports.sort(key=lambda x: (x.total.currency, x.account))
-			inv_report = InventoryReport(start, account_inventory_reports)
-
-			acquisitions_report_rows = []
-			for e in acquisitions:
-				# This should be safe, should have been checked by is_acquisition_tx()
-				rcvd = next(filter(lambda p: is_other_proceeds_leg(p, numeraire), e.postings))
-				acquisitions_report_rows.append(AcquisitionsReportRow(
-					e.date, e.narration, rcvd.units.number, rcvd.units.currency,
-					rcvd.cost.number, rcvd.cost.number * rcvd.units.number,
-					lot_index.get_lotid(rcvd.account, rcvd.units.currency, rcvd.cost)
-				))
-			
-			for e in mining_awards:
-				accrue_mining_stats(e, period_mining_stats)
-
-			if mining_awards:
-				acquisitions_report_rows.append(AcquisitionsReportRow(
-					"Various",
-					f"Mining rewards ({period_mining_stats.n_events} transactions, cost ea. reported as average)",
-					period_mining_stats.total_mined,
-					period_mining_stats.currency,
-					period_mining_stats.avg_price(),
-					period_mining_stats.total_fmv, None))
+			inv_report = self.make_inventory_report(start, inventories_by_acct, lot_index)
+			acquisitions_report_rows = self.make_acquisitions_report(acquisitions, mining_awards, lot_index)
 					      
 		# Collect disposal transactions referencing IDs
 		cumulative_stcg = Decimal("0")
 		cumulative_ltcg = Decimal("0")
 		disposals_report_rows = []
 		for e in disposals:
-			bd = BookedDisposal(e, numeraire)
+			bd = BookedDisposal(e, self.numeraire)
 
 			numer_proc = bd.total_numeriare_proceeds()
 			other_proc = bd.total_other_proceeds_value()
@@ -307,7 +312,7 @@ class ReportDriver:
 				bd.other_proceeds_legs,
 				disposal_legs_and_ids))
 		
-		disposals_report = DisposalsReport(start, end, numeraire,
+		disposals_report = DisposalsReport(start, end, self.numeraire,
 				disposals_report_rows, cumulative_stcg, cumulative_ltcg, extended)
 		
 		# Render.

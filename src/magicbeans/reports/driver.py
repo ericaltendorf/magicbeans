@@ -187,7 +187,7 @@ class ReportDriver:
 	def tax_year_summary(self, ty: int):
 		self.renderer.header(f"{ty} Tax Summary")
 		self.run_disposals_summary(datetime.date(ty, 1, 1), datetime.date(ty+1, 1, 1))
-		self.mining_summary(f"{ty} Mining Operations and Income", ty)
+		self.run_mining_summary(f"{ty} Mining Operations and Income", ty)
 
 	#
 	# New report methods, using direct analysis of the entries
@@ -334,7 +334,7 @@ class ReportDriver:
 			f"{ty} Inventory, Acquisitions, and Disposals, {start} - {inclusive_end}")
 		self.renderer.details_page(inv_report, acquisitions_report_rows, disposals_report)
 
-	def mining_summary(self, title: str, ty: int):
+	def run_mining_summary(self, title: str, ty: int):
 		self.renderer.subreport_header(title)
 
 		# see this: 

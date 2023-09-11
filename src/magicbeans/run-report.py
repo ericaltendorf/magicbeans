@@ -104,9 +104,9 @@ if __name__ == '__main__':
 		last_date = start
 		for date in db.paginate_entries(start, end, 60):
 			print(f"  {ty} {date}", end="", flush=True)
-			db.detailed_report_extended(last_date, date)
+			db.run_detailed_log(last_date, date)
 			last_date = date
-		db.detailed_report_extended(last_date, end)
+		db.run_detailed_log(last_date, end)
 
 	print()
 

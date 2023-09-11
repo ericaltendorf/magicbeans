@@ -186,7 +186,7 @@ class ReportDriver:
 	#
 	def tax_year_summary(self, ty: int):
 		self.renderer.header(f"{ty} Tax Summary")
-		self.detailed_report(datetime.date(ty, 1, 1), datetime.date(ty+1, 1, 1))
+		self.run_disposals_summary(datetime.date(ty, 1, 1), datetime.date(ty+1, 1, 1))
 		self.mining_summary(f"{ty} Mining Operations and Income", ty)
 
 	#
@@ -287,9 +287,7 @@ class ReportDriver:
 		return DisposalsReport(start, end, self.numeraire,
 				disposals_report_rows, cumulative_stcg, cumulative_ltcg, extended)
 	
-	def detailed_report(self, start: datetime.date, end: datetime.date):
-		extended = False
-
+	def run_disposals_summary(self, start: datetime.date, end: datetime.date):
 		inclusive_end = end - datetime.timedelta(days=1)
 		if start.year != inclusive_end.year:
 			raise ValueError(f"Start and end dates must be in same tax year: {start}, {end}")
@@ -302,32 +300,14 @@ class ReportDriver:
 		# Partition entries into disposals, acquisitions, and mining awards
 		(disposals, acquisitions, mining_awards) = self.partition_entries(all_txs, self.numeraire)
 
-		# In 'extended' mode, we will populate this, and use it, later.
-		lot_index = None
-
-		# Collect inventory and acquisition reports
-		if extended:
-			# Populate the lot index, and assign IDs to the interesting lots
-			lot_index = LotIndex(inventories_by_acct, disposals + acquisitions, self.numeraire)
-			lot_index.assign_lotids_for_disposals(disposals)
-			inv_report = self.make_inventory_report(start, inventories_by_acct, lot_index)
-			acquisitions_report_rows = self.make_acquisitions_report(acquisitions, mining_awards, lot_index)
-
-		disposals_report = self.make_disposals_report(disposals, lot_index, start, end, extended)
+		disposals_report = self.make_disposals_report(disposals, None, start, end, False)
 	
 		# Render.
-		if extended:
-			self.renderer.header(
-				f"{ty} Inventory, Acquisitions, and Disposals, {start} - {inclusive_end}")
-			self.renderer.details_page(inv_report, acquisitions_report_rows, disposals_report)
-		else:
-			self.renderer.subheader(
-				f"Asset Disposals and Capital Gains/Losses, {start} - {inclusive_end}")
-			self.renderer.disposals(disposals_report)
+		self.renderer.subheader(
+			f"Asset Disposals and Capital Gains/Losses, {start} - {inclusive_end}")
+		self.renderer.disposals(disposals_report)
 
-	def detailed_report_extended(self, start: datetime.date, end: datetime.date):
-		extended = True
-
+	def run_detailed_log(self, start: datetime.date, end: datetime.date):
 		inclusive_end = end - datetime.timedelta(days=1)
 		if start.year != inclusive_end.year:
 			raise ValueError(f"Start and end dates must be in same tax year: {start}, {end}")
@@ -340,28 +320,19 @@ class ReportDriver:
 		# Partition entries into disposals, acquisitions, and mining awards
 		(disposals, acquisitions, mining_awards) = self.partition_entries(all_txs, self.numeraire)
 
-		# In 'extended' mode, we will populate this, and use it, later.
-		lot_index = None
-
 		# Collect inventory and acquisition reports
-		if extended:
-			# Populate the lot index, and assign IDs to the interesting lots
-			lot_index = LotIndex(inventories_by_acct, disposals + acquisitions, self.numeraire)
-			lot_index.assign_lotids_for_disposals(disposals)
-			inv_report = self.make_inventory_report(start, inventories_by_acct, lot_index)
-			acquisitions_report_rows = self.make_acquisitions_report(acquisitions, mining_awards, lot_index)
+		# Populate the lot index, and assign IDs to the interesting lots
+		lot_index = LotIndex(inventories_by_acct, disposals + acquisitions, self.numeraire)
+		lot_index.assign_lotids_for_disposals(disposals)
+		inv_report = self.make_inventory_report(start, inventories_by_acct, lot_index)
+		acquisitions_report_rows = self.make_acquisitions_report(acquisitions, mining_awards, lot_index)
 
-		disposals_report = self.make_disposals_report(disposals, lot_index, start, end, extended)
+		disposals_report = self.make_disposals_report(disposals, lot_index, start, end, True)
 	
 		# Render.
-		if extended:
-			self.renderer.header(
-				f"{ty} Inventory, Acquisitions, and Disposals, {start} - {inclusive_end}")
-			self.renderer.details_page(inv_report, acquisitions_report_rows, disposals_report)
-		else:
-			self.renderer.subheader(
-				f"Asset Disposals and Capital Gains/Losses, {start} - {inclusive_end}")
-			self.renderer.disposals(disposals_report)
+		self.renderer.header(
+			f"{ty} Inventory, Acquisitions, and Disposals, {start} - {inclusive_end}")
+		self.renderer.details_page(inv_report, acquisitions_report_rows, disposals_report)
 
 	def mining_summary(self, title: str, ty: int):
 		self.renderer.subreport_header(title)

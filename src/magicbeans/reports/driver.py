@@ -288,16 +288,16 @@ class ReportDriver:
 				disposals_report_rows, cumulative_stcg, cumulative_ltcg, extended)
 	
 	def run_disposals_summary(self, start: datetime.date, end: datetime.date):
+		"""Generate a summary of disposals for the period."""
 		inclusive_end = end - datetime.timedelta(days=1)
 		if start.year != inclusive_end.year:
 			raise ValueError(f"Start and end dates must be in same tax year: {start}, {end}")
 		ty = start.year
 
-		# Get inventory (balances) at start, and entries for [start, end)
+		# Get the disposals to report.  (Given disposals are all we need, there might be a 
+		# simpler way to obtain them.)
 		(inventories_by_acct, all_entries) = self.get_inventory_and_entries(start, end)
 		all_txs = list(filter(lambda x: isinstance(x, Transaction), all_entries))
-
-		# Partition entries into disposals, acquisitions, and mining awards
 		(disposals, acquisitions, mining_awards) = self.partition_entries(all_txs, self.numeraire)
 
 		disposals_report = self.make_disposals_report(disposals, None, start, end, False)
@@ -308,6 +308,7 @@ class ReportDriver:
 		self.renderer.disposals(disposals_report)
 
 	def run_detailed_log(self, start: datetime.date, end: datetime.date):
+		"""Generate a detailed log report of activity during the period."""
 		inclusive_end = end - datetime.timedelta(days=1)
 		if start.year != inclusive_end.year:
 			raise ValueError(f"Start and end dates must be in same tax year: {start}, {end}")

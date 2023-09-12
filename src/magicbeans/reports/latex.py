@@ -270,7 +270,7 @@ class LaTeXRenderer():
 			table.add_hline()
 			table.add_row((
 				MultiColumn(1, align="l", data="Date"),   # Just for the align override.
-				NoEscape("Description" + (", augmentations ($+$), disposals with cost ($-$)" if disposals_report.extended else "")),
+				NoEscape("Description" + (", augmentations ($+$), disposals with cost ($-$)" if disposals_report.show_legs else "")),
 				"Proceeds",
 				"Cost",
 				"Gain",
@@ -281,7 +281,7 @@ class LaTeXRenderer():
 				))
 
 			for (rownum, row) in enumerate(disposals_report.rows):
-				if disposals_report.extended or rownum % 5 == 0:
+				if disposals_report.show_legs or rownum % 5 == 0:
 					table.add_hline()
 				
 				# Put true USD proceeds and FMV of other proceeds in the
@@ -307,7 +307,7 @@ class LaTeXRenderer():
 					TextColor("gray", dec2(row.cum_ltcg)),
 					))
 
-				if disposals_report.extended:
+				if disposals_report.show_legs:
 					for leg in row.numeraire_proceeds_legs:
 						table.add_row((NoEscape("$+$"), f"{dec4(leg.units.number)} {leg.units.currency}", "", "", "", "", "", "", ""))
 

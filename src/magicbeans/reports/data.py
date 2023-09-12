@@ -54,7 +54,7 @@ class DisposalsReport(NamedTuple):
     rows: List[DisposalsReportRow]
     cumulative_stcg: Decimal
     cumulative_ltcg: Decimal
-    extended: bool
+    show_legs: bool
 
 class MiningSummaryRow(NamedTuple):
     currency: str

@@ -254,7 +254,7 @@ class ReportDriver:
 				period_mining_stats.total_fmv, None))
 		return acquisitions_report_rows
 
-	def make_disposals_report(self, disposals, lot_index, start, end, extended):
+	def make_disposals_report(self, disposals, lot_index, start, end, show_legs):
 		# Collect disposal transactions referencing IDs
 		cumulative_stcg = Decimal("0")
 		cumulative_ltcg = Decimal("0")
@@ -269,9 +269,8 @@ class ReportDriver:
 			cumulative_stcg += bd.stcg()
 			cumulative_ltcg += bd.ltcg()
 
-			# We only report legs in extended mode
 			disposal_legs_and_ids = []
-			if extended:
+			if show_legs:
 				disposal_legs_and_ids = [
 					(p, lot_index.get_lotid(p.account, p.units.currency, p.cost))
 					for p in bd.disposal_legs]
@@ -285,7 +284,7 @@ class ReportDriver:
 				disposal_legs_and_ids))
 		
 		return DisposalsReport(start, end, self.numeraire,
-				disposals_report_rows, cumulative_stcg, cumulative_ltcg, extended)
+				disposals_report_rows, cumulative_stcg, cumulative_ltcg, show_legs)
 	
 	def run_disposals_summary(self, start: datetime.date, end: datetime.date):
 		"""Generate a summary of disposals for the period."""

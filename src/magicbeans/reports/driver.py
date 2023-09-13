@@ -254,14 +254,12 @@ class ReportDriver:
 				period_mining_stats.total_fmv, None))
 		return acquisitions_report_rows
 
-	def make_disposals_report(self, disposals, lot_index, start, end, show_legs):
+	def make_disposals_report(self, booked_disposals, lot_index, start, end, show_legs):
 		# Collect disposal transactions referencing IDs
 		cumulative_stcg = Decimal("0")
 		cumulative_ltcg = Decimal("0")
 		disposals_report_rows = []
-		for e in disposals:
-			bd = BookedDisposal(e, self.numeraire)
-
+		for bd in booked_disposals:
 			numer_proc = bd.total_numeriare_proceeds()
 			other_proc = bd.total_other_proceeds_value()
 			disposed_cost = bd.total_disposed_cost()
@@ -276,7 +274,7 @@ class ReportDriver:
 					for p in bd.disposal_legs]
 
 			disposals_report_rows.append(DisposalsReportRow(
-				e.date, e.narration, numer_proc, other_proc, disposed_cost, gain,
+				bd.tx.date, bd.tx.narration, numer_proc, other_proc, disposed_cost, gain,
 				bd.stcg(), cumulative_stcg, bd.ltcg(), cumulative_ltcg,
 				bd.disposed_currency,
 				bd.numeraire_proceeds_legs,
@@ -298,13 +296,19 @@ class ReportDriver:
 		(inventories_by_acct, all_entries) = self.get_inventory_and_entries(start, end)
 		all_txs = list(filter(lambda x: isinstance(x, Transaction), all_entries))
 		(disposals, acquisitions, mining_awards) = self.partition_entries(all_txs, self.numeraire)
+		booked_disposals = [BookedDisposal(e, self.numeraire) for e in disposals]
 
-		disposals_report = self.make_disposals_report(disposals, None, start, end, False)
-	
-		# Render.
-		self.renderer.subheader(
-			f"Asset Disposals and Capital Gains/Losses, {start} - {inclusive_end}")
-		self.renderer.disposals(disposals_report)
+		disposed_assets = set([bd.disposed_asset() for bd in booked_disposals])
+
+		self.renderer.subheader(f"Disposals and Gain/Loss, {start} - {inclusive_end}")
+		if not disposed_assets:
+			self.renderer.write_text("(No disposals in this period.)")
+			return	
+
+		for asset in disposed_assets:
+			disposals_for_asset = [bd for bd in booked_disposals if bd.disposed_asset() == asset]
+			disposals_report = self.make_disposals_report(disposals_for_asset, None, start, end, False)
+			self.renderer.disposals(f"{asset} Disposals", disposals_report)
 
 	def run_detailed_log(self, start: datetime.date, end: datetime.date):
 		"""Generate a detailed log report of activity during the period."""
@@ -327,7 +331,8 @@ class ReportDriver:
 		inv_report = self.make_inventory_report(start, inventories_by_acct, lot_index)
 		acquisitions_report_rows = self.make_acquisitions_report(acquisitions, mining_awards, lot_index)
 
-		disposals_report = self.make_disposals_report(disposals, lot_index, start, end, True)
+		booked_disposals = [BookedDisposal(e, self.numeraire) for e in disposals]
+		disposals_report = self.make_disposals_report(booked_disposals, lot_index, start, end, True)
 	
 		# Render.
 		self.renderer.header(
@@ -344,10 +349,16 @@ class ReportDriver:
 		currency = "XCH"
 		mining_stats_by_month = [MiningStats(currency) for _ in range(12)]
 
+		found_mining_tx = False
 		for e in ty_entries:
 			if is_mining_tx(e):
+				found_mining_tx = True
 				month = e.date.month - 1
 				accrue_mining_stats(e, mining_stats_by_month[month])
+
+		if not found_mining_tx:
+			self.renderer.write_text("(No mining transactions in this period.)")
+			return
 
 		rows = []
 

@@ -179,7 +179,7 @@ class LaTeXRenderer():
 			self.acquisitions(acquisitions_report_rows)
 			self.doc.append(VerticalSpace("8pt"))
 			self.doc.append(NewLine())
-			self.disposals(disposals_report)
+			self.disposals("Disposals", disposals_report)
 
 	#
 	# Inventory report
@@ -262,11 +262,11 @@ class LaTeXRenderer():
 	# Disposals report
 	#
 
-	def disposals(self, disposals_report: DisposalsReport):
+	def disposals(self, title: str, disposals_report: DisposalsReport):
 		# with self.doc.create(Tblr("r X[1,l] r r r r r r r", 9, width=r"0.95\linewidth" )) as table:
 		with self.doc.create(Tabularx("r X r r r r r r r", width_argument=NoEscape(r"0.95\linewidth" ))) as table:
 			table.add_hline()
-			table.add_row((MultiColumn(9, align="|c|", data=MediumText(f"Disposals")),))
+			table.add_row((MultiColumn(9, align="|c|", data=MediumText(title)),))
 			table.add_hline()
 			table.add_row((
 				MultiColumn(1, align="l", data="Date"),   # Just for the align override.
@@ -349,6 +349,7 @@ class LaTeXRenderer():
 				"",
 				dec2(disposals_report.cumulative_ltcg),
 				))
+		self.doc.append(NewLine())
 
 	def mining_summary(self, rows: List[MiningSummaryRow]):
 		# with self.doc.create(Tblr("X X X X X X X X", 8)) as table:

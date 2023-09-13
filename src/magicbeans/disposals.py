@@ -163,6 +163,13 @@ class BookedDisposal():
 		return sorted(filter(filter_pred_w_numeraire, tx.postings),
 				key=lambda p: p.units.number)
 
+	def disposed_asset(self) -> str:
+		"""Return the name of the asset disposed"""
+		all_disposed_assets = set([p.units.currency for p in self.disposal_legs])
+		if len(all_disposed_assets) > 1:
+			raise Exception(f"Expected one disposed asset, got: {all_disposed_assets}")
+		return all_disposed_assets.pop()
+
 	def total_numeriare_proceeds(self) -> Amount:
 		"""Return the total proceeds obtained natively in the numeraire"""
 		nums = [p.units for p in self.numeraire_proceeds_legs]

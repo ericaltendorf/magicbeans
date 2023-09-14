@@ -336,7 +336,7 @@ class ReportDriver:
 	
 		# Render.
 		self.renderer.header(
-			f"{ty} Inventory, Acquisitions, and Disposals, {start}--{inclusive_end}")
+			f"{ty} Detailed Activity Log, {start}--{inclusive_end}")
 		self.renderer.details_page(inv_report, acquisitions_report_rows, disposals_report)
 
 	def run_mining_summary(self, title: str, ty: int):

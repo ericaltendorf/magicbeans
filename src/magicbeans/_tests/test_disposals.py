@@ -52,7 +52,7 @@ def test_lotindex_from_inventories():
     assert lotindex.get_lotid('Assets:Coinbase', 'BTC', usd_cost('8000.0', 2020)) == 2
 
     # This shouldn't have gotten an ID, but it should be in the index.
-    assert ('Assets:MtGox', 'BTC', usd_cost('1000.0', 2015)) in lotindex._index
+    assert ('BTC', usd_cost('1000.0', 2015)) in lotindex._index
     assert lotindex.get_lotid('Assets:MtGox', 'BTC', usd_cost('1000.0', 2015)) == None
 
 def test_lotindex_misuse_throws():

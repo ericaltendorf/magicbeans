@@ -315,15 +315,12 @@ class LaTeXRenderer():
 						msg = f"{dec4(leg.units.number)} {leg.units.currency} value ea {dec4(leg.cost.number)}"
 						table.add_row((NoEscape("$+$"), MultiColumn(5, align="l", data=msg), "", "", ""))
 					
-					# TODO: this logic should probably live in the driver, not the renderer, since
-					# it also should affect pagination logic
-					max_disposal_legs = 50
-					n_legs = len(row.disposal_legs_and_ids)
-					for (i, (leg, id)) in enumerate(row.disposal_legs_and_ids[:max_disposal_legs]):
+					for (i, (leg, id)) in enumerate(row.disposal_legs_and_ids):
 						# Negated since we render a special neg sign separate from the number.
 						msg = f"{disposals.disposal_inventory_ref_neg(leg, id)}"
-						if i == max_disposal_legs - 1 and n_legs > max_disposal_legs:
-							msg = msg + f", and {n_legs - max_disposal_legs} more (smaller) lot(s)"
+						# TODO: is there a more pythonic way to do this?
+						if i == len(row.disposal_legs_and_ids) - 1 and row.num_legs_omitted > 0:
+							msg = msg + f", and {row.num_legs_omitted} more (smaller) lot(s)"
 						table.add_row((NoEscape("$-$"), MultiColumn(5, align="l", data=msg), "", "", ""))
 
 

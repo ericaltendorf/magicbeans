@@ -46,6 +46,7 @@ class DisposalsReportRow(NamedTuple):
     numeraire_proceeds_legs: List[Posting]
     other_proceeds_legs: List[Posting]
     disposal_legs_and_ids: List[Tuple[Posting, int]]
+    num_legs_omitted: int
 
 class DisposalsReport(NamedTuple):
     start: datetime.date

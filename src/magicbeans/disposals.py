@@ -46,29 +46,34 @@ class LotIndex():
 		# if it's been transferred.
 		self._index = {}
 
+		available_lots = set()
 		for (account, inventory) in account_to_inventory.items():
 			for position in inventory:
-				self._set(position.units.currency, position.cost, None)
-
-		transactions = acquisitions + disposals
-		for tx in transactions:
+				available_lots.add(self._mk_key(position.units.currency, position.cost))
+		for tx in acquisitions:
 			for posting in tx.postings:
 				if is_other_proceeds_leg(posting, numeraire):
-					self._set(posting.units.currency, posting.cost, None)
-			
+					available_lots.add(self._mk_key(posting.units.currency, posting.cost))
+		
+		for (currency, cost) in available_lots:
+			self._set(currency, cost, None)
+
 		# Use sequential user-visible index IDs starting from 1
 		self.next_id = 1
 
+		referenced_lots = set()
 		for e in disposals:
 			for p in get_disposal_postings(e):
-				currency = p.units.currency
-				if self._has(currency, p.cost):
-					self._assign_lotid(currency, p.cost)
-				else:
-					# TODO: address this -- I think it's mostly currently happening for lots
-					# that were transferred (e.g., USDT bought from CoinbasePro and moved to
-					# GateIO)
-					print(f"WARNING: no lot found for {currency} {{{p.cost.number} {p.cost.date}}}")
+				referenced_lots.add(self._mk_key(p.units.currency, p.cost))
+		
+		missing_lots = referenced_lots - available_lots
+		for (currency, cost) in missing_lots:
+			print(f"WARNING: missing lot for {currency} {{{cost.number} {cost.date}}}")
+		
+		found_lots = referenced_lots & available_lots
+		for (currency, cost) in found_lots:
+			self._assign_lotid(currency, cost)
+
 
 	# For robustness, round Cost values.  TODO: determine if this is necessary
 	def _mk_key(self, currency, cost):

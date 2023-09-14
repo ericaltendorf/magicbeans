@@ -162,6 +162,31 @@ class ReportDriver:
 	# New report methods, using direct analysis of the entries
 	#
 
+	def get_inventory_for_first_disposal(self, start: datetime.date, end: datetime.date):
+		"""Get the inventory at the time of the first disposal in the period"""
+
+		# Find the first disposal in the period
+		first_disposal = None
+		for e in self.entries:
+			if e.date >= start and e.date < end and is_disposal_tx(e):
+				first_disposal = e
+				break
+
+		if first_disposal is not None:
+			inventory_as_of_date = first_disposal.date
+		else:
+			inventory_as_of_date = start
+
+		(inventories_by_acct, _) = summarize.balance_by_account(
+			self.entries, inventory_as_of_date)
+
+		# Remove numeraire-only accounts; we don't need to track those
+		for (account, inventory) in list(inventories_by_acct.items()):
+			if all([p.units.currency == self.numeraire for p in inventory]):
+				inventories_by_acct.pop(account)
+
+		return (inventories_by_acct, inventory_as_of_date)
+
 	def get_inventory_and_entries(self, start: datetime.date, end: datetime.date):
 		"""For a time period, get the inventory at the start and all entries in the period"""
 		(inventories_by_acct, index) = summarize.balance_by_account(
@@ -311,7 +336,8 @@ class ReportDriver:
 
 			# inventories_by_acct is a dict mapping account names to inventories, which
 			# in turn are dicts mapping currencies to lists of positions.
-			(inventories_by_acct, _) = self.get_inventory_and_entries(page_start, page_end)
+			(inventories_by_acct, inventory_as_of_date) = (
+				self.get_inventory_for_first_disposal(page_start, page_end))
 
 			# First organize inventories by currency, and sort, so that we can
 			# assign lot IDs in order.
@@ -325,7 +351,7 @@ class ReportDriver:
 			# Collect inventory and acquisition reports
 			# Populate the lot index, and assign IDs to the interesting lots
 			lot_index = LotIndex(inventory_blocks, acquisitions, disposals, self.numeraire)
-			inv_report = self.make_inventory_report(page_start, inventory_blocks, lot_index)
+			inv_report = self.make_inventory_report(inventory_as_of_date, inventory_blocks, lot_index)
 			acquisitions_report_rows = self.make_acquisitions_report(acquisitions, mining_awards, lot_index)
 
 			booked_disposals = [BookedDisposal(e, self.numeraire) for e in disposals]

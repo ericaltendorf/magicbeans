@@ -155,7 +155,7 @@ class ReportDriver:
 	#
 	def tax_year_summary(self, ty: int):
 		self.renderer.header(f"{ty} Tax Summary")
-		self.run_disposals_summary(datetime.date(ty, 1, 1), datetime.date(ty+1, 1, 1))
+		self.run_disposals_summary(ty)
 		self.run_mining_summary(f"{ty} Mining Operations and Income", ty)
 
 	#
@@ -276,6 +276,7 @@ class ReportDriver:
 				bd.tx.date, bd.tx.narration, numer_proc, other_proc, disposed_cost, gain,
 				bd.stcg(), cumulative_stcg, bd.ltcg(), cumulative_ltcg,
 				bd.disposed_currency,
+				bd.disposed_amount(),
 				bd.numeraire_proceeds_legs,
 				bd.other_proceeds_legs,
 				disposal_legs_and_ids,
@@ -284,12 +285,11 @@ class ReportDriver:
 		return DisposalsReport(start, end, self.numeraire,
 				disposals_report_rows, cumulative_stcg, cumulative_ltcg, show_legs)
 	
-	def run_disposals_summary(self, start: datetime.date, end: datetime.date):
+	def run_disposals_summary(self, ty: int):
 		"""Generate a summary of disposals for the period."""
+		start = datetime.date(ty, 1, 1)
+		end = datetime.date(ty+1, 1, 1)
 		inclusive_end = end - datetime.timedelta(days=1)
-		if start.year != inclusive_end.year:
-			raise ValueError(f"Start and end dates must be in same tax year: {start}, {end}")
-		ty = start.year
 
 		# Get the disposals to report.  (Given disposals are all we need, there might be a 
 		# simpler way to obtain them.)
@@ -300,7 +300,7 @@ class ReportDriver:
 
 		disposed_assets = set([bd.disposed_asset() for bd in booked_disposals])
 
-		self.renderer.subheader(f"Disposals and Gain/Loss, {start}--{inclusive_end}")
+		self.renderer.subheader(f"{ty} Disposals and Gain/Loss")
 		if not disposed_assets:
 			self.renderer.write_text("(No disposals in this period.)")
 			return	

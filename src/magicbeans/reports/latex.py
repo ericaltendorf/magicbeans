@@ -86,7 +86,7 @@ class LaTeXRenderer():
 		self.path = path
 		
 		geometry_options = {
-			"landscape": True,
+			"landscape": False,
 			"hmargin": "0.3in",
 			"top": "0.3in",
 			"bottom": "0.7in",
@@ -170,13 +170,13 @@ class LaTeXRenderer():
 			acquisitions_report_rows: List[AcquisitionsReportRow],
 			disposals_report: DisposalsReport):
 
-		with self.doc.create(MiniPage(width=r"0.2\textwidth", pos="t", content_pos="t")) as page:
+		with self.doc.create(MiniPage(width=r"0.3\textwidth", pos="t", content_pos="t")) as page:
 			# Trick the minipage env to align to this (zero-height) first line
 			self.doc.append(NoEscape(r"\vspace{0pt}"))
 			self.inventory(inventory_report)
 
 		self.doc.append(HFill())
-		with self.doc.create(MiniPage(width=r"0.8\textwidth", pos="t", content_pos="t")) as page:
+		with self.doc.create(MiniPage(width=r"0.7\textwidth", pos="t", content_pos="t")) as page:
 			# Trick the minipage env to align to this (zero-height) first line
 			self.doc.append(NoEscape(r"\vspace{0pt}"))
 
@@ -240,7 +240,7 @@ class LaTeXRenderer():
 			table.add_row((
 				"Date",
 				"Description",
-				"Lot ID",
+				"ID",
 				MultiColumn(2, data="Assets Acquired", align="r"),
 				"Cost ea.",
 				"Total cost"
@@ -271,7 +271,7 @@ class LaTeXRenderer():
 			table.add_hline()
 			table.add_row((
 				MultiColumn(1, align="l", data="Date"),   # Just for the align override.
-				NoEscape("Description" + (", augmentations ($+$), disposals with cost ($-$)" if disposals_report.show_legs else "")),
+				NoEscape("Description" + (", legs ($+$, $-$)" if disposals_report.show_details else "")),
 				"Proceeds",
 				"Cost",
 				"Gain",
@@ -282,7 +282,7 @@ class LaTeXRenderer():
 				))
 
 			for (rownum, row) in enumerate(disposals_report.rows):
-				if disposals_report.show_legs or rownum % 5 == 0:
+				if disposals_report.show_details or rownum % 5 == 0:
 					table.add_hline()
 				
 				# Put true USD proceeds and FMV of other proceeds in the
@@ -298,7 +298,7 @@ class LaTeXRenderer():
 					dec2(row.other_proceeds.number),
 				table.add_row((
 					row.date,
-					row.narration,
+					f"{dec4(row.disposed_amount)} {row.disposed_currency}",
 					NoEscape(proceeds),
 					dec2(row.disposed_cost),
 					dec2(row.gain),
@@ -307,8 +307,11 @@ class LaTeXRenderer():
 					dec2(row.ltcg),
 					TextColor("gray", dec2(row.cum_ltcg)),
 					))
+				if (disposals_report.show_details):
+					table.add_row((
+						MultiColumn(9, align="l", data=TextColor("gray", row.narration)), ))
 
-				if disposals_report.show_legs:
+				if disposals_report.show_details:
 					for leg in row.numeraire_proceeds_legs:
 						table.add_row((NoEscape("$+$"), f"{dec4(leg.units.number)} {leg.units.currency}", "", "", "", "", "", "", ""))
 

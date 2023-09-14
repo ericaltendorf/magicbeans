@@ -43,6 +43,7 @@ class DisposalsReportRow(NamedTuple):
     ltcg: Decimal
     cum_ltcg: Decimal
     disposed_currency: str
+    disposed_amount: Decimal
     numeraire_proceeds_legs: List[Posting]
     other_proceeds_legs: List[Posting]
     disposal_legs_and_ids: List[Tuple[Posting, int]]
@@ -55,7 +56,7 @@ class DisposalsReport(NamedTuple):
     rows: List[DisposalsReportRow]
     cumulative_stcg: Decimal
     cumulative_ltcg: Decimal
-    show_legs: bool
+    show_details: bool
 
 class MiningSummaryRow(NamedTuple):
     currency: str

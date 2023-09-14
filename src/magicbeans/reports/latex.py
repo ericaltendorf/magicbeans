@@ -40,6 +40,9 @@ def decn(n, d):
 		n = n.number
 	return f"{n:.{d}f}"
 
+def table_text(text: str):
+	return SmallText(bold(text))
+
 class Multicols(Environment):
 	packages = [Package('multicol')]
 	escape = False
@@ -190,13 +193,13 @@ class LaTeXRenderer():
 	def inventory(self, inventory_report: InventoryReport):
 		# with self.doc.create(Tblr("|r r r X|", 4, width=r"0.95\linewidth" )) as table:
 		with self.doc.create(Tabularx("|r r r X|", width_argument=NoEscape(r"0.95\linewidth") )) as table:
-			table.add_hline()
-			table.add_row((MultiColumn(4, align="|c|",
-				data=MediumText(f"Inventory {inventory_report.date}")), ))
+			table.add_row((MultiColumn(4, align="c",
+				data=table_text(f"Inventory {inventory_report.date}")), ))
 			if not inventory_report.accounts:
 				table.add_hline()
 				table.add_row((MultiColumn(4, data="No inventory to report"),))
 				table.add_hline()
+				table.add_row(("", "", "", ""))  # Needed to force the X cell to expand the row
 			for acct in inventory_report.accounts:
 				table.add_hline()
 				table.add_row((MultiColumn(4, data=bold(acct.account)),))
@@ -232,8 +235,7 @@ class LaTeXRenderer():
 	def acquisitions(self, acquisitions_report_rows: List[AcquisitionsReportRow]):
 		# with self.doc.create(Tblr("r X[1,l] l r r r r", 7, width=r"0.95\linewidth" )) as table:
 		with self.doc.create(Tabularx("r X l r l r r", width_argument=NoEscape(r"0.95\linewidth") )) as table:
-			table.add_hline()
-			table.add_row((MultiColumn(7, align="|c|", data=MediumText(f"Acquisitions")),))
+			table.add_row((MultiColumn(7, align="c", data=table_text(f"Acquisitions")),))
 			table.add_hline()
 			table.add_row((
 				"Date",
@@ -265,8 +267,7 @@ class LaTeXRenderer():
 	def disposals(self, title: str, disposals_report: DisposalsReport):
 		# with self.doc.create(Tblr("r X[1,l] r r r r r r r", 9, width=r"0.95\linewidth" )) as table:
 		with self.doc.create(Tabularx("r X r r r r r r r", width_argument=NoEscape(r"0.95\linewidth" ))) as table:
-			table.add_hline()
-			table.add_row((MultiColumn(9, align="|c|", data=MediumText(title)),))
+			table.add_row((MultiColumn(9, align="c", data=table_text(title)),))
 			table.add_hline()
 			table.add_row((
 				MultiColumn(1, align="l", data="Date"),   # Just for the align override.

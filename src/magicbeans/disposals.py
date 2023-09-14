@@ -35,14 +35,15 @@ class LotIndex():
 
 	# TODO: filter out numeraire accounts
 
-	def __init__(self, account_to_inventory, transactions, numeraire):
+	def __init__(self, account_to_inventory, acquisitions, disposals, numeraire):
 		"""Initialize the index by adding lots from all inventories, and
 		from the augmentation legs of all transactions.
 
 		Args:
 		- account_to_inventory: a dict mapping account names to inventories,
 			as returned by beancount.ops.summarize.balance_by_account()
-		- transactions: a list of transactions
+		- acquisitions: acquisition transactions
+		- disposals: disposal transactions
 		- numeraire: needed to ignore cash-proceeds augmentations
 		"""
 
@@ -54,6 +55,7 @@ class LotIndex():
 			for position in inventory:
 				self._set(account, position.units.currency, position.cost, (position, None))
 
+		transactions = acquisitions + disposals
 		for tx in transactions:
 			for posting in tx.postings:
 				if is_other_proceeds_leg(posting, numeraire):

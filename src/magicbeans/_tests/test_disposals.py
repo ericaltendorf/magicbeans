@@ -44,7 +44,7 @@ def test_lotindex_from_inventories():
         ]),
     ]
 
-    lotindex = LotIndex(account_to_inventory, [], "USD")
+    lotindex = LotIndex(account_to_inventory, [], [], "USD")
     lotindex.assign_lotids_for_disposals(disposals)
 
     # These should have been assigned IDs
@@ -72,7 +72,7 @@ def test_lotindex_misuse_throws():
         ]),
     ]
 
-    lotindex = LotIndex(account_to_inventory, [], "USD")
+    lotindex = LotIndex(account_to_inventory, [], [], "USD")
     
     # Assign some IDs
     lotindex.assign_lotids_for_disposals(disposals)

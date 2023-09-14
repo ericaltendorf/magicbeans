@@ -47,9 +47,9 @@ def test_lotindex_from_inventories():
     lotindex = LotIndex(account_to_inventory, [], disposals, "USD")
 
     # These should have been assigned IDs
-    assert lotindex.get_lotid('Assets:MtGox', 'BTC', usd_cost('2000.0', 2016)) == 1
-    assert lotindex.get_lotid('Assets:Coinbase', 'BTC', usd_cost('8000.0', 2020)) == 2
+    assert lotindex.get_lotid('BTC', usd_cost('2000.0', 2016)) == 1
+    assert lotindex.get_lotid('BTC', usd_cost('8000.0', 2020)) == 2
 
     # This shouldn't have gotten an ID, but it should be in the index.
     assert ('BTC', usd_cost('1000.0', 2015)) in lotindex._index
-    assert lotindex.get_lotid('Assets:MtGox', 'BTC', usd_cost('1000.0', 2015)) == None
+    assert lotindex.get_lotid('BTC', usd_cost('1000.0', 2015)) == None

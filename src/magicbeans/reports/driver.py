@@ -195,7 +195,7 @@ class ReportDriver:
 
 				acct_inv_rep = AccountInventoryReport(account, total, [])
 				for pos in sorted(positions, key=lambda x: -abs(x.units.number)):
-					lotid = lot_index.get_lotid(account, pos.units.currency, pos.cost)
+					lotid = lot_index.get_lotid(pos.units.currency, pos.cost)
 					acct_inv_rep.positions_and_ids.append((pos, lotid))
 				account_inventory_reports.append(acct_inv_rep)
 			account_inventory_reports.sort(key=lambda x: (x.total.currency, x.account))
@@ -212,7 +212,7 @@ class ReportDriver:
 			acquisitions_report_rows.append(AcquisitionsReportRow(
 				e.date, e.narration, rcvd.units.number, rcvd.units.currency,
 				rcvd.cost.number, rcvd.cost.number * rcvd.units.number,
-				lot_index.get_lotid(rcvd.account, rcvd.units.currency, rcvd.cost)
+				lot_index.get_lotid(rcvd.units.currency, rcvd.cost)
 			))
 		
 		for e in mining_awards:
@@ -245,7 +245,7 @@ class ReportDriver:
 			num_legs_omitted = 0
 			if show_legs:
 				disposal_legs_and_ids = [
-					(p, lot_index.get_lotid(p.account, p.units.currency, p.cost))
+					(p, lot_index.get_lotid(p.units.currency, p.cost))
 					for p in bd.disposal_legs]
 				n_legs = len(disposal_legs_and_ids)
 				disposal_legs_and_ids = disposal_legs_and_ids[:MAX_DISPOSAL_LEGS]

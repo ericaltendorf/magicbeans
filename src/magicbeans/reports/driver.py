@@ -179,26 +179,22 @@ class ReportDriver:
 		# the caller really need this raw inventories_by_acct dict?
 		return (inventories_by_acct, all_entries)
 
-	def make_inventory_report(self, start, inventories_by_acct, lot_index):
+	def make_inventory_report(self, start, inventory_blocks, lot_index):
 		"""Construct an inventory report object."""
 		account_inventory_reports = [] 
-		for account in inventories_by_acct.keys():
+		for (cur, account, positions) in inventory_blocks:
 			# TODO: Hiding these for now to avoid taking up space, but we should really 
 			# track them down and figure out why there's assets remaining in these accounts.
 			if account.startswith("Assets:Xfer:"):
 				continue
 
-			currency_to_inventory = inventories_by_acct[account].split()
-			for (cur, inventory) in currency_to_inventory.items():
-				positions = inventory.values()
-				total = sum_amounts(cur, [pos.units for pos in positions])
+			total = sum_amounts(cur, [pos.units for pos in positions])
 
-				acct_inv_rep = AccountInventoryReport(account, total, [])
-				for pos in sorted(positions, key=lambda x: -abs(x.units.number)):
-					lotid = lot_index.get_lotid(pos.units.currency, pos.cost)
-					acct_inv_rep.positions_and_ids.append((pos, lotid))
-				account_inventory_reports.append(acct_inv_rep)
-			account_inventory_reports.sort(key=lambda x: (x.total.currency, x.account))
+			acct_inv_rep = AccountInventoryReport(account, total, [])
+			for pos in positions:
+				lotid = lot_index.get_lotid(pos.units.currency, pos.cost)
+				acct_inv_rep.positions_and_ids.append((pos, lotid))
+			account_inventory_reports.append(acct_inv_rep)
 		return InventoryReport(start, account_inventory_reports)
 
 	def make_acquisitions_report(self, acquisitions, mining_awards, lot_index):
@@ -313,12 +309,23 @@ class ReportDriver:
 			# Partition entries into disposals, acquisitions, and mining awards
 			(disposals, acquisitions, mining_awards) = self.partition_entries(tx_page, self.numeraire)
 
+			# inventories_by_acct is a dict mapping account names to inventories, which
+			# in turn are dicts mapping currencies to lists of positions.
 			(inventories_by_acct, _) = self.get_inventory_and_entries(page_start, page_end)
+
+			# First organize inventories by currency, and sort, so that we can
+			# assign lot IDs in order.
+			inventory_blocks = []  # (currency, account, positions) tuples
+			for acct in inventories_by_acct.keys():
+				for (cur, positions) in inventories_by_acct[acct].split().items():
+					inventory_blocks.append((cur, acct,
+							  sorted(positions, key=lambda x: -abs(x.units.number))))
+			inventory_blocks.sort()
 
 			# Collect inventory and acquisition reports
 			# Populate the lot index, and assign IDs to the interesting lots
-			lot_index = LotIndex(inventories_by_acct, acquisitions, disposals, self.numeraire)
-			inv_report = self.make_inventory_report(page_start, inventories_by_acct, lot_index)
+			lot_index = LotIndex(inventory_blocks, acquisitions, disposals, self.numeraire)
+			inv_report = self.make_inventory_report(page_start, inventory_blocks, lot_index)
 			acquisitions_report_rows = self.make_acquisitions_report(acquisitions, mining_awards, lot_index)
 
 			booked_disposals = [BookedDisposal(e, self.numeraire) for e in disposals]

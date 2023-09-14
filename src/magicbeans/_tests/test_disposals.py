@@ -16,16 +16,16 @@ def usd_cost(amount: str, year: int):
 def nyd(year: int):
     return datetime.date(year, 1, 1)
 
+# TODO: add test for acquisition lots
+
 def test_lotindex_from_inventories():
-    account_to_inventory = {
-        'Assets:MtGox': [
+    inventory_blocks = [
+        ('BTC', 'Assets:MtGox', [
             Position(Amount(D('1.8'), 'BTC'), Cost(D('1000.0'), 'USD', nyd(2015), None)),
-            Position(Amount(D('1.2'), 'BTC'), Cost(D('2000.0'), 'USD', nyd(2016), None)),
-            ],
-        'Assets:Coinbase': [
-            Position(Amount(D('0.5'), 'BTC'), Cost(D('8000.0'), 'USD', nyd(2020), None)),
-            ]
-    }
+            Position(Amount(D('1.2'), 'BTC'), Cost(D('2000.0'), 'USD', nyd(2016), None)), ]),
+        ('BTC', 'Assets:Coinbase', [
+            Position(Amount(D('0.5'), 'BTC'), Cost(D('8000.0'), 'USD', nyd(2020), None)), ]),
+    ]
 
     disposals = [
         Transaction({}, datetime.date(2022, 1, 1), None, None, None, None, None, [
@@ -44,12 +44,8 @@ def test_lotindex_from_inventories():
         ]),
     ]
 
-    lotindex = LotIndex(account_to_inventory, [], disposals, "USD")
+    lotindex = LotIndex(inventory_blocks, [], disposals, "USD")
 
     # These should have been assigned IDs
-    assert lotindex.get_lotid('BTC', usd_cost('2000.0', 2016)) == 2
-    assert lotindex.get_lotid('BTC', usd_cost('8000.0', 2020)) == 1
-
-    # This shouldn't have gotten an ID, but it should be in the index.
-    assert ('BTC', usd_cost('1000.0', 2015)) in lotindex._index
-    assert lotindex.get_lotid('BTC', usd_cost('1000.0', 2015)) == None
+    assert lotindex.get_lotid('BTC', usd_cost('2000.0', 2016)) == 1
+    assert lotindex.get_lotid('BTC', usd_cost('8000.0', 2020)) == 2

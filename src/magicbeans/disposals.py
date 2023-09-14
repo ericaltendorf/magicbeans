@@ -28,13 +28,12 @@ class LotIndex():
 
 	# TODO: filter out numeraire accounts
 
-	def __init__(self, account_to_inventory, acquisitions, disposals, numeraire):
+	def __init__(self, inventory_blocks, acquisitions, disposals, numeraire):
 		"""Initialize the index by adding lots from all inventories, and
 		from the augmentation legs of all transactions.
 
 		Args:
-		- account_to_inventory: a dict mapping account names to inventories,
-			as returned by beancount.ops.summarize.balance_by_account()
+		- inventory_blocks: list of (currency, account, positions) tuples
 		- acquisitions: acquisition transactions
 		- disposals: disposal transactions
 		- numeraire: needed to ignore cash-proceeds augmentations
@@ -46,33 +45,37 @@ class LotIndex():
 		# if it's been transferred.
 		self._index = {}
 
-		available_lots = set()
-		for (account, inventory) in account_to_inventory.items():
-			for position in inventory:
-				available_lots.add(self._mk_key(position.units.currency, position.cost))
-		for tx in acquisitions:
-			for posting in tx.postings:
-				if is_other_proceeds_leg(posting, numeraire):
-					available_lots.add(self._mk_key(posting.units.currency, posting.cost))
-		
-		for (currency, cost) in available_lots:
-			self._set(currency, cost, None)
-
-		# Use sequential user-visible index IDs starting from 1
-		self.next_id = 1
-
 		referenced_lots = set()
 		for e in disposals:
 			for p in get_disposal_postings(e):
 				referenced_lots.add(self._mk_key(p.units.currency, p.cost))
+
+		# Use user-visible index IDs starting from 1, and in the order that lots
+		# appear in inventory and acquisitions, so they're easy to find in the
+		# report.
+		self.next_id = 1
+
+		available_lots = set()
+		for (currency, account, positions) in inventory_blocks:
+			for position in positions:
+				key = self._mk_key(position.units.currency, position.cost)
+				if key in referenced_lots:
+					available_lots.add(key)
+					self._assign_lotid(key[0], key[1])
+		for tx in acquisitions:
+			for posting in tx.postings:
+				if is_other_proceeds_leg(posting, numeraire):
+					key = self._mk_key(posting.units.currency, posting.cost)
+					if key in referenced_lots:
+						available_lots.add(key)
+						self._assign_lotid(key[0], key[1])
 		
+		# for (currency, cost) in available_lots:
+		# 	self._set(currency, cost, None)
+
 		missing_lots = referenced_lots - available_lots
 		for (currency, cost) in missing_lots:
 			print(f"WARNING: missing lot for {currency} {{{cost.number} {cost.date}}}")
-		
-		found_lots = referenced_lots & available_lots
-		for (currency, cost) in found_lots:
-			self._assign_lotid(currency, cost)
 
 
 	# For robustness, round Cost values.  TODO: determine if this is necessary
@@ -92,10 +95,8 @@ class LotIndex():
 	def _assign_lotid(self, currency: str, cost: Cost) -> None:
 		"""Finds the lot in the inventory, assigns an index number to it
 		   if it doesn't already have one, remembers that and returns it"""
-		id = self._get(currency, cost)
-		if id is None:
-			self._set(currency, cost, self.next_id)
-			self.next_id += 1
+		self._set(currency, cost, self.next_id)
+		self.next_id += 1
 
 	def get_lotid(self, currency: str, cost: Cost) -> int:
 		"""If this lot has been indexed, return the index, otherwise None"""

@@ -149,7 +149,7 @@ class ReportDriver:
 		return (disposals, acquisitions, mining_awards)
 
 	# TODO: unittest
-	def paginate_entries(self, start: datetime.date, end: datetime.date, page_size: int):
+	def paginate_entries_by_dates(self, start: datetime.date, end: datetime.date, page_size: int):
 		"""Yield dates which segment the provide entries into groups intended to fit on
 		   one page.  The supplied 
 		   most page_size entries, unless more than that many entries occur on one day.

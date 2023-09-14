@@ -102,7 +102,7 @@ if __name__ == '__main__':
 		# is called here.  Can we push  it into the driver?
 
 		last_date = start
-		for date in db.paginate_entries(start, end, 60):
+		for date in db.paginate_entries_by_dates(start, end, 60):
 			print(f"  {ty} {date}", end="", flush=True)
 			db.run_detailed_log(last_date, date)
 			last_date = date

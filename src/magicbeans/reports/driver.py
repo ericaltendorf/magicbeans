@@ -385,19 +385,27 @@ def paginate_entries(entries, page_size: int):
 	page_start_index = 0
 	vweight = 0  # Roughly, number of table lines used.
 	for i in range(0, len(entries)):
-		if is_mining_tx(entries[i]):
-			continue  # We don't show each mining event
-
-		vweight += 1
+		row_weight = 0
+		if not is_mining_tx(entries[i]):
+			row_weight += 1
 		if is_disposal_tx(entries[i]):
-			vweight += len(entries[i].postings)
+			row_weight += len(entries[i].postings)
 
-		if vweight > page_size and page_start_index != i:
-			yield entries[page_start_index:i]
-			vweight = 0
-			page_start_index = i
+		if vweight + row_weight > page_size:
+			if i == page_start_index:
+				# We went overweight on the first entry.  Just yield it anyway.
+				yield entries[page_start_index:i+1]
+				page_start_index = i+1
+				vweight = 0
+			else:
+				yield entries[page_start_index:i]
+				page_start_index = i
+				vweight = row_weight
+		else:
+			vweight += row_weight
 
-	yield entries[page_start_index:]
+	if page_start_index < len(entries):
+		yield entries[page_start_index:]
 
 def accrue_mining_stats(mining_tx, stats_to_update):
 	income_posting = common.maybe_get_unique_posting_by_account(

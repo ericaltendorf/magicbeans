@@ -7,13 +7,13 @@
 
 2020-02-20 * "CB: Sent 0.01BTC to adh547SDFhs7SDKJFkdfh4KS95hsdkfs6s"
   timestamp: "2020-02-20T03:20:45Z"
-  Assets:Coinbase:BTC  -0.01000000 BTC {USD}
-  Assets:Ledger:BTC     0.01000000 BTC {USD}
+  Assets:Coinbase:BTC  -0.01000000 BTC {}
+  Assets:Ledger:BTC     0.01000000 BTC {}
 
 2020-03-23 * "CB: Received 0.0050 BTC from an external account"
   timestamp: "2020-03-23T03:49:33Z"
-  Assets:Coinbase:BTC   0.00500000 BTC {USD}
-  Assets:Ledger:BTC    -0.00500000 BTC {USD}
+  Assets:Coinbase:BTC   0.00500000 BTC {}
+  Assets:Ledger:BTC    -0.00500000 BTC {}
 
 2020-04-25 * "CB: Buy 0.5000 BTC for $4,500.00 USD (@9000.00, w fees ~9000.0000)"
   fee-info: "(fees=0.0000 USD, total=4500.00, subtotal=4500.00); fee-adjusted per-unit value: 9000.0 USD"

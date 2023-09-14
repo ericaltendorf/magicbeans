@@ -1,13 +1,13 @@
 
 2021-01-31 * "GIO: Receive 5.0000 XCH tx:2467345"
   timestamp: "2021-01-31T20:35:10Z"
-  Assets:GateIO:XCH                   5.0000000000000000 XCH {USD}
-  Assets:Xfer:ChiaWallet-GateIO:XCH  -5.0000000000000000 XCH {USD}
+  Assets:Xfer:ChiaWallet-GateIO:XCH  -5.0000000000000000 XCH {}
+  Assets:GateIO:XCH                   5.0000000000000000 XCH {}
 
 2021-02-02 * "GIO: Receive 1000.0000 USDT tx:2645835"
   timestamp: "2021-02-02T09:47:27Z"
-  Assets:GateIO:USDT                 1000.0000000000000000 USDT {USD}
-  Assets:Xfer:Coinbase-GateIO:USDT  -1000.0000000000000000 USDT {USD}
+  Assets:Xfer:Coinbase-GateIO:USDT  -1000.0000000000000000 USDT {}
+  Assets:GateIO:USDT                 1000.0000000000000000 USDT {}
 
 2021-03-01 * "GIO: Buy 20 XCH with 400 USDT fees: 0.2000 XCH tx:462845726"
   fee-info: "(fees=0.2000000000 XCH, rcvd-total=19.8000000000000000 XCH, rcvd-subtotal=20.0000000000000000 XCH)"
@@ -18,8 +18,8 @@
 
 2021-04-01 * "GIO: Send 8.0000 XCH tx:24567229"
   timestamp: "2021-04-01T07:44:08Z"
-  Assets:GateIO:XCH                  -8.0000000000000000 XCH {USD}
-  Assets:Xfer:GateIO-ChiaWallet:XCH   8.0000000000000000 XCH {USD}
+  Assets:GateIO:XCH                  -8.0000000000000000 XCH {}
+  Assets:Xfer:GateIO-ChiaWallet:XCH   8.0000000000000000 XCH {}
 
 2021-04-30 * "GIO: Buy 10 XCH with 250 USDT fees: 0.2000 XCH tx:32475432626"
   fee-info: "(fees=0.2000000000000000 XCH, rcvd-total=9.8000000000000000 XCH, rcvd-subtotal=10.0000000000000000 XCH)"
@@ -30,8 +30,8 @@
 
 2021-05-31 * "GIO: Receive 5.0000 XCH tx:2456237"
   timestamp: "2021-05-31T21:46:20Z"
-  Assets:GateIO:XCH                   5.0000000000000000 XCH {USD}
-  Assets:Xfer:ChiaWallet-GateIO:XCH  -5.0000000000000000 XCH {USD}
+  Assets:Xfer:ChiaWallet-GateIO:XCH  -5.0000000000000000 XCH {}
+  Assets:GateIO:XCH                   5.0000000000000000 XCH {}
 
 2021-07-01 * "GIO: Sell 20 XCH for 600 USDT fees: 0.5000 USDT tx:234765643"
   fee-info: "(fees=0.5000000000000000 USDT, rcvd-total=599.5000000000000000 USDT, rcvd-subtotal=600.0000000000000000 USDT)"
@@ -42,5 +42,5 @@
 
 2021-08-01 * "GIO: Send 100.0000 USDT tx:26435237"
   timestamp: "2021-08-01T06:07:42Z"
-  Assets:GateIO:USDT                -100.0000000000000000 USDT {USD}
-  Assets:Xfer:GateIO-Coinbase:USDT   100.0000000000000000 USDT {USD}
+  Assets:GateIO:USDT                -100.0000000000000000 USDT {}
+  Assets:Xfer:GateIO-Coinbase:USDT   100.0000000000000000 USDT {}

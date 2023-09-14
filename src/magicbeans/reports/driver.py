@@ -183,6 +183,11 @@ class ReportDriver:
 		"""Construct an inventory report object."""
 		account_inventory_reports = [] 
 		for account in inventories_by_acct.keys():
+			# TODO: Hiding these for now to avoid taking up space, but we should really 
+			# track them down and figure out why there's assets remaining in these accounts.
+			if account.startswith("Assets:Xfer:"):
+				continue
+
 			currency_to_inventory = inventories_by_acct[account].split()
 			for (cur, inventory) in currency_to_inventory.items():
 				positions = inventory.values()

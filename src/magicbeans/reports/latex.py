@@ -15,6 +15,8 @@ from pylatex.utils import italic, NoEscape, bold
 from pylatex.basic import HugeText, LargeText, MediumText, SmallText, NewPage
 from pylatex.math import Math
 
+# TODO: This truncation probably should take place in the driver.
+DEFAULT_NUM_LOTS_PER_ACCT = 8
 
 # TODO: get the tabudecimal thing working, or maybe siunitx, which is
 # already in the tabu pylatex package.
@@ -197,9 +199,7 @@ class LaTeXRenderer():
 				table.add_hline()
 			for acct in inventory_report.accounts:
 				table.add_hline()
-
-				acct_name = acct.account.replace("Assets:Xfer:", "Xfer ")
-				table.add_row((MultiColumn(4, data=bold(acct_name)),))
+				table.add_row((MultiColumn(4, data=bold(acct.account)),))
 				table.add_hline()
 
 				n_lots = len(acct.positions_and_ids)
@@ -213,7 +213,7 @@ class LaTeXRenderer():
 
 				last_line_added = 0
 				for (line_no, (pos, lot_id)) in enumerate(acct.positions_and_ids):
-					if (line_no < 10 or lot_id):
+					if (line_no < DEFAULT_NUM_LOTS_PER_ACCT or lot_id):
 						table.add_row((
 							f"#{lot_id}" if lot_id else "",
 							dec6(pos.units.number),

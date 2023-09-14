@@ -97,16 +97,8 @@ if __name__ == '__main__':
 	for ty in tax_years:
 		start = datetime.date(ty, 1, 1)
 		end = datetime.date(ty+1, 1, 1)
-
-		# TODO: It's actually really confusing that the pagination logic
-		# is called here.  Can we push  it into the driver?
-
-		last_date = start
-		for date in db.paginate_entries_by_dates(start, end, 60):
-			print(f"  {ty} {date}", end="", flush=True)
-			db.run_detailed_log(last_date, date)
-			last_date = date
-		db.run_detailed_log(last_date, end)
+		print(f"  {ty} ", end="", flush=True)
+		db.run_detailed_log(start, end)
 
 	print()
 

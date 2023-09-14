@@ -11,6 +11,7 @@ MINING_INCOME_ACCOUNT = "Income:Mining:USD"
 
 def is_mining_tx(entry):
     return (isinstance(entry, Transaction)
+            and entry.narration
             and entry.narration.startswith("Mining reward"))
 
     # It feels cleaner to look for transactions with a posting to the mining

@@ -165,13 +165,13 @@ class LaTeXRenderer():
 			acquisitions_report_rows: List[AcquisitionsReportRow],
 			disposals_report: DisposalsReport):
 
-		with self.doc.create(MiniPage(width=r"0.22\textwidth", pos="t", content_pos="t")) as page:
+		with self.doc.create(MiniPage(width=r"0.2\textwidth", pos="t", content_pos="t")) as page:
 			# Trick the minipage env to align to this (zero-height) first line
 			self.doc.append(NoEscape(r"\vspace{0pt}"))
 			self.inventory(inventory_report)
 
 		self.doc.append(HFill())
-		with self.doc.create(MiniPage(width=r"0.78\textwidth", pos="t", content_pos="t")) as page:
+		with self.doc.create(MiniPage(width=r"0.8\textwidth", pos="t", content_pos="t")) as page:
 			# Trick the minipage env to align to this (zero-height) first line
 			self.doc.append(NoEscape(r"\vspace{0pt}"))
 
@@ -190,7 +190,7 @@ class LaTeXRenderer():
 		with self.doc.create(Tabularx("|r r r X|", width_argument=NoEscape(r"0.95\linewidth") )) as table:
 			table.add_hline()
 			table.add_row((MultiColumn(4, align="|c|",
-				data=MediumText(f"Starting Inventory")), ))
+				data=MediumText(f"Inventory {inventory_report.date}")), ))
 			if not inventory_report.accounts:
 				table.add_hline()
 				table.add_row((MultiColumn(4, data="No inventory to report"),))
@@ -231,7 +231,7 @@ class LaTeXRenderer():
 
 	def acquisitions(self, acquisitions_report_rows: List[AcquisitionsReportRow]):
 		# with self.doc.create(Tblr("r X[1,l] l r r r r", 7, width=r"0.95\linewidth" )) as table:
-		with self.doc.create(Tabularx("r X l r r r r", width_argument=NoEscape(r"0.95\linewidth") )) as table:
+		with self.doc.create(Tabularx("r X l r l r r", width_argument=NoEscape(r"0.95\linewidth") )) as table:
 			table.add_hline()
 			table.add_row((MultiColumn(7, align="|c|", data=MediumText(f"Acquisitions")),))
 			table.add_hline()
@@ -315,8 +315,9 @@ class LaTeXRenderer():
 						msg = f"{dec4(leg.units.number)} {leg.units.currency} value ea {dec4(leg.cost.number)}"
 						table.add_row((NoEscape("$+$"), MultiColumn(5, align="l", data=msg), "", "", ""))
 					
-					max_disposal_legs = 8
-					
+					# TODO: this logic should probably live in the driver, not the renderer, since
+					# it also should affect pagination logic
+					max_disposal_legs = 50
 					n_legs = len(row.disposal_legs_and_ids)
 					for (i, (leg, id)) in enumerate(row.disposal_legs_and_ids[:max_disposal_legs]):
 						# Negated since we render a special neg sign separate from the number.

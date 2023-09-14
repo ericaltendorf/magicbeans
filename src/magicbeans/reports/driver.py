@@ -148,39 +148,6 @@ class ReportDriver:
 		acquisitions = list(filter(lambda e: self.is_acquisition_tx(e, numeraire), entries))
 		return (disposals, acquisitions, mining_awards)
 
-	# TODO: unittest
-	def paginate_entries_by_dates(self, start: datetime.date, end: datetime.date, page_size: int):
-		"""Yield dates which segment the provide entries into groups intended to fit on
-		   one page.  The supplied 
-		   most page_size entries, unless more than that many entries occur on one day.
-		   This is currently called from the run script, which then uses the pages to 
-		   call disposals_report() for each page, which is all a bit confusing. """
-		entered_range = False
-		last_partition = 0
-		last_date_change = 0
-		filtered_entries = list(filter(lambda x: is_disposal_tx(x) or self.is_acquisition_tx(x, self.numeraire), self.entries))
-		vweight = 0  # Accumulate vertical space taken by entries
-		for i in range(0, len(filtered_entries)):
-			if not entered_range and filtered_entries[i].date >= start:
-				entered_range = True
-				last_partition = i
-				last_date_change = i
-
-			if entered_range:
-				if filtered_entries[i].date > end:
-					break
-				if i > 0 and filtered_entries[i].date != filtered_entries[i-1].date:
-					last_date_change = i
-
-				vweight += 1
-				if is_disposal_tx(filtered_entries[i]):
-					vweight += len(filtered_entries[i].postings)
-
-				if vweight >= page_size and last_partition != last_date_change:
-					yield filtered_entries[last_date_change].date
-					last_partition = last_date_change
-					vweight = 0
-
 	#
 	# High level reporting functions
 	#
@@ -203,7 +170,7 @@ class ReportDriver:
 			if all([p.units.currency == self.numeraire for p in inventory]):
 				inventories_by_acct.pop(account)
 
-		# Define the list of transactions to process on this page
+		# Define the list of transactions to process in this period
 		all_entries = summarize.truncate(self.entries[index:], end)
 
 		# TODO: could we construct the inventory index here and return it?  does
@@ -317,27 +284,41 @@ class ReportDriver:
 			raise ValueError(f"Start and end dates must be in same tax year: {start}, {end}")
 		ty = start.year
 
-		# Get inventory (balances) at start, and entries for [start, end)
-		(inventories_by_acct, all_entries) = self.get_inventory_and_entries(start, end)
+		# This is a little confusing -- we'll call get_inventory_and_entries()
+		# multiple times; the first time for the entire period, to get all
+		# entries, and then subsequent times to get an inventory for the date
+		# for each page.
+		(_, all_entries) = self.get_inventory_and_entries(start, end)
 		all_txs = list(filter(lambda x: isinstance(x, Transaction), all_entries))
 
-		# Partition entries into disposals, acquisitions, and mining awards
-		(disposals, acquisitions, mining_awards) = self.partition_entries(all_txs, self.numeraire)
+		pages = list(paginate_entries(all_txs, 40))
+		for page_num in range(len(pages)):
+			tx_page = pages[page_num]
+			page_start = (start if page_num == 0 else tx_page[0].date)
+			page_end = (inclusive_end if page_num == len(pages) - 1
+			   else max(tx_page[-1].date, pages[page_num + 1][0].date - datetime.timedelta(days=1)))
 
-		# Collect inventory and acquisition reports
-		# Populate the lot index, and assign IDs to the interesting lots
-		lot_index = LotIndex(inventories_by_acct, disposals + acquisitions, self.numeraire)
-		lot_index.assign_lotids_for_disposals(disposals)
-		inv_report = self.make_inventory_report(start, inventories_by_acct, lot_index)
-		acquisitions_report_rows = self.make_acquisitions_report(acquisitions, mining_awards, lot_index)
+			# Partition entries into disposals, acquisitions, and mining awards
+			(disposals, acquisitions, mining_awards) = self.partition_entries(tx_page, self.numeraire)
 
-		booked_disposals = [BookedDisposal(e, self.numeraire) for e in disposals]
-		disposals_report = self.make_disposals_report(booked_disposals, lot_index, start, end, True)
-	
-		# Render.
-		self.renderer.header(
-			f"{ty} Detailed Activity Log, {start}--{inclusive_end}")
-		self.renderer.details_page(inv_report, acquisitions_report_rows, disposals_report)
+			(inventories_by_acct, _) = self.get_inventory_and_entries(page_start, page_end)
+
+			# Collect inventory and acquisition reports
+			# Populate the lot index, and assign IDs to the interesting lots
+			lot_index = LotIndex(inventories_by_acct, disposals + acquisitions, self.numeraire)
+			lot_index.assign_lotids_for_disposals(disposals)
+			inv_report = self.make_inventory_report(page_start, inventories_by_acct, lot_index)
+			acquisitions_report_rows = self.make_acquisitions_report(acquisitions, mining_awards, lot_index)
+
+			booked_disposals = [BookedDisposal(e, self.numeraire) for e in disposals]
+			disposals_report = self.make_disposals_report(booked_disposals, lot_index, page_start, page_end, True)
+		
+			# Render.
+			n_pages = len(pages)
+			self.renderer.header(
+				f"{ty} Detailed Activity Log ({page_num+1}/{n_pages}) "
+				+ f"{page_start.strftime('%m-%d')}--{page_end.strftime('%m-%d')}")
+			self.renderer.details_page(inv_report, acquisitions_report_rows, disposals_report)
 
 	def run_mining_summary(self, title: str, ty: int):
 		self.renderer.subreport_header(title)
@@ -380,6 +361,25 @@ class ReportDriver:
 				cumulative_fmv))
 		
 		self.renderer.mining_summary(rows)
+
+def paginate_entries(entries, page_size: int):
+	"""Yield lists of entries which fit on one page."""
+	page_start_index = 0
+	vweight = 0  # Roughly, number of table lines used.
+	for i in range(0, len(entries)):
+		if is_mining_tx(entries[i]):
+			continue  # We don't show each mining event
+
+		vweight += 1
+		if is_disposal_tx(entries[i]):
+			vweight += len(entries[i].postings)
+
+		if vweight > page_size and page_start_index != i:
+			yield entries[page_start_index:i]
+			vweight = 0
+			page_start_index = i
+
+	yield entries[page_start_index:]
 
 def accrue_mining_stats(mining_tx, stats_to_update):
 	income_posting = common.maybe_get_unique_posting_by_account(

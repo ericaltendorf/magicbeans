@@ -58,7 +58,16 @@ class LotIndex():
 		# Use sequential user-visible index IDs starting from 1
 		self.next_id = 1
 
-		self._assign_lotids_for_disposals(disposals)
+		for e in disposals:
+			for p in get_disposal_postings(e):
+				currency = p.units.currency
+				if self._has(p.account, currency, p.cost):
+					self._assign_lotid(p.account, currency, p.cost)
+				else:
+					# TODO: address this -- I think it's mostly currently happening for lots
+					# that were transferred (e.g., USDT bought from CoinbasePro and moved to
+					# GateIO)
+					print(f"WARNING: no lot found for {currency} {{{p.cost.number} {p.cost.date}}}")
 
 	# For robustness, round Cost values.  TODO: determine if this is necessary
 	def _mk_key(self, account, currency, cost):
@@ -86,18 +95,6 @@ class LotIndex():
 		if id is None:
 			self._set(account, currency, cost, (position, self.next_id))
 			self.next_id += 1
-
-	def _assign_lotids_for_disposals(self, disposals: List[Transaction]) -> None:
-		for e in disposals:
-			for p in get_disposal_postings(e):
-				currency = p.units.currency
-				if self._has(p.account, currency, p.cost):
-					self._assign_lotid(p.account, currency, p.cost)
-				else:
-					# TODO: address this -- I think it's mostly currently happening for lots
-					# that were transferred (e.g., USDT bought from CoinbasePro and moved to
-					# GateIO)
-					print(f"WARNING: no lot found for {currency} {{{p.cost.number} {p.cost.date}}}")
 
 	def get_lotid(self, account: str, currency: str, cost: Cost) -> int:
 		"""If this lot has been indexed, return the index, otherwise None"""

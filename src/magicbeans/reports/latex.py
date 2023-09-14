@@ -124,10 +124,10 @@ class LaTeXRenderer():
 
 	def header(self, title: str):
 		self.doc.append(NewPage())
-		self.doc.append(Section(title, numbering=True))
+		self.doc.append(Section(NoEscape(title), numbering=True))
 		
 	def subheader(self, title: str, q: str = None):
-		self.doc.append(Subsection(title, numbering=False))
+		self.doc.append(Subsection(NoEscape(title), numbering=False))
 
 	def subreport_header(self, title: str, q: str = None):
 		self.subheader(title)

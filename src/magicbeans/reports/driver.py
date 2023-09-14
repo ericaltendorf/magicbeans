@@ -300,7 +300,7 @@ class ReportDriver:
 
 		disposed_assets = set([bd.disposed_asset() for bd in booked_disposals])
 
-		self.renderer.subheader(f"Disposals and Gain/Loss, {start} - {inclusive_end}")
+		self.renderer.subheader(f"Disposals and Gain/Loss, {start}--{inclusive_end}")
 		if not disposed_assets:
 			self.renderer.write_text("(No disposals in this period.)")
 			return	
@@ -336,7 +336,7 @@ class ReportDriver:
 	
 		# Render.
 		self.renderer.header(
-			f"{ty} Inventory, Acquisitions, and Disposals, {start} - {inclusive_end}")
+			f"{ty} Inventory, Acquisitions, and Disposals, {start}--{inclusive_end}")
 		self.renderer.details_page(inv_report, acquisitions_report_rows, disposals_report)
 
 	def run_mining_summary(self, title: str, ty: int):

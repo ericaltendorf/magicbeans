@@ -44,8 +44,7 @@ def test_lotindex_from_inventories():
         ]),
     ]
 
-    lotindex = LotIndex(account_to_inventory, [], [], "USD")
-    lotindex.assign_lotids_for_disposals(disposals)
+    lotindex = LotIndex(account_to_inventory, [], disposals, "USD")
 
     # These should have been assigned IDs
     assert lotindex.get_lotid('Assets:MtGox', 'BTC', usd_cost('2000.0', 2016)) == 1
@@ -54,42 +53,3 @@ def test_lotindex_from_inventories():
     # This shouldn't have gotten an ID, but it should be in the index.
     assert ('BTC', usd_cost('1000.0', 2015)) in lotindex._index
     assert lotindex.get_lotid('Assets:MtGox', 'BTC', usd_cost('1000.0', 2015)) == None
-
-def test_lotindex_misuse_throws():
-    account_to_inventory = {
-        'Assets:Coinbase': [
-            Position(Amount(D('0.5'), 'BTC'), Cost(D('8000.0'), 'USD', nyd(2020), None)),
-            ]
-    }
-
-    disposals = [
-        Transaction({}, datetime.date(2022, 1, 1), None, None, None, None, None, [
-            Posting('Assets:MtGox',
-                    Amount(D('-0.2'), 'BTC'),
-                    Cost(D('2000.0'), 'USD', nyd(2016), None),
-                    None, None, None),
-            Posting('Assets:Bank', Amount(D('6000'), 'USD'), None, None, None, None),
-        ]),
-    ]
-
-    lotindex = LotIndex(account_to_inventory, [], [], "USD")
-    
-    # Assign some IDs
-    lotindex.assign_lotids_for_disposals(disposals)
-
-    # Now look up (it's not there, but that doesn't matter)
-    assert lotindex.get_lotid('Assets:MtGox', 'BTC', usd_cost('2000.0', 2016)) == None
-
-    # Further assignment should throw error.
-    disposals = [
-        Transaction({}, datetime.date(2022, 1, 1), None, None, None, None, None, [
-            Posting('Assets:Coinbase',
-                    Amount(D('-0.2'), 'BTC'),
-                    Cost(D('8000.0'), 'USD', nyd(2020), None),
-                    None, None, None),
-            Posting('Assets:Bank', Amount(D('6000'), 'USD'), None, None, None, None),
-        ]),
-    ]
-    with pytest.raises(Exception):
-        lotindex.assign_lotids_for_disposals(disposals)
-

@@ -318,7 +318,6 @@ class ReportDriver:
 			# Collect inventory and acquisition reports
 			# Populate the lot index, and assign IDs to the interesting lots
 			lot_index = LotIndex(inventories_by_acct, acquisitions, disposals, self.numeraire)
-			lot_index.assign_lotids_for_disposals(disposals)
 			inv_report = self.make_inventory_report(page_start, inventories_by_acct, lot_index)
 			acquisitions_report_rows = self.make_acquisitions_report(acquisitions, mining_awards, lot_index)
 

@@ -22,15 +22,8 @@ class LotIndex():
 
 	This class enables us to create an index of lots (i.e., positions) from
 	multiple accounts with an inventory snapshot, as well as from lots obtained
-	in subsequent acquisition transactions.  It also enables us to assign unique
-	user-reportable IDs to select lots of interest (e.g., those referenced by
-	booking decisions in disposals).
-
-	Usage:
-	1) Initialize index with lots/positions from inventories and/or transactions
-	2) Call assign_lotid() to mark lots we wish to reference later, or assign
-	   IDs for all disposal-referenced lots with assign_lotids_for_disposals()
-	3) Call getters to access the index
+	in subsequent acquisition transactions, and index relevant ones from
+	subsequent disposal transactions.
 	"""
 
 	# TODO: filter out numeraire accounts
@@ -65,8 +58,7 @@ class LotIndex():
 		# Use sequential user-visible index IDs starting from 1
 		self.next_id = 1
 
-		# Prevent unintentional misuse (indexing after lookups)
-		self.has_had_lookup = False
+		self._assign_lotids_for_disposals(disposals)
 
 	# For robustness, round Cost values.  TODO: determine if this is necessary
 	def _mk_key(self, account, currency, cost):
@@ -87,22 +79,20 @@ class LotIndex():
 	def _set(self, account, currency, cost, new_value):
 		self._index[self._mk_key(account, currency, cost)] = new_value
 
-	def assign_lotid(self, account: str, currency: str, cost: Cost) -> None:
+	def _assign_lotid(self, account: str, currency: str, cost: Cost) -> None:
 		"""Finds the lot in the inventory, assigns an index number to it
 		   if it doesn't already have one, remembers that and returns it"""
-		if self.has_had_lookup:
-			raise Exception("Cannot assign lot IDs after lookups have been performed")
 		(position, id) = self._get(account, currency, cost)
 		if id is None:
 			self._set(account, currency, cost, (position, self.next_id))
 			self.next_id += 1
 
-	def assign_lotids_for_disposals(self, disposals: List[Transaction]) -> None:
+	def _assign_lotids_for_disposals(self, disposals: List[Transaction]) -> None:
 		for e in disposals:
 			for p in get_disposal_postings(e):
 				currency = p.units.currency
 				if self._has(p.account, currency, p.cost):
-					self.assign_lotid(p.account, currency, p.cost)
+					self._assign_lotid(p.account, currency, p.cost)
 				else:
 					# TODO: address this -- I think it's mostly currently happening for lots
 					# that were transferred (e.g., USDT bought from CoinbasePro and moved to
@@ -111,7 +101,6 @@ class LotIndex():
 
 	def get_lotid(self, account: str, currency: str, cost: Cost) -> int:
 		"""If this lot has been indexed, return the index, otherwise None"""
-		self.has_had_lookup = True
 		if self._has(account, currency, cost):
 			return self._get(account, currency, cost)[1]
 		return None

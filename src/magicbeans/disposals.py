@@ -41,20 +41,20 @@ class LotIndex():
 		"""
 
 		# Our index is logically a dict mapping
-		#   (currency, Cost) to (Position, ID number or None)
+		#   (currency, Cost) to (ID number or None)
 		# We share lots IDs across accounts in order to refer to a lot id even
 		# if it's been transferred.
 		self._index = {}
 
 		for (account, inventory) in account_to_inventory.items():
 			for position in inventory:
-				self._set(position.units.currency, position.cost, (position, None))
+				self._set(position.units.currency, position.cost, None)
 
 		transactions = acquisitions + disposals
 		for tx in transactions:
 			for posting in tx.postings:
 				if is_other_proceeds_leg(posting, numeraire):
-					self._set(posting.units.currency, posting.cost, (posting, None))
+					self._set(posting.units.currency, posting.cost, None)
 			
 		# Use sequential user-visible index IDs starting from 1
 		self.next_id = 1
@@ -87,15 +87,15 @@ class LotIndex():
 	def _assign_lotid(self, currency: str, cost: Cost) -> None:
 		"""Finds the lot in the inventory, assigns an index number to it
 		   if it doesn't already have one, remembers that and returns it"""
-		(position, id) = self._get(currency, cost)
+		id = self._get(currency, cost)
 		if id is None:
-			self._set(currency, cost, (position, self.next_id))
+			self._set(currency, cost, self.next_id)
 			self.next_id += 1
 
 	def get_lotid(self, currency: str, cost: Cost) -> int:
 		"""If this lot has been indexed, return the index, otherwise None"""
 		if self._has(currency, cost):
-			return self._get(currency, cost)[1]
+			return self._get(currency, cost)
 		return None
 
 	def debug_str(self, currency=None) -> str:

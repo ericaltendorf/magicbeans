@@ -27,6 +27,8 @@ from beanquery.query_render import render_text
 def beancount_quarter(ty: int, quarter_n: int):
 	return f"{ty}-Q{quarter_n}"
 
+MAX_DISPOSAL_LEGS = 40
+
 REPORT_ABSTRACT = """\
 The first section of this report contains annual summaries.  For each year, it shows
 asset disposals, the proceeds, and the short and long term capital gains or losses
@@ -240,9 +242,8 @@ class ReportDriver:
 				disposal_legs_and_ids = [
 					(p, lot_index.get_lotid(p.account, p.units.currency, p.cost))
 					for p in bd.disposal_legs]
-				max_disposal_legs = 40
 				n_legs = len(disposal_legs_and_ids)
-				disposal_legs_and_ids = disposal_legs_and_ids[:max_disposal_legs]
+				disposal_legs_and_ids = disposal_legs_and_ids[:MAX_DISPOSAL_LEGS]
 				num_legs_omitted = n_legs - len(disposal_legs_and_ids)
 
 			disposals_report_rows.append(DisposalsReportRow(

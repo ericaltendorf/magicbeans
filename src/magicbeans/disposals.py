@@ -153,6 +153,13 @@ class BookedDisposal():
 		return sorted(filter(filter_pred_w_numeraire, tx.postings),
 				key=lambda p: p.units.number)
 
+	def acquisition_date(self) -> datetime.date:
+		"""Return the date of the acquisition legs, if unique, otherwise "Various"."""
+		dates = set([p.cost.date for p in self.disposal_legs])
+		if len(dates) > 1:
+			return "Various"
+		return dates.pop()
+
 	# TODO: this should just return self.disposed_currency, no?
 	def disposed_asset(self) -> str:
 		"""Return the name of the asset disposed"""

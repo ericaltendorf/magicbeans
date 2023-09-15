@@ -7,7 +7,7 @@ from beancount.core.data import Posting
 from beanquery.query_render import render_text
 from magicbeans import disposals
 from magicbeans.disposals import abbrv_disposal, format_money
-from magicbeans.reports.data import AcquisitionsReportRow, CoverPage, DisposalsReport, InventoryReport, MiningSummaryRow
+from magicbeans.reports.data import AcquisitionsReportRow, CoverPage, DisposalsReport, DisposalsReportRow, InventoryReport, MiningSummaryRow
 
 from pylatex import Document, Table, Section, Subsection, Command, Center, MultiColumn, MiniPage, TextColor, Package, VerticalSpace, HFill, NewLine, Tabular, Tabularx, LongTable
 from pylatex.base_classes import Environment, Float
@@ -42,6 +42,17 @@ def decn(n, d):
 
 def table_text(text: str):
 	return SmallText(bold(text))
+
+def proceeds_text(row: DisposalsReportRow) -> str:
+	proceeds = ""
+	if row.numeraire_proceeds:
+		proceeds += dec2(row.numeraire_proceeds.number)
+	if row.other_proceeds:
+		if proceeds:
+			proceeds += " + "
+		proceeds += italic(dec2(row.other_proceeds.number), escape=False)
+	return proceeds
+
 
 class Multicols(Environment):
 	packages = [Package('multicol')]
@@ -192,7 +203,7 @@ class LaTeXRenderer():
 
 	def inventory(self, inventory_report: InventoryReport):
 		# with self.doc.create(Tblr("|r r r X|", 4, width=r"0.95\linewidth" )) as table:
-		with self.doc.create(Tabularx("|r r r X|", width_argument=NoEscape(r"0.95\linewidth") )) as table:
+		with self.doc.create(Tabularx("|r r X r|", width_argument=NoEscape(r"0.95\linewidth") )) as table:
 			table.add_row((MultiColumn(4, align="c",
 				data=table_text(f"Inventory {inventory_report.date}")), ))
 			if not inventory_report.accounts:
@@ -208,9 +219,9 @@ class LaTeXRenderer():
 				n_lots = len(acct.positions_and_ids)
 
 				table.add_row((
-					"ID",
 					dec6(acct.total.number),
-					(MultiColumn(2, align="l|", data=f"total in {n_lots} lot{'s' if n_lots > 1 else ''}")),
+					(MultiColumn(2, align="l", data=f"total in {n_lots} lot{'s' if n_lots > 1 else ''}")),
+					"ID",
 					))
 				table.add_hline()
 
@@ -218,13 +229,15 @@ class LaTeXRenderer():
 				for (line_no, (pos, lot_id)) in enumerate(acct.positions_and_ids):
 					if (line_no < DEFAULT_NUM_LOTS_PER_ACCT or lot_id):
 						table.add_row((
-							f"#{lot_id}" if lot_id else "",
 							dec6(pos.units.number),
 							dec4(pos.cost.number),
-							pos.cost.date))
+							pos.cost.date,
+							f"#{lot_id}" if lot_id else "",
+							))
 						last_line_added = line_no
 					elif line_no == last_line_added + 1:
-						table.add_row((MultiColumn(4, align="|c|", data=NoEscape(r'$\cdots$')),))
+						table.add_hline()  # Less obvious, but takes less vertical space
+						# table.add_row((MultiColumn(4, align="|c|", data=NoEscape(r'$\cdots$')),))
 
 			table.add_hline()
 
@@ -234,29 +247,30 @@ class LaTeXRenderer():
 
 	def acquisitions(self, acquisitions_report_rows: List[AcquisitionsReportRow]):
 		# with self.doc.create(Tblr("r X[1,l] l r r r r", 7, width=r"0.95\linewidth" )) as table:
-		with self.doc.create(Tabularx("r X l r l r r", width_argument=NoEscape(r"0.95\linewidth") )) as table:
-			table.add_row((MultiColumn(7, align="c", data=table_text(f"Acquisitions")),))
+		with self.doc.create(Tabularx("r l r r X r", width_argument=NoEscape(r"0.95\linewidth") )) as table:
+			table.add_row((MultiColumn(6, align="c", data=table_text(f"Acquisitions")),))
 			table.add_hline()
 			table.add_row((
 				"Date",
-				"Description",
-				"ID",
-				MultiColumn(2, data="Assets Acquired", align="r"),
+				"",
 				"Cost ea.",
-				"Total cost"
+				"Total cost",
+				"",  # filler column
+				"Lot ID",
 				))
 			table.add_hline()
 
 			for row in acquisitions_report_rows:
 				table.add_row((
 					row.date,
-					row.narration,
-					f"#{row.lotid}" if row.lotid else "",
-					dec6(row.amount),
-					row.cur,
+					f"{dec6(row.amount)} {row.cur}",
 					dec4(row.cost_ea),
 					dec2(row.total_cost),
+					"", # filler column
+					f"#{row.lotid}" if row.lotid else "",
 					))
+				table.add_row(("", 
+					MultiColumn(5, align="l", data=TextColor("gray", row.narration)), ))
 			
 			table.add_hline()
 
@@ -265,13 +279,70 @@ class LaTeXRenderer():
 	#
 
 	def disposals(self, title: str, disposals_report: DisposalsReport):
+		if disposals_report.show_details:
+			self.disposals_detailed(title, disposals_report)
+		else:
+			self.disposals_summary(title, disposals_report)
+
+	def disposals_summary(self, title: str, disposals_report: DisposalsReport):
+		# with self.doc.create(Tblr("r X[1,l] r r r r r r r", 9, width=r"0.95\linewidth" )) as table:
+		with self.doc.create(Tabularx("X r r p{1.2cm} p{1.2cm} p{1.2cm} p{1.2cm} p{1.2cm} p{1.2cm} p{1.2cm}", width_argument=NoEscape(r"0.95\linewidth" ))) as table:
+			table.add_row((MultiColumn(10, align="c", data=table_text(title)),))
+			table.add_hline()
+			table.add_row((
+				"Assets",
+				"Date Acquired",
+				"Date Disposed",
+				"Proceeds",
+				"Cost",
+				"Gain",
+				"STCG",
+				"(cumul)",
+				"LTCG",
+				"(cumul)",
+				))
+
+			for (rownum, row) in enumerate(disposals_report.rows):
+				if rownum % 5 == 0:
+					table.add_hline()
+				
+				table.add_row((
+					f"{dec4(row.disposed_amount)} {row.disposed_currency}",
+					row.acquisition_date,
+					row.date,
+					NoEscape(proceeds_text(row)),
+					dec2(row.disposed_cost),
+					dec2(row.gain),
+					dec2(row.stcg),
+					TextColor("gray", dec2(row.cum_stcg)),
+					dec2(row.ltcg),
+					TextColor("gray", dec2(row.cum_ltcg)),
+					))
+
+			table.add_hline()
+
+			table.add_row((
+				"",
+				"",
+				"Total",
+				"",
+				"",
+				"",
+				"",
+				dec2(disposals_report.cumulative_stcg),
+				"",
+				dec2(disposals_report.cumulative_ltcg),
+				))
+		self.doc.append(NewLine())
+
+	def disposals_detailed(self, title: str, disposals_report: DisposalsReport):
 		# with self.doc.create(Tblr("r X[1,l] r r r r r r r", 9, width=r"0.95\linewidth" )) as table:
 		with self.doc.create(Tabularx("r X r r r r r r r", width_argument=NoEscape(r"0.95\linewidth" ))) as table:
 			table.add_row((MultiColumn(9, align="c", data=table_text(title)),))
 			table.add_hline()
 			table.add_row((
 				MultiColumn(1, align="l", data="Date"),   # Just for the align override.
-				NoEscape("Description" + (", legs ($+$, $-$)" if disposals_report.show_details else "")),
+				"", #NoEscape("Description" + (", legs ($+$, $-$)" if disposals_report.show_details else "")),
 				"Proceeds",
 				"Cost",
 				"Gain",
@@ -285,21 +356,10 @@ class LaTeXRenderer():
 				if disposals_report.show_details or rownum % 5 == 0:
 					table.add_hline()
 				
-				# Put true USD proceeds and FMV of other proceeds in the
-				# same column, with the latter italicized.
-				proceeds = ""
-				if row.numeraire_proceeds:
-					proceeds += dec2(row.numeraire_proceeds.number)
-				if row.other_proceeds:
-					if proceeds:
-						proceeds += " + "
-					proceeds += italic(dec2(row.other_proceeds.number), escape=False)
-
-					dec2(row.other_proceeds.number),
 				table.add_row((
 					row.date,
 					f"{dec4(row.disposed_amount)} {row.disposed_currency}",
-					NoEscape(proceeds),
+					NoEscape(proceeds_text(row)),
 					dec2(row.disposed_cost),
 					dec2(row.gain),
 					dec2(row.stcg),
@@ -307,36 +367,23 @@ class LaTeXRenderer():
 					dec2(row.ltcg),
 					TextColor("gray", dec2(row.cum_ltcg)),
 					))
-				if (disposals_report.show_details):
-					table.add_row((
-						MultiColumn(9, align="l", data=TextColor("gray", row.narration)), ))
+				table.add_row(("", 
+					MultiColumn(8, align="l", data=TextColor("gray", row.narration)), ))
 
-				if disposals_report.show_details:
-					for leg in row.numeraire_proceeds_legs:
-						table.add_row((NoEscape("$+$"), f"{dec4(leg.units.number)} {leg.units.currency}", "", "", "", "", "", "", ""))
+				for leg in row.numeraire_proceeds_legs:
+					table.add_row((NoEscape("$+$"), f"{dec4(leg.units.number)} {leg.units.currency}", "", "", "", "", "", "", ""))
 
-					for leg in row.other_proceeds_legs:
-						msg = f"{dec4(leg.units.number)} {leg.units.currency} value ea {dec4(leg.cost.number)}"
-						table.add_row((NoEscape("$+$"), MultiColumn(5, align="l", data=msg), "", "", ""))
-					
-					for (i, (leg, id)) in enumerate(row.disposal_legs_and_ids):
-						# Negated since we render a special neg sign separate from the number.
-						msg = f"{disposals.disposal_inventory_ref_neg(leg, id)}"
-						# TODO: is there a more pythonic way to do this?
-						if i == len(row.disposal_legs_and_ids) - 1 and row.num_legs_omitted > 0:
-							msg = msg + f", and {row.num_legs_omitted} more (smaller) lot(s)"
-						table.add_row((NoEscape("$-$"), MultiColumn(5, align="l", data=msg), "", "", ""))
-
-
-					# TODO: render these when we try new table rendering
-					# extra_leg_msgs = []
-					# for (leg, id) in row.disposal_legs_and_ids[5:]:
-					# 	# Negated since we render a special neg sign separate from the number.
-					# 	extra_leg_msgs.append(f"{disposals.disposal_inventory_ref_neg(leg, id)}")
-					# if extra_leg_msgs:
-					# 	table.add_row((NoEscape("$-$"), MultiColumn(5, align="p",
-					#      	data=", ".join(extra_leg_msgs)), "", "", ""))
-
+				for leg in row.other_proceeds_legs:
+					msg = f"{dec4(leg.units.number)} {leg.units.currency} value ea {dec4(leg.cost.number)}"
+					table.add_row((NoEscape("$+$"), MultiColumn(5, align="l", data=msg), "", "", ""))
+				
+				for (i, (leg, id)) in enumerate(row.disposal_legs_and_ids):
+					# Negated since we render a special neg sign separate from the number.
+					msg = f"{disposals.disposal_inventory_ref_neg(leg, id)}"
+					# TODO: is there a more pythonic way to do this?
+					if i == len(row.disposal_legs_and_ids) - 1 and row.num_legs_omitted > 0:
+						msg = msg + f", and {row.num_legs_omitted} more (smaller) lot(s)"
+					table.add_row((NoEscape("$-$"), MultiColumn(5, align="l", data=msg), "", "", ""))
 
 			table.add_hline()
 

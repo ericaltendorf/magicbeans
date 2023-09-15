@@ -33,6 +33,7 @@ class AcquisitionsReportRow(NamedTuple):
 
 class DisposalsReportRow(NamedTuple):
     date: datetime.date
+    acquisition_date: str  # May be "Various"
     narration: str
     numeraire_proceeds: Decimal
     other_proceeds: Decimal

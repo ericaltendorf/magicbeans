@@ -273,7 +273,8 @@ class ReportDriver:
 				num_legs_omitted = n_legs - len(disposal_legs_and_ids)
 
 			disposals_report_rows.append(DisposalsReportRow(
-				bd.tx.date, bd.tx.narration, numer_proc, other_proc, disposed_cost, gain,
+				bd.tx.date, bd.acquisition_date(),
+				bd.tx.narration, numer_proc, other_proc, disposed_cost, gain,
 				bd.stcg(), cumulative_stcg, bd.ltcg(), cumulative_ltcg,
 				bd.disposed_currency,
 				bd.disposed_amount(),

@@ -286,13 +286,14 @@ class LaTeXRenderer():
 
 	def disposals_summary(self, title: str, disposals_report: DisposalsReport):
 		# with self.doc.create(Tblr("r X[1,l] r r r r r r r", 9, width=r"0.95\linewidth" )) as table:
-		with self.doc.create(Tabularx("X r r p{1.2cm} p{1.2cm} p{1.2cm} p{1.2cm} p{1.2cm} p{1.2cm} p{1.2cm}", width_argument=NoEscape(r"0.95\linewidth" ))) as table:
-			table.add_row((MultiColumn(10, align="c", data=table_text(title)),))
+		with self.doc.create(Tabularx("r r r X p{2.0cm} p{1.4cm} p{1.4cm} p{1.4cm} p{1.4cm} p{1.4cm} p{1.4cm}", width_argument=NoEscape(r"0.95\linewidth" ))) as table:
+			table.add_row((MultiColumn(11, align="c", data=table_text(title)),))
 			table.add_hline()
 			table.add_row((
 				"Assets",
 				"Date Acquired",
 				"Date Disposed",
+				"", # filler
 				"Proceeds",
 				"Cost",
 				"Gain",
@@ -310,6 +311,7 @@ class LaTeXRenderer():
 					f"{dec4(row.disposed_amount)} {row.disposed_currency}",
 					row.acquisition_date,
 					row.date,
+					"", # filler
 					NoEscape(proceeds_text(row)),
 					dec2(row.disposed_cost),
 					dec2(row.gain),
@@ -325,6 +327,7 @@ class LaTeXRenderer():
 				"",
 				"",
 				"Total",
+				"", # filler
 				"",
 				"",
 				"",

@@ -17,6 +17,7 @@ from pylatex.math import Math
 
 # TODO: This truncation probably should take place in the driver.
 DEFAULT_NUM_LOTS_PER_ACCT = 8
+MAX_DISPLAYED_LOTS_PER_ACCT = 40
 
 # TODO: get the tabudecimal thing working, or maybe siunitx, which is
 # already in the tabu pylatex package.
@@ -122,6 +123,7 @@ class LaTeXRenderer():
 		self.doc.preamble.append(Command('setcounter', ['secnumdepth', '0']))
 		
 		# Tables
+		self.doc.preamble.append(Command('usepackage', 'arydshln'))
 		self.doc.change_length(r"\tabcolsep", "2pt")  # For tabularx
 		# self.doc.preamble.append(NoEscape(r"\SetTblrInner{rowsep=0pt,colsep=2pt}"))  # For tblr
 
@@ -211,8 +213,10 @@ class LaTeXRenderer():
 				table.add_row((MultiColumn(4, data="No inventory to report"),))
 				table.add_hline()
 				table.add_row(("", "", "", ""))  # Needed to force the X cell to expand the row
-			for acct in inventory_report.accounts:
+			else:
 				table.add_hline()
+
+			for acct in inventory_report.accounts:
 				table.add_row((MultiColumn(4, data=bold(acct.account)),))
 				table.add_hline()
 
@@ -226,20 +230,28 @@ class LaTeXRenderer():
 				table.add_hline()
 
 				last_line_added = 0
+				total_lines_added = 0
+				just_showed_ellipsis = False
 				for (line_no, (pos, lot_id)) in enumerate(acct.positions_and_ids):
-					if (line_no < DEFAULT_NUM_LOTS_PER_ACCT or lot_id):
+					if (line_no < DEFAULT_NUM_LOTS_PER_ACCT or 
+						(total_lines_added < MAX_DISPLAYED_LOTS_PER_ACCT and lot_id)):
 						table.add_row((
 							dec6(pos.units.number),
 							dec4(pos.cost.number),
 							pos.cost.date,
 							f"#{lot_id}" if lot_id else "",
 							))
+						total_lines_added += 1
 						last_line_added = line_no
-					elif line_no == last_line_added + 1:
-						table.add_hline()  # Less obvious, but takes less vertical space
-						# table.add_row((MultiColumn(4, align="|c|", data=NoEscape(r'$\cdots$')),))
+						just_showed_ellipsis = False
+					elif not just_showed_ellipsis:
+						table.append(Command("hdashline"))
+						just_showed_ellipsis = True
 
-			table.add_hline()
+				if just_showed_ellipsis:
+					table.add_row((MultiColumn(4, align="|c|", data=bold(NoEscape(r'$\cdots$'))),))
+
+				table.add_hline()
 
 	#
 	# Acquisitions report

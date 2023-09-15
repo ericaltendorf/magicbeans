@@ -27,7 +27,7 @@ from beanquery.query_render import render_text
 def beancount_quarter(ty: int, quarter_n: int):
 	return f"{ty}-Q{quarter_n}"
 
-MAX_DISPOSAL_LEGS = 40
+MAX_DISPOSAL_LEGS = 70
 
 REPORT_ABSTRACT = """\
 The first section of this report contains annual summaries.  For each year, it shows

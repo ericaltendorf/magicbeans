@@ -166,10 +166,20 @@ class PriceFetcher:
         else:
             raise Exception("Invalid data source")
 
-        response = requests.get(url)
-        if response.status_code != 200:
-            raise ValueError(f"HTTP response {response.status_code}\n"
-                             f"request was {url}")
+        failures = 0
+        while True:
+            response = requests.get(url)
+            if response.status_code == 200:
+                break
+            else:
+                failures += 1
+                print(f"HTTP response {response.status_code}", end="")
+                if failures < 5:
+                    print("Retrying...")
+                else: 
+                    print()
+                    raise ValueError(f"HTTP response {response.status_code}\n"
+                                     f"request was {url}")
         json = response.json()
 
         if SELECTED_DATASOURCE == DataSource.CRYPTOCOMPARE:

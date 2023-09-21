@@ -81,7 +81,13 @@ class ReportDriver:
 		# self.renderer = TextRenderer(out_path)
 		self.renderer = LaTeXRenderer(out_path)
 
-		entries, _errors, options = loader.load_file(ledger_path)
+		entries, errors, options = loader.load_file(ledger_path)
+		if errors:
+			print("Errors while loading beancount file:")
+			for err in errors:
+				print(err)
+			sys.exit(1)
+		print(f"Loaded {len(entries)} entries from {ledger_path}")
 		self.entries = entries
 		self.options = options
 

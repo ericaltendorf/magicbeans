@@ -58,19 +58,13 @@ def quarter_report(year: int, quarter_n: int, currencies: List[str], db):
 		f"Mining summary for {quarter}",
 		queries.mining_summary(quarter, currency_re))
 
-def run(ledger_path: str, out_path: str):
-	config = Config()  # Report generation barely uses this, but it's probably OK since
-	                   # we'll combine this file with run.py at some point anyway.
-
+def run(tax_years: List[int], currencies: List[str], ledger_path: str, out_path: str):
 	print(f"Generating report for beancount file {ledger_path} "
           f"and writing to {out_path}")
 	
 	numeraire = "USD"  # TODO
 
 	db = driver.ReportDriver(ledger_path, out_path, numeraire)
-
-	currencies = config.get_covered_currencies()
-	tax_years = range(2018, 2022 + 1)
 
 	db.coverpage(datetime.datetime.now(), tax_years, currencies)
 
@@ -118,4 +112,8 @@ def run(ledger_path: str, out_path: str):
 if __name__ == '__main__':
 	ledger_path = sys.argv[1]   # "build/final.beancount"
 	out_path = sys.argv[2]   # "build/report.txt"
-	run(ledger_path, out_path)
+	tax_years = range(2018, 2022 + 1)
+	config = Config()  # Report generation barely uses this, but it's probably OK since
+	                   # we'll combine this file with run.py at some point anyway.
+	currencies = config.get_covered_currencies()
+	run(tax_years, currencies, ledger_path, out_path)

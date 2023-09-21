@@ -89,7 +89,7 @@ class PriceFetcher:
                     low = Decimal(row["low"])
                     self.cache[self._cache_key(ts, currency)] = CacheEntry(ts, currency, high, low)
         except FileNotFoundError:
-            print("No price cache file found.  One will be created.")
+            print(f"No price cache file found at '{self.cache_path}'.  It will be created.")
 
     def write_cache_file(self) -> None:
         """Write the cache file to disk."""
@@ -110,7 +110,7 @@ class PriceFetcher:
         if ts.tzinfo is None or ts.tzinfo.utcoffset(ts) is None:
             raise Exception(f"Timestamp not timezone aware; must be UTC.  Was: {ts}")
         if ts.tzinfo != pytz.utc: # datetime.timezone.utc:
-            raise Exception(f"Timestamp not UTC.  Was: {ts} , timzone {ts.tzinfo}")
+            raise Exception(f"Timestamp not UTC.  Timestamp was: {ts}, timezone {ts.tzinfo}, offset {ts.utcoffset()}")
 
         key = self._cache_key(ts, currency)
 
@@ -143,7 +143,7 @@ class PriceFetcher:
         if not ts:
             raise ValueError("Timestamp required")
 
-        print(f"Price fetch: {currency} {ts} ", end="")
+        print(f"Price fetch from API: {currency} {ts} ", end="")
         s_since_last_call = (datetime.datetime.now() - self.last_fetch_ts).total_seconds()
         throttle_deficit_s = self.min_fetch_interval_ms / 1000 - s_since_last_call
         if throttle_deficit_s > 0:

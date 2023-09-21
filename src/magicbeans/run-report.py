@@ -58,9 +58,7 @@ def quarter_report(year: int, quarter_n: int, currencies: List[str], db):
 		f"Mining summary for {quarter}",
 		queries.mining_summary(quarter, currency_re))
 
-if __name__ == '__main__':
-	ledger_path = sys.argv[1]   # "build/final.beancount"
-	out_path = sys.argv[2]   # "build/report.txt"
+def run(ledger_path: str, out_path: str):
 	config = Config()  # Report generation barely uses this, but it's probably OK since
 	                   # we'll combine this file with run.py at some point anyway.
 
@@ -116,3 +114,8 @@ if __name__ == '__main__':
 	# print()
 
 	db.close()
+
+if __name__ == '__main__':
+	ledger_path = sys.argv[1]   # "build/final.beancount"
+	out_path = sys.argv[2]   # "build/report.txt"
+	run(ledger_path, out_path)

@@ -1,0 +1,611 @@
+
+;; -*- mode: beancount; -*-
+;; Fake transactions for example report generation
+
+option "title" "Crypto Trading"
+option "operating_currency" "USD"
+option "booking_method" "HIFO"
+option "inferred_tolerance_default" "USD:0.01"
+
+plugin "beancount_reds_plugins.capital_gains_classifier.long_short" "{
+'Income.*:CapGains': [':CapGains', ':CapGains:Short', ':CapGains:Long']
+}"
+
+2020-01-01 open Income:CapGains
+2020-01-01 open Assets:Account:Cash
+2020-01-01 open Assets:Account:BTC
+2020-01-01 open Assets:Account:ETH
+2020-01-01 open Assets:Account:XCH
+
+2020-01-01 * "Buy BTC"
+  Assets:Account:BTC    2.00000000 BTC {7210.982900 USD}
+  Assets:Account:Cash  -14421.9658 USD
+
+2020-02-03 * "Sell BTC"
+  Assets:Account:BTC   -0.15000000 BTC {} @ 9267.849900 USD
+  Assets:Account:Cash    1390.1775 USD
+  Income:CapGains
+
+2020-02-04 * "Sell BTC"
+  Assets:Account:BTC   -0.81000000 BTC {} @ 9194.857200 USD
+  Assets:Account:Cash    7447.8343 USD
+  Income:CapGains
+
+2020-02-14 * "Sell BTC"
+  Assets:Account:BTC   -0.40000000 BTC {} @ 10328.010700 USD
+  Assets:Account:Cash    4131.2043 USD
+  Income:CapGains
+
+2020-02-24 * "Buy ETH"
+  Assets:Account:ETH   75.00000000 ETH {263.260800 USD}
+  Assets:Account:Cash  -19744.5600 USD
+
+2020-02-25 * "Buy BTC"
+  Assets:Account:BTC   0.10000000 BTC {9360.529400 USD}
+  Assets:Account:Cash   -936.0529 USD
+
+2020-03-15 * "Buy BTC"
+  Assets:Account:BTC    2.70000000 BTC {5383.890500 USD}
+  Assets:Account:Cash  -14536.5044 USD
+
+2020-03-17 * "Buy BTC"
+  Assets:Account:BTC   18.00000000 BTC {5409.100900 USD}
+  Assets:Account:Cash  -97363.8162 USD
+
+2020-04-11 * "Buy BTC"
+  Assets:Account:BTC    8.70000000 BTC {6856.142200 USD}
+  Assets:Account:Cash  -59648.4371 USD
+
+2020-04-30 * "Sell BTC"
+  Assets:Account:BTC   -12.00000000 BTC {} @ 8607.329800 USD
+  Assets:Account:Cash   103287.9576 USD
+  Income:CapGains
+
+2020-05-02 * "Buy BTC"
+  Assets:Account:BTC   0.27000000 BTC {8967.864900 USD}
+  Assets:Account:Cash  -2421.3235 USD
+
+2020-05-05 * "Buy BTC"
+  Assets:Account:BTC    3.90000000 BTC {8950.537100 USD}
+  Assets:Account:Cash  -34907.0947 USD
+
+2020-05-07 * "Sell ETH"
+  Assets:Account:ETH   -56.00000000 ETH {} @ 212.990800 USD
+  Assets:Account:Cash    11927.4848 USD
+  Income:CapGains
+
+2020-05-09 * "Sell ETH"
+  Assets:Account:ETH   -15.00000000 ETH {} @ 211.552100 USD
+  Assets:Account:Cash     3173.2815 USD
+  Income:CapGains
+
+2020-05-12 * "Sell BTC"
+  Assets:Account:BTC   -4.10000000 BTC {} @ 8792.063800 USD
+  Assets:Account:Cash   36047.4616 USD
+  Income:CapGains
+
+2020-05-31 * "Buy ETH"
+  Assets:Account:ETH   8.60000000 ETH {231.015400 USD}
+  Assets:Account:Cash  -1986.7324 USD
+
+2020-06-03 * "Buy ETH"
+  Assets:Account:ETH   160.00000000 ETH {243.588400 USD}
+  Assets:Account:Cash   -38974.1440 USD
+
+2020-06-28 * "Buy BTC"
+  Assets:Account:BTC   0.16000000 BTC {9092.793400 USD}
+  Assets:Account:Cash  -1454.8469 USD
+
+2020-06-30 * "Buy ETH"
+  Assets:Account:ETH   11.00000000 ETH {225.908500 USD}
+  Assets:Account:Cash   -2484.9935 USD
+
+2020-07-10 * "Sell ETH"
+  Assets:Account:ETH   -5.20000000 ETH {} @ 240.854200 USD
+  Assets:Account:Cash    1252.4418 USD
+  Income:CapGains
+
+2020-07-20 * "Sell BTC"
+  Assets:Account:BTC   -10.00000000 BTC {} @ 9174.309400 USD
+  Assets:Account:Cash    91743.0940 USD
+  Income:CapGains
+
+2020-07-21 * "Sell ETH"
+  Assets:Account:ETH   -160.00000000 ETH {} @ 245.001800 USD
+  Assets:Account:Cash     39200.2880 USD
+  Income:CapGains
+
+2020-07-23 * "Sell ETH"
+  Assets:Account:ETH   -0.00990000 ETH {} @ 274.644400 USD
+  Assets:Account:Cash       2.7190 USD
+  Income:CapGains
+
+2020-07-25 * "Buy BTC"
+  Assets:Account:BTC   10.00000000 BTC {9690.594200 USD}
+  Assets:Account:Cash  -96905.9420 USD
+
+2020-08-27 * "Buy ETH"
+  Assets:Account:ETH   91.00000000 ETH {383.258900 USD}
+  Assets:Account:Cash  -34876.5599 USD
+
+2020-09-06 * "Buy ETH"
+  Assets:Account:ETH   70.00000000 ETH {355.458700 USD}
+  Assets:Account:Cash  -24882.1090 USD
+
+2020-09-07 * "Buy BTC"
+  Assets:Account:BTC    2.80000000 BTC {10363.335400 USD}
+  Assets:Account:Cash  -29017.3391 USD
+
+2020-09-08 * "Buy BTC"
+  Assets:Account:BTC    2.90000000 BTC {10108.286000 USD}
+  Assets:Account:Cash  -29314.0294 USD
+
+2020-09-09 * "Sell BTC"
+  Assets:Account:BTC   -18.00000000 BTC {} @ 10252.259900 USD
+  Assets:Account:Cash   184540.6782 USD
+  Income:CapGains
+
+2020-09-16 * "Sell BTC"
+  Assets:Account:BTC   -5.20000000 BTC {} @ 10962.230100 USD
+  Assets:Account:Cash   57003.5965 USD
+  Income:CapGains
+
+2020-09-23 * "Buy BTC"
+  Assets:Account:BTC   0.09700000 BTC {10247.144100 USD}
+  Assets:Account:Cash   -993.9730 USD
+
+2020-10-03 * "Buy BTC"
+  Assets:Account:BTC    1.80000000 BTC {10550.591800 USD}
+  Assets:Account:Cash  -18991.0652 USD
+
+2020-10-28 * "Sell ETH"
+  Assets:Account:ETH   -58.00000000 ETH {} @ 388.513400 USD
+  Assets:Account:Cash    22533.7772 USD
+  Income:CapGains
+
+2020-11-30 * "Buy ETH"
+  Assets:Account:ETH   2.40000000 ETH {613.626800 USD}
+  Assets:Account:Cash  -1472.7043 USD
+
+2020-12-03 * "Buy ETH"
+  Assets:Account:ETH   81.00000000 ETH {617.171500 USD}
+  Assets:Account:Cash  -49990.8915 USD
+
+2020-12-05 * "Buy ETH"
+  Assets:Account:ETH   75.00000000 ETH {593.395700 USD}
+  Assets:Account:Cash  -44504.6775 USD
+
+2020-12-08 * "Sell ETH"
+  Assets:Account:ETH   -150.00000000 ETH {} @ 556.599500 USD
+  Assets:Account:Cash     83489.9250 USD
+  Income:CapGains
+
+2020-12-09 * "Buy BTC"
+  Assets:Account:BTC    3.20000000 BTC {18566.083200 USD}
+  Assets:Account:Cash  -59411.4662 USD
+
+2020-12-14 * "Buy ETH"
+  Assets:Account:ETH   170.00000000 ETH {585.693400 USD}
+  Assets:Account:Cash   -99567.8780 USD
+
+2020-12-19 * "Buy BTC"
+  Assets:Account:BTC    1.80000000 BTC {23822.036400 USD}
+  Assets:Account:Cash  -42879.6655 USD
+
+2020-12-22 * "Buy BTC"
+  Assets:Account:BTC   0.10000000 BTC {23771.423000 USD}
+  Assets:Account:Cash  -2377.1423 USD
+
+2021-01-24 * "Buy BTC"
+  Assets:Account:BTC    1.30000000 BTC {32175.841700 USD}
+  Assets:Account:Cash  -41828.5942 USD
+
+2021-01-26 * "Buy BTC"
+  Assets:Account:BTC   0.04600000 BTC {32583.939400 USD}
+  Assets:Account:Cash  -1498.8612 USD
+
+2021-01-27 * "Buy BTC"
+  Assets:Account:BTC    0.65000000 BTC {30361.537800 USD}
+  Assets:Account:Cash  -19734.9996 USD
+
+2021-01-29 * "Buy ETH"
+  Assets:Account:ETH   10.00000000 ETH {1386.734800 USD}
+  Assets:Account:Cash  -13867.3480 USD
+
+2021-02-05 * "Sell BTC"
+  Assets:Account:BTC   -8.40000000 BTC {} @ 37978.804400 USD
+  Assets:Account:Cash  319021.9570 USD
+  Income:CapGains
+
+2021-02-12 * "Buy BTC"
+  Assets:Account:BTC    0.31000000 BTC {47274.913900 USD}
+  Assets:Account:Cash  -14655.2233 USD
+
+2021-02-13 * "Buy BTC"
+  Assets:Account:BTC    1.00000000 BTC {47231.345700 USD}
+  Assets:Account:Cash  -47231.3457 USD
+
+2021-02-14 * "Sell ETH"
+  Assets:Account:ETH   -55.00000000 ETH {} @ 1820.172400 USD
+  Assets:Account:Cash   100109.4820 USD
+  Income:CapGains
+
+2021-02-16 * "Sell ETH"
+  Assets:Account:ETH   -190.00000000 ETH {} @ 1777.610600 USD
+  Assets:Account:Cash    337746.0140 USD
+  Income:CapGains
+
+2021-03-21 * "Sell ETH"
+  Assets:Account:ETH   -37.00000000 ETH {} @ 1786.854300 USD
+  Assets:Account:Cash    66113.6091 USD
+  Income:CapGains
+
+2021-03-23 * "Buy BTC"
+  Assets:Account:BTC    0.27000000 BTC {54548.331900 USD}
+  Assets:Account:Cash  -14728.0496 USD
+
+2021-03-26 * "Sell ETH"
+  Assets:Account:ETH   -20.00000000 ETH {} @ 1696.486800 USD
+  Assets:Account:Cash    33929.7360 USD
+  Income:CapGains
+
+2021-03-27 * "Buy ETH"
+  Assets:Account:ETH   5.70000000 ETH {1724.790000 USD}
+  Assets:Account:Cash  -9831.3030 USD
+
+2021-04-10 * "Buy BTC"
+  Assets:Account:BTC    0.58000000 BTC {59693.642600 USD}
+  Assets:Account:Cash  -34622.3127 USD
+
+2021-05-13 * "Buy ETH"
+  Assets:Account:ETH    9.40000000 ETH {3685.574800 USD}
+  Assets:Account:Cash  -34644.4031 USD
+
+2021-05-18 * "Sell ETH"
+  Assets:Account:ETH   -19.00000000 ETH {} @ 3373.657000 USD
+  Assets:Account:Cash    64099.4830 USD
+  Income:CapGains
+
+2021-05-19 * "Sell BTC"
+  Assets:Account:BTC   -2.50000000 BTC {} @ 37735.985200 USD
+  Assets:Account:Cash   94339.9630 USD
+  Income:CapGains
+
+2021-05-20 * "Sell BTC"
+  Assets:Account:BTC   -0.80000000 BTC {} @ 41649.420300 USD
+  Assets:Account:Cash   33319.5362 USD
+  Income:CapGains
+
+2021-05-22 * "Sell ETH"
+  Assets:Account:ETH   -0.68000000 ETH {} @ 2323.168300 USD
+  Assets:Account:Cash    1579.7544 USD
+  Income:CapGains
+
+2021-05-23 * "Sell BTC"
+  Assets:Account:BTC   -0.00042000 BTC {} @ 34743.473600 USD
+  Assets:Account:Cash      14.5923 USD
+  Income:CapGains
+
+2021-05-24 * "Sell ETH"
+  Assets:Account:ETH   -1.70000000 ETH {} @ 2625.602300 USD
+  Assets:Account:Cash    4463.5239 USD
+  Income:CapGains
+
+2021-05-26 * "Sell ETH"
+  Assets:Account:ETH   -0.98000000 ETH {} @ 2871.146200 USD
+  Assets:Account:Cash    2813.7233 USD
+  Income:CapGains
+
+2021-05-27 * "Buy ETH"
+  Assets:Account:ETH   21.00000000 ETH {2761.347700 USD}
+  Assets:Account:Cash  -57988.3017 USD
+
+2021-05-28 * "Buy BTC"
+  Assets:Account:BTC    1.10000000 BTC {35601.402800 USD}
+  Assets:Account:Cash  -39161.5431 USD
+
+2021-06-02 * "Buy ETH"
+  Assets:Account:ETH   12.00000000 ETH {2722.050000 USD}
+  Assets:Account:Cash  -32664.6000 USD
+
+2021-06-03 * "Buy BTC"
+  Assets:Account:BTC   0.05000000 BTC {39222.520000 USD}
+  Assets:Account:Cash  -1961.1260 USD
+
+2021-06-10 * "Sell ETH"
+  Assets:Account:ETH   -15.00000000 ETH {} @ 2494.000000 USD
+  Assets:Account:Cash    37410.0000 USD
+  Income:CapGains
+
+2021-06-11 * "Sell BTC"
+  Assets:Account:BTC   -0.14000000 BTC {} @ 36989.970000 USD
+  Assets:Account:Cash    5178.5958 USD
+  Income:CapGains
+
+2021-06-16 * "Buy BTC"
+  Assets:Account:BTC    1.00000000 BTC {38188.006200 USD}
+  Assets:Account:Cash  -38188.0062 USD
+
+2021-06-30 * "Sell ETH"
+  Assets:Account:ETH   -1.90000000 ETH {} @ 2284.325200 USD
+  Assets:Account:Cash    4340.2179 USD
+  Income:CapGains
+
+2021-07-19 * "Buy ETH"
+  Assets:Account:ETH   16.00000000 ETH {1828.133300 USD}
+  Assets:Account:Cash  -29250.1328 USD
+
+2021-07-21 * "Buy BTC"
+  Assets:Account:BTC   0.07700000 BTC {32124.916700 USD}
+  Assets:Account:Cash  -2473.6186 USD
+
+2021-08-04 * "Buy ETH"
+  Assets:Account:ETH   29.00000000 ETH {2748.200600 USD}
+  Assets:Account:Cash  -79697.8174 USD
+
+2021-08-14 * "Buy BTC"
+  Assets:Account:BTC    0.42000000 BTC {47115.861600 USD}
+  Assets:Account:Cash  -19788.6619 USD
+
+2021-09-08 * "Buy ETH"
+  Assets:Account:ETH   0.28000000 ETH {3534.678300 USD}
+  Assets:Account:Cash   -989.7099 USD
+
+2021-09-09 * "Sell ETH"
+  Assets:Account:ETH   -47.00000000 ETH {} @ 3442.203600 USD
+  Assets:Account:Cash   161783.5692 USD
+  Income:CapGains
+
+2021-09-10 * "Buy ETH"
+  Assets:Account:ETH   18.00000000 ETH {3195.083000 USD}
+  Assets:Account:Cash  -57511.4940 USD
+
+2021-09-20 * "Sell ETH"
+  Assets:Account:ETH   -3.60000000 ETH {} @ 2986.602100 USD
+  Assets:Account:Cash   10751.7676 USD
+  Income:CapGains
+
+2021-10-09 * "Buy ETH"
+  Assets:Account:ETH    5.50000000 ETH {3587.162400 USD}
+  Assets:Account:Cash  -19729.3932 USD
+
+2021-10-10 * "Buy ETH"
+  Assets:Account:ETH   11.00000000 ETH {3475.280000 USD}
+  Assets:Account:Cash  -38228.0800 USD
+
+2021-10-15 * "Buy ETH"
+  Assets:Account:ETH    9.00000000 ETH {3860.504500 USD}
+  Assets:Account:Cash  -34744.5405 USD
+
+2021-11-17 * "Buy ETH"
+  Assets:Account:ETH   0.46000000 ETH {4265.700400 USD}
+  Assets:Account:Cash  -1962.2222 USD
+
+2021-12-12 * "Buy ETH"
+  Assets:Account:ETH   12.00000000 ETH {4142.692800 USD}
+  Assets:Account:Cash  -49712.3136 USD
+
+2022-01-06 * "Sell ETH"
+  Assets:Account:ETH   -21.00000000 ETH {} @ 3423.873100 USD
+  Assets:Account:Cash    71901.3351 USD
+  Income:CapGains
+
+2022-01-13 * "Sell ETH"
+  Assets:Account:ETH   -40.00000000 ETH {} @ 3264.754000 USD
+  Assets:Account:Cash   130590.1600 USD
+  Income:CapGains
+
+2022-02-15 * "Buy XCH"
+  Assets:Account:XCH   120.00000000 XCH {80.365400 USD}
+  Assets:Account:Cash    -9643.8480 USD
+
+2022-02-16 * "Buy ETH"
+  Assets:Account:ETH   14.00000000 ETH {3143.362300 USD}
+  Assets:Account:Cash  -44007.0722 USD
+
+2022-02-17 * "Buy XCH"
+  Assets:Account:XCH   67.00000000 XCH {74.166200 USD}
+  Assets:Account:Cash   -4969.1354 USD
+
+2022-02-20 * "Buy ETH"
+  Assets:Account:ETH    7.50000000 ETH {2645.863300 USD}
+  Assets:Account:Cash  -19843.9748 USD
+
+2022-03-17 * "Buy ETH"
+  Assets:Account:ETH   21.00000000 ETH {2819.788800 USD}
+  Assets:Account:Cash  -59215.5648 USD
+
+2022-03-20 * "Sell BTC"
+  Assets:Account:BTC   -0.44000000 BTC {} @ 41249.017600 USD
+  Assets:Account:Cash   18149.5677 USD
+  Income:CapGains
+
+2022-03-23 * "Buy XCH"
+  Assets:Account:XCH   530.00000000 XCH {65.854000 USD}
+  Assets:Account:Cash   -34902.6200 USD
+
+2022-03-27 * "Sell XCH"
+  Assets:Account:XCH   -380.00000000 XCH {} @ 71.333700 USD
+  Assets:Account:Cash     27106.8060 USD
+  Income:CapGains
+
+2022-03-30 * "Buy ETH"
+  Assets:Account:ETH    8.80000000 ETH {3392.981400 USD}
+  Assets:Account:Cash  -29858.2363 USD
+
+2022-03-31 * "Buy XCH"
+  Assets:Account:XCH   140.00000000 XCH {69.307100 USD}
+  Assets:Account:Cash    -9702.9940 USD
+
+2022-04-03 * "Sell XCH"
+  Assets:Account:XCH   -210.00000000 XCH {} @ 71.081000 USD
+  Assets:Account:Cash     14927.0100 USD
+  Income:CapGains
+
+2022-04-17 * "Buy XCH"
+  Assets:Account:XCH   790.00000000 XCH {63.103700 USD}
+  Assets:Account:Cash   -49851.9230 USD
+
+2022-04-22 * "Sell ETH"
+  Assets:Account:ETH   -16.00000000 ETH {} @ 2968.996600 USD
+  Assets:Account:Cash    47503.9456 USD
+  Income:CapGains
+
+2022-04-26 * "Sell ETH"
+  Assets:Account:ETH   -34.00000000 ETH {} @ 2806.683600 USD
+  Assets:Account:Cash    95427.2424 USD
+  Income:CapGains
+
+2022-05-10 * "Buy BTC"
+  Assets:Account:BTC    2.50000000 BTC {30988.756800 USD}
+  Assets:Account:Cash  -77471.8920 USD
+
+2022-05-24 * "Sell XCH"
+  Assets:Account:XCH   -810.00000000 XCH {} @ 35.816600 USD
+  Assets:Account:Cash     29011.4460 USD
+  Income:CapGains
+
+2022-05-25 * "Sell XCH"
+  Assets:Account:XCH   -100.00000000 XCH {} @ 34.930000 USD
+  Assets:Account:Cash      3493.0000 USD
+  Income:CapGains
+
+2022-05-28 * "Sell BTC"
+  Assets:Account:BTC   -0.89000000 BTC {} @ 29099.978100 USD
+  Assets:Account:Cash   25898.9805 USD
+  Income:CapGains
+
+2022-05-30 * "Buy XCH"
+  Assets:Account:XCH   700.00000000 XCH {35.273000 USD}
+  Assets:Account:Cash   -24691.1000 USD
+
+2022-06-18 * "Buy ETH"
+  Assets:Account:ETH   40.00000000 ETH {991.598500 USD}
+  Assets:Account:Cash  -39663.9400 USD
+
+2022-06-23 * "Sell BTC"
+  Assets:Account:BTC   -1.80000000 BTC {} @ 21116.346800 USD
+  Assets:Account:Cash   38009.4242 USD
+  Income:CapGains
+
+2022-06-30 * "Buy ETH"
+  Assets:Account:ETH   38.00000000 ETH {1028.447800 USD}
+  Assets:Account:Cash  -39081.0164 USD
+
+2022-07-01 * "Buy BTC"
+  Assets:Account:BTC    2.50000000 BTC {19429.390000 USD}
+  Assets:Account:Cash  -48573.4750 USD
+
+2022-07-03 * "Buy XCH"
+  Assets:Account:XCH   900.00000000 XCH {44.039900 USD}
+  Assets:Account:Cash   -39635.9100 USD
+
+2022-07-06 * "Buy BTC"
+  Assets:Account:BTC    1.40000000 BTC {20578.624300 USD}
+  Assets:Account:Cash  -28810.0740 USD
+
+2022-07-20 * "Buy XCH"
+  Assets:Account:XCH   110.00000000 XCH {42.974500 USD}
+  Assets:Account:Cash    -4727.1950 USD
+
+2022-07-24 * "Buy XCH"
+  Assets:Account:XCH   1800.00000000 XCH {42.156900 USD}
+  Assets:Account:Cash    -75882.4200 USD
+
+2022-08-03 * "Buy ETH"
+  Assets:Account:ETH   30.00000000 ETH {1622.622200 USD}
+  Assets:Account:Cash  -48678.6660 USD
+
+2022-08-06 * "Buy ETH"
+  Assets:Account:ETH   20.00000000 ETH {1702.007100 USD}
+  Assets:Account:Cash  -34040.1420 USD
+
+2022-09-08 * "Buy XCH"
+  Assets:Account:XCH   270.00000000 XCH {35.722900 USD}
+  Assets:Account:Cash    -9645.1830 USD
+
+2022-09-11 * "Sell ETH"
+  Assets:Account:ETH   -79.00000000 ETH {} @ 1778.931400 USD
+  Assets:Account:Cash   140535.5806 USD
+  Income:CapGains
+
+2022-09-15 * "Buy XCH"
+  Assets:Account:XCH   980.00000000 XCH {35.591300 USD}
+  Assets:Account:Cash   -34879.4740 USD
+
+2022-09-20 * "Sell BTC"
+  Assets:Account:BTC   -3.20000000 BTC {} @ 18874.161200 USD
+  Assets:Account:Cash   60397.3158 USD
+  Income:CapGains
+
+2022-09-22 * "Buy BTC"
+  Assets:Account:BTC    2.00000000 BTC {19415.640000 USD}
+  Assets:Account:Cash  -38831.2800 USD
+
+2022-09-29 * "Sell XCH"
+  Assets:Account:XCH   -2000.00000000 XCH {} @ 33.382600 USD
+  Assets:Account:Cash      66765.2000 USD
+  Income:CapGains
+
+2022-10-01 * "Buy XCH"
+  Assets:Account:XCH   59.00000000 XCH {33.382700 USD}
+  Assets:Account:Cash   -1969.5793 USD
+
+2022-10-03 * "Buy ETH"
+  Assets:Account:ETH   37.00000000 ETH {1331.994800 USD}
+  Assets:Account:Cash  -49283.8076 USD
+
+2022-10-04 * "Buy XCH"
+  Assets:Account:XCH   580.00000000 XCH {34.414600 USD}
+  Assets:Account:Cash   -19960.4680 USD
+
+2022-10-05 * "Sell BTC"
+  Assets:Account:BTC   -2.90000000 BTC {} @ 20129.688500 USD
+  Assets:Account:Cash   58376.0966 USD
+  Income:CapGains
+
+2022-10-24 * "Buy ETH"
+  Assets:Account:ETH   18.00000000 ETH {1343.869200 USD}
+  Assets:Account:Cash  -24189.6456 USD
+
+2022-10-29 * "Sell BTC"
+  Assets:Account:BTC   -0.34000000 BTC {} @ 20798.265200 USD
+  Assets:Account:Cash    7071.4102 USD
+  Income:CapGains
+
+2022-10-30 * "Sell BTC"
+  Assets:Account:BTC   -0.62000000 BTC {} @ 20592.164500 USD
+  Assets:Account:Cash   12767.1420 USD
+  Income:CapGains
+
+2022-10-31 * "Sell ETH"
+  Assets:Account:ETH   -85.00000000 ETH {} @ 1574.185400 USD
+  Assets:Account:Cash   133805.7590 USD
+  Income:CapGains
+
+2022-11-07 * "Buy BTC"
+  Assets:Account:BTC    1.20000000 BTC {20568.205900 USD}
+  Assets:Account:Cash  -24681.8471 USD
+
+2022-11-12 * "Sell ETH"
+  Assets:Account:ETH   -15.00000000 ETH {} @ 1252.386000 USD
+  Assets:Account:Cash    18785.7900 USD
+  Income:CapGains
+
+2022-11-13 * "Sell ETH"
+  Assets:Account:ETH   -2.10000000 ETH {} @ 1231.485900 USD
+  Assets:Account:Cash    2586.1204 USD
+  Income:CapGains
+
+2022-11-18 * "Buy BTC"
+  Assets:Account:BTC    1.10000000 BTC {16711.141800 USD}
+  Assets:Account:Cash  -18382.2560 USD
+
+2022-12-07 * "Buy BTC"
+  Assets:Account:BTC    2.00000000 BTC {16851.377800 USD}
+  Assets:Account:Cash  -33702.7556 USD
+
+2022-12-26 * "Sell ETH"
+  Assets:Account:ETH   -3.20000000 ETH {} @ 1224.595800 USD
+  Assets:Account:Cash    3918.7066 USD
+  Income:CapGains

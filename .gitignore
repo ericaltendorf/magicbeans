@@ -1,4 +1,6 @@
 # Project-specific
+src/magicbeans/data/*tex
+src/magicbeans/data/*toc
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

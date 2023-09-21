@@ -36,11 +36,11 @@ asset disposals, the proceeds, and the short and long term capital gains or loss
 
 The second section contains more detailed summaries of activity during each
 year.  Each year is broken down into periods containing one page's worth of
-activity.  Each period (i.e., page) shows: (1) the starting inventory (the set
-of held lots for each type of asset), (2) pure acquisitions (receipt of assets
-in exchange for USD payment, i.e., nontaxable events), and finally (3) disposals,
-i.e., receipt of USD or other assets of value, in exchange for the disposal of
-some other assets of value.
+activity.  Each period (i.e., page) shows: (1) an inventory (the set of held
+lots for each type of asset, as of the first disposal in the period), (2) pure
+acquisitions (receipt of assets in exchange for USD payment, i.e., nontaxable
+events), and finally (3) disposals, i.e., receipt of USD or other assets of
+value, in exchange for the disposal of some other assets of value.
 
 This disposals table identifies the received or augmented assets.  If these assets
 are USD, the USD amount is shown as "Proceeds".  If the assets are not USD, then

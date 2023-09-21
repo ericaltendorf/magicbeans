@@ -12,7 +12,10 @@ from beancount.parser import printer, parser
 from magicbeans import prices, run_report
 import pytz
 
-# TODO: Model fees.
+# TODO:
+#   Model fees
+#   Model USDT exchanges
+#   Add more interesting narrations
 
 START_YEAR = 2020
 END_YEAR = 2023   # Exclusive
@@ -100,7 +103,8 @@ if __name__ == '__main__':
     random.seed(f"{start_date}-{end_date}")
 
     # Preambles
-    OPTIONS = textwrap.dedent(""";; -*- mode: beancount; -*-
+    OPTIONS = textwrap.dedent("""
+        ;; -*- mode: beancount; -*-
         ;; Fake transactions for example report generation
 
         option "title" "Crypto Trading"

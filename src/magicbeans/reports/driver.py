@@ -134,6 +134,9 @@ class ReportDriver:
 	#
 
 	# TODO: consoldiate this with is_disposal_tx() and is_mining_tx()
+	# TODO: the p.unit.number checks were recently added; they're obviously
+	#       missing, but it would be good to verify their addition didn't
+	#       unexpectedly break anything.
 	def is_acquisition_tx(self, e: Transaction, numeraire: str):
 		"""Return true if the given transaction is an acquisition of an asset."""
 		if not isinstance(e, Transaction):
@@ -142,9 +145,9 @@ class ReportDriver:
 			return False
 		if len(e.postings) != 2:
 			return False
-		if len([p for p in e.postings if p.units.currency != numeraire]) != 1:
+		if len([p for p in e.postings if p.units.currency != numeraire and p.units.number > 0]) != 1:
 			return False
-		if len([p for p in e.postings if p.units.currency == numeraire]) != 1:
+		if len([p for p in e.postings if p.units.currency == numeraire and p.units.number < 0]) != 1:
 			return False
 		return True
 
@@ -235,7 +238,14 @@ class ReportDriver:
 		acquisitions_report_rows = []
 		for e in acquisitions:
 			# This should be safe, should have been checked by is_acquisition_tx()
-			rcvd = next(filter(lambda p: is_other_proceeds_leg(p, self.numeraire), e.postings))
+			try:
+				rcvd = next(filter(lambda p: is_other_proceeds_leg(p, self.numeraire), e.postings))
+			except StopIteration:
+				# Debug
+				print(self.is_acquisition_tx(e, self.numeraire))
+				for p in e.postings:
+					print(f"-- {p.account} {p.units} || {is_other_proceeds_leg(p, self.numeraire)}")
+				raise Exception(f"Expected one proceeds posting in {e.postings}")
 			acquisitions_report_rows.append(AcquisitionsReportRow(
 				e.date, e.narration, rcvd.units.number, rcvd.units.currency,
 				rcvd.cost.number, rcvd.cost.number * rcvd.units.number,

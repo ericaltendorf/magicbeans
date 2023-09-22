@@ -5,22 +5,28 @@ import math
 import random
 import sys
 import textwrap
-from beancount.core import account
+from beancount.core import account, amount, flags
 from beancount.core import data
 from beancount.core.data import Posting, Transaction, create_simple_posting
+from beancount.core.position import Cost
 from beancount.parser import printer, parser
 from magicbeans import prices, run_report
 import pytz
 
+# N.b.: There are a few places here where it would feel natural to use set()
+# objects.  However, sets introduce nondeterminism, resulting in different 
+# outputs from different runs even when the random seed is the same.  Thus,
+# we use lists throughout.
+
 # TODO:
 #   Model fees
-#   Model USDT exchanges
 #   Add more interesting narrations
 
 START_YEAR = 2020
-END_YEAR = 2023   # Exclusive
+END_YEAR = 2022   # Exclusive
 ACCT_PREFIX = "Assets:Account"
-TOKENS = [ 'BTC', 'ETH', 'XCH' ]
+CURRENCIES = [ 'USD', 'USDT', 'BTC', 'ETH', 'XCH' ]
+BASE_CURS = [ 'USD', 'USDT' ]
 SIZES = [ 1000, 1500, 2000, 2500, 5000, 10000, 15000, 20000, 25000,
           30000, 35000, 40000, 45000, 50000, 60000, 80000, 100000 ]
 GAPS = [ 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 5, 7, 10, 14, 19, 25, 33 ]
@@ -29,7 +35,7 @@ def sd_round(amount: Decimal, sd: int):
     '''Round to sd significant digits.'''
     with decimal.localcontext() as ctx:
         ctx.rounding = decimal.ROUND_DOWN
-        num_digits = math.ceil(math.log10(amount))
+        num_digits = 0 if amount == 0 else math.ceil(math.log10(amount))
         return round(amount, sd - num_digits)
 
 def parse(input_string):
@@ -39,68 +45,92 @@ def parse(input_string):
         raise ValueError("Parsed text has errors")
     return data.sorted(entries)
 
-def mk_tx(date, is_buy, token, amount, price):
+def mk_tx(date, sent_cur, sent_amt, sent_price, rcvd_cur, rcvd_amt, rcvd_price, fees_cur, fees_amt):
     '''Construct a beancount Transaction given the parameters.'''
-    amount_cash = amount * price
-    if is_buy:
-        return parse(f"""
-            {date} * "Buy {token}"
-              {ACCT_PREFIX}:{token}    {amount:.8f} {token} {{{price:.6f} USD}}
-              {ACCT_PREFIX}:Cash       {-amount_cash:.4f} USD
-        """)[0]
+    if sent_cur == "USD":
+        narration = f"Buy {rcvd_amt:.4f} {rcvd_cur} with {sent_amt:.4f} {sent_cur}"
+    elif rcvd_cur == "USD":
+        narration = f"Sell {sent_amt:.4f} {sent_cur} for {rcvd_amt:.4f} {rcvd_cur}"
     else:
-        return parse(f"""
-            {date} * "Sell {token}"
-              {ACCT_PREFIX}:{token}    {-amount:.8f} {token} {{}} @ {price:.6f} USD
-              {ACCT_PREFIX}:Cash       {amount_cash:.4f} USD
-              Income:CapGains
-        """)[0]
+        narration = f"Exchange {sent_amt:.4f} {sent_cur} for {rcvd_amt:.4f} {rcvd_cur}"
 
-def pick_token(date: datetime.date):
-    token = random.choice(TOKENS)
-    if token == 'XCH' and date < datetime.date(2021, 7, 1):
-        token = 'BTC'
-    return token
+    postings = [
+        Posting(f"{ACCT_PREFIX}:{rcvd_cur}",
+                amount.Amount(rcvd_amt, rcvd_cur),
+                None if rcvd_cur == "USD" else Cost(rcvd_price, "USD", None, None),
+                None,
+                None, None),
+        Posting(f"{ACCT_PREFIX}:{sent_cur}",
+                amount.Amount(-sent_amt, sent_cur),
+                None if sent_cur == "USD" else Cost(None, None, None, None),
+                amount.Amount(sent_price, "USD"),
+                None, None)
+    ]
+    if sent_cur != "USD":
+        postings.append(Posting("Income:CapGains", None, None, None, None, None))
 
-# TODO: generate USDT exchanges too
+    return data.Transaction({}, date, flags.FLAG_OKAY, None,
+                            narration, data.EMPTY_SET, data.EMPTY_SET, postings)
+    
+def random_time():
+    return datetime.time(hour=random.randint(0, 23),
+                         minute=random.randint(0, 59),
+                         second=random.randint(0, 59))
+
+def rcvd_cur_choices(date: datetime.date, sent_cur: str):
+    initial_choices = CURRENCIES if sent_cur in BASE_CURS else BASE_CURS
+    disallowed = [sent_cur]
+    if date < datetime.date(2021, 7, 1):
+        disallowed.append("XCH")
+    return [t for t in initial_choices if t not in disallowed]
+
 def random_tx(date: datetime.date, balances: dict, price_fetcher):
-    '''Randomly generate either a buy or sell for a random token.'''
-    # Can't sell if we don't have any tokens
-    is_buy = (len(balances) == 0) or (random.random() < 0.6)
-    if is_buy:
-        token = pick_token(date)
-    elif balances:
-        token = random.choice(list(balances.keys()))
+    '''Randomly generate a trade.'''
 
-    # Pick random time of day...probably a more concise way to do this
-    timestamp = datetime.datetime.combine(
-        date,
-        datetime.time(hour=random.randint(0, 23),
-                      minute=random.randint(0, 59),
-                      second=random.randint(0, 59)),
-        tzinfo=pytz.utc)
-    price = price_fetcher.get_price(token, timestamp)
+    timestamp = datetime.datetime.combine(date, random_time(), tzinfo=pytz.utc)
 
-    if is_buy:
-        approx_usd_amount = random.choice(SIZES)
-        token_amount = sd_round(approx_usd_amount / price, 2)
+    numeraire = "USD"
+    sent_cur = random.choice([numeraire] + [k for k in balances.keys() if balances[k] > 1.0])
+    rcvd_cur = random.choice(list(rcvd_cur_choices(date, sent_cur)))
+
+    rcvd_price = (Decimal('1.0') if rcvd_cur == numeraire else
+        price_fetcher.get_price(rcvd_cur, timestamp))
+    sent_price = (Decimal('1.0') if sent_cur == numeraire else
+        price_fetcher.get_price(sent_cur, timestamp))
+
+    max_usd_trade_size = balances[sent_cur] * sent_price
+    approx_usd_trade_size = random.choice([max_usd_trade_size] +
+                                          [s for s in SIZES if s < max_usd_trade_size])
+
+    # Trade in approx even amounts of tokens, rather than even amounts of USD
+    if sent_cur in BASE_CURS:
+        rcvd_amt = sd_round(approx_usd_trade_size / rcvd_price, 2)
+        sent_amt = rcvd_amt * rcvd_price / sent_price
     else:
-        token_amount = sd_round(decimal.Decimal(random.uniform(0.001, math.floor(balances[token]))), 2)
+        sent_amt = sd_round(approx_usd_trade_size / sent_price, 2)
+        rcvd_amt = sent_amt * sent_price / rcvd_price
 
-    balances[token] = balances.get(token, 0) + (token_amount if is_buy else -token_amount)
+    # TODO
+    fees_cur = sent_cur
+    fees_amt = Decimal('0')
 
-    return mk_tx(date, is_buy, token, token_amount, price)
+    balances[rcvd_cur] = balances.get(rcvd_cur, Decimal('0')) + rcvd_amt
+    balances[sent_cur] = balances.get(sent_cur, Decimal('0')) - sent_amt
+
+    return mk_tx(date, sent_cur, sent_amt, sent_price, rcvd_cur, rcvd_amt, rcvd_price, fees_cur, fees_amt)
 
 if __name__ == '__main__':
     start_date = datetime.date(START_YEAR, 1, 1)
     end_date = datetime.date(END_YEAR, 1, 1)
-    balances = {}
+    balances = {"USD": Decimal('1000000.00')}  # Start with $1MM
     entries = []
+
+    # These paths are hardcoded, so you need to run from the git root.
     beancount_path = "data/magicbeans_example.beancount"
     report_path = "data/magicbeans_example"  # .pdf
 
-    # Be deterministic for any particular time period
-    random.seed(f"{start_date}-{end_date}")
+    # Be repeatable.
+    random.seed(0)
 
     # Preambles
     OPTIONS = textwrap.dedent("""
@@ -116,8 +146,8 @@ if __name__ == '__main__':
         'Income.*:CapGains': [':CapGains', ':CapGains:Short', ':CapGains:Long']
         }"
         """)
-    accounts = (["Income:CapGains", f"{ACCT_PREFIX}:Cash"] +
-        [f"{ACCT_PREFIX}:{token}" for token in TOKENS])
+    accounts = (["Income:CapGains"] +
+        [f"{ACCT_PREFIX}:{token}" for token in CURRENCIES])
     for account in accounts:
         entries.append(parse(f"2020-01-01 open {account}")[0])
 
@@ -136,5 +166,5 @@ if __name__ == '__main__':
         parser.printer.print_entries(entries, file=out)
 
     # Now generate the report
-    run_report.run(range(START_YEAR, END_YEAR), TOKENS,
+    run_report.run(range(START_YEAR, END_YEAR), CURRENCIES,
                    beancount_path, report_path)

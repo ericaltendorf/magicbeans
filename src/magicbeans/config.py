@@ -35,10 +35,6 @@ class Config:
         """Return the price fetcher to use."""
         raise NotImplementedError
     
-    def is_exempt_currency(self, currency: str) -> bool:
-        """Return True if the provided currency is exempt from capital gains"""
-        return currency in ["USD"]
-
     def is_like_operating_currency(self, currency: str) -> bool:
         """Return True if spending/receiving this is anaalogous to buying/selling.
         

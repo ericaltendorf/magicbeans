@@ -167,6 +167,7 @@ class PriceFetcher:
             raise Exception("Invalid data source")
 
         failures = 0
+        max_tries = 5
         while True:
             response = requests.get(url)
             if response.status_code == 200:
@@ -174,10 +175,10 @@ class PriceFetcher:
             else:
                 failures += 1
                 print(f"HTTP response {response.status_code}", end="")
-                if failures < 5:
-                    print("Retrying...")
+                if failures < max_tries:
+                    print(", retrying...")
                 else: 
-                    print()
+                    print(f", giving up after {max_tries} tries.")
                     raise ValueError(f"HTTP response {response.status_code}\n"
                                      f"request was {url}")
         json = response.json()

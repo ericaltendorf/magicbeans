@@ -1,10 +1,13 @@
 # magicbeans
-Cryptocurrency tax and tracking tools for the Beancount platform.
+Cryptocurrency tax tracking and reporting tools for the Beancount platform.
+
+An example report: [data/magicbeans_example.pdf](data/magicbeans_example.pdf)
 
 ## Goals:
 - Accurate importing of crypto transactions from exchanges or wallet software
 - Accurate and traceable capital gains/loss tracking and computation
 - Handle mining/staking/farming income
+- Handle taxable asset exchanges (e.g., USDT for BTC)
 - Tax optimization options beyond HIFO/FIFO
 - Flexibility between automatic and manual lot selection
 - Scale to hundreds or thousands of transactions and cost-basis lots
@@ -19,9 +22,11 @@ https://github.com/beancount
 
 ## Status
 
-This code should be runnable, but you would need some guidance.  If you end up
-here and want to try it, contact me and I'll prioritize documentation (see
-below).
+Magicbeans works for the very narrow set of data on which I've personally
+used it.  It will almost certainly break when exercised on new situations.
+It is full of TODO's and known issues which need shaking out.  I would
+appreciate alpha testers who are willing to do some debugging, testing,
+and fixing.
 
 Data importers which have been (mostly) implemented include:
 - Coinbase csv
@@ -37,7 +42,7 @@ Data importers which have been (mostly) implemented include:
 - Write some more detailed documentation with tips, tricks, gotchas, examples, and war stories of real-life data
 
 ### Necessary and missing functionality
-- Track prices and acquisition dates are being through transfers https://github.com/beancount/beancount/issues/614
+- Verify that price and acquisition date tracking transfers is working ([background](https://github.com/beancount/beancount/issues/614))
 - Write tax-minimizing booking algo
   Ref: [minimizegains](https://github.com/redstreet/fava_investor/tree/main/fava_investor/modules/minimizegains)
   and [match_trades](https://github.com/beancount/beanlabs/blob/master/beanlabs/trades/match_trades.py)

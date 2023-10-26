@@ -1,9 +1,11 @@
 # magicbeans
 Cryptocurrency tax tracking and reporting tools for the Beancount platform.
 
-An example report: [data/magicbeans_example.pdf](data/magicbeans_example.pdf)
+An example generated report: [data/magicbeans_example.pdf](data/magicbeans_example.pdf)
 
-## Goals:
+## Overview
+
+Goals:
 - Accurate importing of crypto transactions from exchanges or wallet software
 - Accurate and traceable capital gains/loss tracking and computation
 - Handle mining/staking/farming income
@@ -13,26 +15,29 @@ An example report: [data/magicbeans_example.pdf](data/magicbeans_example.pdf)
 - Scale to hundreds or thousands of transactions and cost-basis lots
 - Generation of reports suitable for preparing (US) taxes
 
-Currently out of scope are importers that extract directly from blockchain data
-using crypto addresses.
-
-This is not standalone software, it consists of modules, extensions, and tools
+Magicbeans is not standalone software, it consists of modules, extensions, and tools
 that operate on the Beancount platform.  For more information see:
-https://github.com/beancount
+https://github.com/beancount .
+
+No warranty is expressed or implied; in fact I can almost guarantee you that
+Magicbeans behaves incorrectly in many situations.
 
 ## Status
 
-Magicbeans works for the very narrow set of data on which I've personally
-used it.  It will almost certainly break when exercised on new situations.
-It is full of TODO's and known issues which need shaking out.  I would
-appreciate alpha testers who are willing to do some debugging, testing,
-and fixing.
+Magicbeans currently can:
+- Import crypto activity data from a few sources (Coinbase csvs, CoinbasePro
+csvs, Gate.IO csvs, and the [Chia](http://www.chia.net/) default wallet) into
+Beancount format (and transaction semantics)
+- Run standard Beancount functionality, including balancing transactions,
+flagging discrepencies, cost-basis lot tracking, computing capital gains
+- Generate PDF reports containing high-level summaries of capital gains
+(similar to IRS 8949) and income, as well as very detailed reports tracking
+individual lots from acquisition through inventory through disposition, to 
+enable auditing
 
-Data importers which have been (mostly) implemented include:
-- Coinbase csv
-- CoinbasePro csv
-- Gate.IO csv
-- [Chia](http://www.chia.net/) default wallet
+However, Magicbeans is underexercised and undertested.  It is badly in need
+of more beta-testers/developers who are willing to try to use it with their
+data, debug where it breaks, and contribute fixes.
 
 ## TODO
 

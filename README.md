@@ -22,6 +22,7 @@ https://github.com/beancount .
 No warranty is expressed or implied; in fact I can almost guarantee you that
 Magicbeans behaves incorrectly in many situations.
 
+
 ## Status
 
 Magicbeans currently can:
@@ -38,6 +39,35 @@ enable auditing
 However, Magicbeans is underexercised and undertested.  It is badly in need
 of more beta-testers/developers who are willing to try to use it with their
 data, debug where it breaks, and contribute fixes.
+
+## Installation and Usage
+
+*Reminder: This package is underdeveloped and undertested.*  Please download
+and use only if you're ready to do a developer's install (i.e., you're familiar
+with git, python virtual environments, pip, etc.), and to tweak a bunch of stuff,
+check the output carefully, and assist at least by filing issues for
+problems found.
+
+Installation instructions:
+```
+git clone git@github.com:ericaltendorf/magicbeans.git
+python3 -m venv mb-venv # (or whatever you want to call the venv))
+source ./mb-venv/bin/activate
+cd magicbeans
+pip3 install .
+```
+
+Local configuration:
+- Create a directory containing your input files (e.g., csv files of transactions)
+- Create a working directory in which magicbeans can produce beancount and other files
+- Write a local python run script (e.g., `magicbeans_local.py`) which defines a subclass of
+  `magicbeans.config.Config`, and has a `__main__` method which creates an instance of
+  the config and passes it to `magicbeans.run.run()` (see `run.py`).
+ 
+The local run script allows you to define your own custom hooks as well as to 
+initialize a price fetcher, and to persist its cache after running.
+
+You can then invoke the magicbeans pipeline by running your local run script.
 
 ## TODO
 

@@ -22,6 +22,7 @@ https://github.com/beancount .
 No warranty is expressed or implied; in fact I can almost guarantee you that
 Magicbeans behaves incorrectly in many situations.
 
+
 ## Status
 
 Magicbeans currently can:
@@ -38,6 +39,74 @@ enable auditing
 However, Magicbeans is underexercised and undertested.  It is badly in need
 of more beta-testers/developers who are willing to try to use it with their
 data, debug where it breaks, and contribute fixes.
+
+## Installation and Usage
+
+*Reminder: This package is underdeveloped and undertested.*  Please download
+and use only if you're ready to do a developer's install (i.e., you're familiar
+with git, python virtual environments, pip, etc.), and to tweak a bunch of stuff,
+check the output carefully, and assist at least by filing issues for
+problems found.
+
+The following are installation instructions for Linux/Ubuntu.  For other
+platforms, you may need to adjust some commands and paths.  Also, if you
+plan to contribute back to Magicbeans, you should first fork the git repo,
+and then clone your own fork instead.
+
+Find a nice empty working directory:
+```
+  mkdir crypto-taxes
+  cd crypto-taxes
+```
+
+Clone magicbeans (note: if you plan to contribute, you'll want
+to first fork it and then clone your fork with ssh):
+```
+  git clone https://github.com/ericaltendorf/magicbeans.git
+```
+
+Create and enter a venv:
+```
+  python3 -m venv venv-magicbeans
+  source venv-magicbeans/bin/activate
+```
+
+Install (in "editable" mode, in case you want to tweak):
+```
+  venv-magicbeans/bin/pip install -e magicbeans
+```
+
+To run Magicbeans, you need a script that sets up your local configuration and calls
+the Magicbeans `run()` entry point.  The local run script allows you to define
+your own custom hooks as well as to initialize a price fetcher, and to persist
+its cache after running.
+
+Write a local python run script (e.g., `magicbeans_local.py`) which defines a
+subclass of `magicbeans.config.Config`, and has a `__main__` method which
+creates an instance of the config and passes it to `magicbeans.run.run()` (see
+`run.py` in the source).  *Note: a default `magicbeans_local.py` will be
+provided in an upcoming version.*
+
+Create your local run script (see magicbeans/run.py):
+```
+  mkdir tax-tools
+  vi tax-tools/magicbeans_local.py
+```
+
+Create your input files (e.g. csv files of transactions)
+```
+  mkdir downloads   # put your input files here
+```
+
+Create a working directory for Magicbeans to write output (and temporary) files:
+```
+  mkdir build
+```
+
+Try running:
+```
+  python3 tax-tools/magicbeans_local.py downloads/ build/
+```
 
 ## TODO
 

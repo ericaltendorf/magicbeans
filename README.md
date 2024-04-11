@@ -59,54 +59,42 @@ Find a nice empty working directory:
   cd crypto-taxes
 ```
 
-Clone magicbeans (note: if you plan to contribute, you'll want
-to first fork it and then clone your fork with ssh):
+Clone magicbeans (note: if you plan to contribute, you'll want to first fork it
+and then clone your fork with ssh):
 ```
   git clone https://github.com/ericaltendorf/magicbeans.git
 ```
 
-Create and enter a venv:
+Create and enter a venv, and install (in -e "editable" mode, so you can tweak):
 ```
   python3 -m venv venv-magicbeans
   source venv-magicbeans/bin/activate
-```
-
-Install (in "editable" mode, in case you want to tweak):
-```
   venv-magicbeans/bin/pip install -e magicbeans
 ```
 
-To run Magicbeans, you need a script that sets up your local configuration and calls
-the Magicbeans `run()` entry point.  The local run script allows you to define
-your own custom hooks as well as to initialize a price fetcher, and to persist
-its cache after running.
-
-Write a local python run script (e.g., `magicbeans_local.py`) which defines a
-subclass of `magicbeans.config.Config`, and has a `__main__` method which
-creates an instance of the config and passes it to `magicbeans.run.run()` (see
-`run.py` in the source).  *Note: a default `magicbeans_local.py` will be
-provided in an upcoming version.*
-
-Create your local run script (see magicbeans/run.py):
+Create directories for your input files (e.g. csv files of transactions)
+and a working directory for Magicbeans to write output (and temporary) files:
 ```
-  mkdir tax-tools
-  vi tax-tools/magicbeans_local.py
+  mkdir downloads build
+  # put stuff in downloads
 ```
 
-Create your input files (e.g. csv files of transactions)
+To run Magicbeans, you need a script that sets up your local configuration and
+calls the Magicbeans `run()` entry point.  The local run script allows you to
+define your own custom hooks as well as to initialize a price fetcher, and to
+persist its cache after running.
+
+An example such script is provided as `main_example.py`.  You may try running
+it, and pointing it at the directories you just set up, with:
 ```
-  mkdir downloads   # put your input files here
+  python3 magicbeans/src/magicbeans/main_example.py downloads/ build/
 ```
 
-Create a working directory for Magicbeans to write output (and temporary) files:
-```
-  mkdir build
-```
+You will need to modify that script to set it up for your own situation,
+accounts, and data issues.  To do so, you will probably want to copy the
+example script to a private repo, so that you can version-control it and keep
+acount information private.
 
-Try running:
-```
-  python3 tax-tools/magicbeans_local.py downloads/ build/
-```
 
 ## TODO
 

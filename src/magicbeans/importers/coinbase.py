@@ -47,14 +47,14 @@ class CoinbaseImporter(beangulp.Importer):
 
     def identify(self, filepath):
         filename_re = r"^Coinbase-.*TransactionsHistoryReport-" \
-                      r"\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d.csv$"
+                      r"\d\d\d\d-\d\d-\d\d.*\.csv$"
         if not re.match(filename_re, path.basename(filepath)):
             return False
         
-        expected_header = '"You can use this transaction report to inform ' \
-                          'your likely tax obligations.'
-        if not common.file_begins_with(filepath, expected_header):
-            return False
+        # expected_header = '"You can use this transaction report to inform ' \
+        #                   'your likely tax obligations.'
+        # if not common.file_begins_with(filepath, expected_header):
+        #     return False
             
         return True
 
@@ -67,7 +67,7 @@ class CoinbaseImporter(beangulp.Importer):
     def date(self, filepath):
         # Extract the statement date from the filename.
         date_re = r"Coinbase-.*TransactionsHistoryReport-" \
-                  r"(\d\d\d\d-\d\d-\d\d)-\d\d-\d\d-\d\d.csv"
+                  r"(\d\d\d\d-\d\d-\d\d).*\.csv"
         m = re.match(date_re, path.basename(filepath))
         return datetime.datetime.strptime(m.group(1), "%Y-%m-%d").date()
 
@@ -87,8 +87,10 @@ class CoinbaseImporter(beangulp.Importer):
                 instrument = row["Asset"]
                 quantity = D(row["Quantity Transacted"])
                 fees = row["Fees and/or Spread"]
-                asset_price_currency = row["Spot Price Currency"]
-                reported_asset_price = D(row["Spot Price at Transaction"])
+                asset_price_currency = next((row.get(k) for k in
+                    ['Spot Price Currency', 'Price Currency'] if k in row), "")
+                reported_asset_price = D(next((row.get(k) for k in
+                    ['Spot Price at Transaction', 'Price at Transaction'] if k in row), ""))
                 subtotal = D(row['Subtotal'])
                 total = D(row["Total (inclusive of fees and/or spread)"])
 

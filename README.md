@@ -48,26 +48,65 @@ with git, python virtual environments, pip, etc.), and to tweak a bunch of stuff
 check the output carefully, and assist at least by filing issues for
 problems found.
 
-Installation instructions:
+The following are installation instructions for Linux/Ubuntu.  For other
+platforms, you may need to adjust some commands and paths.  Also, if you
+plan to contribute back to Magicbeans, you should first fork the git repo,
+and then clone your own fork instead.
+
+Find a nice empty working directory:
 ```
-git clone git@github.com:ericaltendorf/magicbeans.git
-python3 -m venv mb-venv # (or whatever you want to call the venv))
-source ./mb-venv/bin/activate
-cd magicbeans
-pip3 install .
+  mkdir crypto-taxes
+  cd crypto-taxes
 ```
 
-Local configuration:
-- Create a directory containing your input files (e.g., csv files of transactions)
-- Create a working directory in which magicbeans can produce beancount and other files
-- Write a local python run script (e.g., `magicbeans_local.py`) which defines a subclass of
-  `magicbeans.config.Config`, and has a `__main__` method which creates an instance of
-  the config and passes it to `magicbeans.run.run()` (see `run.py`).
- 
-The local run script allows you to define your own custom hooks as well as to 
-initialize a price fetcher, and to persist its cache after running.
+Clone magicbeans (note: if you plan to contribute, you'll want
+to first fork it and then clone your fork with ssh):
+```
+  git clone https://github.com/ericaltendorf/magicbeans.git
+```
 
-You can then invoke the magicbeans pipeline by running your local run script.
+Create and enter a venv:
+```
+  python3 -m venv venv-magicbeans
+  source venv-magicbeans/bin/activate
+```
+
+Install (in "editable" mode, in case you want to tweak):
+```
+  venv-magicbeans/bin/pip install -e .
+```
+
+To run Magicbeans, you need a script that sets up your local configuration and calls
+the Magicbeans `run()` entry point.  The local run script allows you to define
+your own custom hooks as well as to initialize a price fetcher, and to persist
+its cache after running.
+
+Write a local python run script (e.g., `magicbeans_local.py`) which defines a
+subclass of `magicbeans.config.Config`, and has a `__main__` method which
+creates an instance of the config and passes it to `magicbeans.run.run()` (see
+`run.py` in the source).  *Note: a default `magicbeans_local.py` will be
+provided in an upcoming version.*
+
+Create your local run script (see magicbeans/run.py):
+```
+  mkdir tax-tools
+  vi tax-tools/magicbeans_local.py
+```
+
+Create your input files (e.g. csv files of transactions)
+```
+  mkdir downloads   # put your input files here
+```
+
+Create a working directory for Magicbeans to write output (and temporary) files:
+```
+  mkdir build
+```
+
+Try running:
+```
+  python3 tax-tools/magicbeans_local.py downloads/ build/
+```
 
 ## TODO
 

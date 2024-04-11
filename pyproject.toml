@@ -16,6 +16,15 @@ classifiers = [
     "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
     "Operating System :: OS Independent",
 ]
+dependencies = [
+    "pytz",
+    "tabulate",
+    "pyfiglet",
+    "pyyaml",
+    "pylatex",
+    "beancount @ git+https://github.com/beancount/beancount@master",
+    "beangulp @ git+https://github.com/beancount/beangulp@master",
+]
 
 [project.urls]
 "Homepage" = "https://github.com/ericaltendorf/magicbeans"

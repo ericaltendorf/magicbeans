@@ -13,22 +13,13 @@ from magicbeans.config import Config
 def run(config: Config, input_dir: str, working_dir: str):
     """Main entry point to run beancount importing and processing.
 
-    Usage: write a file, e.g. `magicbeans_local.py` which defines your own
-    settings and behavior in a subclass of Config.  Pass an instance of that
-    subclass to this function, along with the input directory containing the
-    crypto transaction files to import, and the working directory in which to
-    write intermediate and final output files.  E.g.:
-    
-        class LocalConfig(magicbeans.config.Config):
-            # Override methods ...
-
-        if __name__ == '__main__':
-            config = LocalConfig()
-            magicbeans.run.run(config, "input_dir", "working_dir")
-
-    TODO: separate in phases, allow running of subphases
+    Usage: define your own settings and behavior in a subclass of Config.  Pass
+    an instance of that subclass to this function, along with the input
+    directory containing the crypto transaction files to import, and the
+    working directory in which to write intermediate and final output files.
     """
 
+    # TODO: separate in phases, allow running of subphases
     path_preamble   = os.path.join(working_dir, "00-preamble.beancount")
     path_directives = os.path.join(working_dir, "01-directives.beancount")
     path_extracted  = os.path.join(working_dir, "02-extracted.beancount")

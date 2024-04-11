@@ -73,7 +73,7 @@ Create and enter a venv:
 
 Install (in "editable" mode, in case you want to tweak):
 ```
-  venv-magicbeans/bin/pip install -e .
+  venv-magicbeans/bin/pip install -e magicbeans
 ```
 
 To run Magicbeans, you need a script that sets up your local configuration and calls

@@ -23,7 +23,11 @@ dependencies = [
     "pyyaml",
     "pylatex",
     "requests",
-    "beancount @ git+https://github.com/beancount/beancount@master",
+
+    # Depend on custom fork with cost-transfer support until it is merged
+    # into beancount upstream.
+    "beancount @ git+https://github.com/ericaltendorf/beancount@cost-transfer",
+
     "beangulp @ git+https://github.com/beancount/beangulp@master",
     "beanquery @ git+https://github.com/beancount/beanquery@master",
 ]

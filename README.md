@@ -99,8 +99,7 @@ acount information private.
 ## TODO
 
 ### Enable collaborators & alpha testers
-- Write some introductory documentation
-- Document requirements (pip packages, and beancount plugins)
+- Document how to run report generator (see also cleanup task below)
 - Write some more detailed documentation with tips, tricks, gotchas, examples, and war stories of real-life data
 
 ### Necessary and missing functionality
@@ -111,6 +110,7 @@ acount information private.
 - Figure out plan for saving booking decisions and applying in the future
 
 ### Cleanup
+- Integrate runner.py and run_report.py into one script
 - Existing price fetcher isn't ideal, see if we can get higher-resolution historical data, and 
   corroborate across multiple sources
 - Set up continuous integration w/ typechecking and unit tests

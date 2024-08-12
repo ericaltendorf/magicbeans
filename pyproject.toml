@@ -25,6 +25,7 @@ dependencies = [
     "requests",
     "beancount @ git+https://github.com/beancount/beancount@master",
     "beangulp @ git+https://github.com/beancount/beangulp@master",
+    "beanquery @ git+https://github.com/beancount/beanquery@master",
 ]
 
 [project.urls]

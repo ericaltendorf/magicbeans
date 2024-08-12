@@ -103,6 +103,12 @@ class CoinbaseImporter(beangulp.Importer):
                 desc = "CB: " + row["Notes"].replace("Bought", "Buy").replace("Sold", "Sell")
                 links = set()  # { "ut{0[REF #]}".format(row) }
 
+                # Map some synonyms
+                if rtype == "Withdrawal":
+                    rtype = "Send"
+                elif rtype == "Deposit":
+                    rtype = "Receive"
+
                 if rtype in ("Send", "Receive"):
                     assert fees.number == ZERO
 

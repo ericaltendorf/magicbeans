@@ -79,7 +79,11 @@ class LotIndex():
 
 		missing_lots = referenced_lots - available_lots
 		for (currency, cost) in missing_lots:
-			print(f"WARNING: missing lot for {currency} {{{cost.number} {cost.date}}}")
+			print(f"WARNING: missing lot for {currency} {{{cost.number} {cost.currency} {cost.date}}}")
+		# if missing_lots:
+		# 	nl = "\n"
+		# 	print(f'Referenced lots:\n{referenced_lots}')
+		# 	print(f'Available lots:\n{available_lots}')
 
 
 	# For robustness, round Cost values.  TODO: determine if this is necessary

@@ -72,6 +72,11 @@ Create and enter a venv, and install (in -e "editable" mode, so you can tweak):
   venv-magicbeans/bin/pip install -e magicbeans
 ```
 
+Install system utilities/libraries:
+```
+  sudo apt install latexmk texlive texlive-latex-extra
+```
+
 Create directories for your input files (e.g. csv files of transactions)
 and a working directory for Magicbeans to write output (and temporary) files:
 ```

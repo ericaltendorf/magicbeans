@@ -26,10 +26,11 @@ dependencies = [
 
     # Depend on custom fork with cost-transfer support until it is merged
     # into beancount upstream.
-    "beancount @ git+https://github.com/ericaltendorf/beancount@cost-transfer",
+    "beancount @ git+https://github.com/ericaltendorf/beancount@cost-transfer-dev",
 
     "beangulp @ git+https://github.com/beancount/beangulp@master",
     "beanquery @ git+https://github.com/beancount/beanquery@master",
+    "beancount-reds-plugins",
 ]
 
 [project.urls]

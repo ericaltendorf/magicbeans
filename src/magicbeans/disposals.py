@@ -17,6 +17,9 @@ CG_ACCOUNT = "Income:CapGains"
 STCG_ACCOUNT = "Income:CapGains:Short"
 LTCG_ACCOUNT = "Income:CapGains:Long"
 
+def assert_valid_position(position):
+	assert(position.cost is not None), f"Position {position} has no cost"
+
 class LotIndex():
 	"""Tracks lots from inventories or acquisitions and enables ID assignment.
 
@@ -58,6 +61,7 @@ class LotIndex():
 		available_lots = set()
 		for (currency, account, positions) in inventory_blocks:
 			for position in positions:
+				assert_valid_position(position)
 				key = self._mk_key(position.units.currency, position.cost)
 				if key in referenced_lots:
 					available_lots.add(key)

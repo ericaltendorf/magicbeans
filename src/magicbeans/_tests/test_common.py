@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Sequence
 
 from beancount.core import amount, data
 from beancount.core.number import D
@@ -21,7 +21,7 @@ def mk_tx(rem: str) -> Transaction:
     return entries[0]
 
 def test_filter_extractions() -> None:
-    extractions: List[ExtractionRecord] = [
+    extractions: Sequence[ExtractionRecord] = [
         ExtractionRecord("file1", [mk_tx("alice"), mk_tx("bob")], "acct1", "imp1"),
         ExtractionRecord("file2", [mk_tx("charlie"), mk_tx("bob"), mk_tx("diane")], "acct2", "imp2"),
         ExtractionRecord("file3", [mk_tx("earl"), mk_tx("francis")], "acct3", "imp3"),

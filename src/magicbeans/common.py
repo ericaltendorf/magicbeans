@@ -1,7 +1,7 @@
 import copy
 import datetime
 from decimal import Decimal
-from typing import Callable, List, NamedTuple, Tuple
+from typing import Callable, List, NamedTuple, Sequence, Tuple
 import typing
 from beancount.core import position
 from beancount.core.data import Posting, Transaction
@@ -18,13 +18,13 @@ class ExtractionRecord(NamedTuple):
     types so we can do typechecking.
     """
     filename: str
-    entries: List[Transaction]
+    entries: Sequence[Transaction]
     account: str
     importer: str
 
 def filter_extractions(
-        extracted: typing.List[ExtractionRecord],
-        filter_fn: Callable[[Transaction], bool]) -> typing.List[ExtractionRecord]:
+        extracted: typing.Sequence[ExtractionRecord],
+        filter_fn: Callable[[Transaction], bool]) -> typing.Sequence[ExtractionRecord]:
     """Return a list of ExtractionRecords that omit transactions for which the
     provided predicate function returns True."""
     keep_fun = (lambda entry: not filter_fn(entry))

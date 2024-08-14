@@ -9,7 +9,7 @@
 import datetime
 import dateutil
 from decimal import Decimal
-from typing import Callable, List
+from typing import Callable, List, Sequence
 from beancount.core.amount import Amount
 
 import magicbeans
@@ -132,9 +132,9 @@ class LocalConfig(magicbeans.config.Config):
         return importers
 
     # Define the hooks that should be run on the transactions.
-    def get_hooks(self) -> List[Callable[
-            [List[ExtractionRecord], List[Transaction]],
-            List[ExtractionRecord]]]:
+    def get_hooks(self) -> Sequence[Callable[
+            [Sequence[ExtractionRecord], Sequence[Transaction]],
+            Sequence[ExtractionRecord]]]:
         return [chiawallet_filter_change_coins_hook,
                 cbp_tweak_xfer_timestamp_hook,
                 chiawallet_recharacterize_sale_hook,
@@ -156,16 +156,16 @@ class LocalConfig(magicbeans.config.Config):
 # should write your own to tweak your data as needed.
 #
 # Hooks should take arguments:
-#   extracted: List[common.ExtractionRecord]
-#   existing_entries: List[Transaction]
+#   extracted: Sequence[common.ExtractionRecord]
+#   existing_entries: Sequence[Transaction]
 # and return a new
-#   List[common.ExtractionRecord]
+#   Sequence[common.ExtractionRecord]
 #
 # Unfortunately these types are not really defined or documented; please refer
 # to the Beangulp source code for more information.
 #
 
-def chiawallet_filter_change_coins_hook(extracted: List[ExtractionRecord], _existing_entries: List[Transaction]) -> List[ExtractionRecord]:
+def chiawallet_filter_change_coins_hook(extracted: Sequence[ExtractionRecord], _existing_entries: Sequence[Transaction]) -> Sequence[ExtractionRecord]:
     return common.filter_extractions(extracted, chiawallet_filter_change_coins)
 
 def chiawallet_filter_change_coins(entry: Transaction):
@@ -180,8 +180,8 @@ def chiawallet_filter_change_coins(entry: Transaction):
             (entry.meta['timestamp'], entry.postings[0].units.number) in to_filter)
 
 
-def cbp_tweak_xfer_timestamp_hook(extracted: List[ExtractionRecord], _existing_entries: List[Transaction]) -> List[ExtractionRecord]:
-    return [ExtractionRecord(filename, map(cbp_tweak_xfer_timestamp, entries), account, importer)
+def cbp_tweak_xfer_timestamp_hook(extracted: Sequence[ExtractionRecord], _existing_entries: Sequence[Transaction]) -> Sequence[ExtractionRecord]:
+    return [ExtractionRecord(filename, list(map(cbp_tweak_xfer_timestamp, entries)), account, importer)
             for (filename, entries, account, importer) in extracted]
 
 def cbp_tweak_xfer_timestamp(tx: Transaction) -> Transaction:
@@ -201,8 +201,8 @@ def cbp_tweak_xfer_timestamp(tx: Transaction) -> Transaction:
     return tx   # So can be used in map()
 
 
-def chiawallet_recharacterize_sale_hook(extracted: List[ExtractionRecord], _existing_entries: List[Transaction]) -> List[ExtractionRecord]:
-    return [ExtractionRecord(filename, map(chiawallet_recharacterize_sale_entry, entries), account, importer)
+def chiawallet_recharacterize_sale_hook(extracted: Sequence[ExtractionRecord], _existing_entries: Sequence[Transaction]) -> Sequence[ExtractionRecord]:
+    return [ExtractionRecord(filename, list(map(chiawallet_recharacterize_sale_entry, entries)), account, importer)
             for (filename, entries, account, importer) in extracted]
 
 def chiawallet_recharacterize_sale_entry(entry: Transaction) -> Transaction:

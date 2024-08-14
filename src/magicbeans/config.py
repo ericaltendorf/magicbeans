@@ -1,4 +1,4 @@
-from typing import Callable, List
+from typing import Callable, List, Sequence
 from beangulp.importer import Importer
 from magicbeans import prices, transfers
 
@@ -19,9 +19,9 @@ class Config:
         """Return the list of beancount importers to use."""
         raise NotImplementedError
 
-    def get_hooks(self) -> List[Callable[
-            [List[ExtractionRecord], List[Transaction]],
-            List[ExtractionRecord]]]:
+    def get_hooks(self) -> Sequence[Callable[
+            [Sequence[ExtractionRecord], Sequence[Transaction]],
+            Sequence[ExtractionRecord]]]:
         """Return the list of hooks to use.
 
         Hooks are functions which take a list of extracted entries and

@@ -52,12 +52,9 @@ class LotIndex():
 		#   (currency, Cost) to (ID number or None)
 		# where currency is the held asset.
 		#
-		# TODO: do we need the dict to actually be able to hold None, or is that
-		# just what we return when we don't find the key?
-		#
 		# We share lots IDs across accounts in order to refer to a lot id even
 		# if it's been transferred.
-		self._index: Dict[Tuple[str, Cost], int | None] = {}
+		self._index: Dict[Tuple[str, Cost], int] = {}
 
 		referenced_lots = set()
 		for e in disposals:
@@ -117,7 +114,7 @@ class LotIndex():
 		self._set(currency, cost, self.next_id)
 		self.next_id += 1
 
-	def get_lotid(self, currency: str, cost: Cost) -> int:
+	def get_lotid(self, currency: str, cost: Cost) -> int | None:
 		"""If this lot has been indexed, return the index, otherwise None"""
 		if self._has(currency, cost):
 			return self._get(currency, cost)

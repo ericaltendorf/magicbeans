@@ -106,13 +106,3 @@ def run(tax_years: List[int], numeraire: str, currencies: List[str], ledger_path
 	# print()
 
 	db.close()
-
-if __name__ == '__main__':
-	ledger_path = sys.argv[1]   # "build/final.beancount"
-	out_path = sys.argv[2]   # "build/report.txt"
-	tax_years = range(2018, 2023 + 1)
-	config = Config()  # Report generation barely uses this, but it's probably OK since
-	                   # we'll combine this file with run.py at some point anyway.
-	currencies = config.get_covered_currencies()
-	numeraire = "USD"  # Should be : config.get_numeraire() ?
-	run(tax_years, numeraire, currencies, ledger_path, out_path)

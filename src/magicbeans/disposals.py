@@ -3,7 +3,7 @@
 import datetime
 from decimal import Decimal
 from functools import partial
-from typing import List, NamedTuple, Sequence
+from typing import Dict, List, NamedTuple, Sequence, Tuple
 from beancount.core import amount
 from beancount.core.amount import Amount
 from beancount.core.data import Posting, Transaction
@@ -50,9 +50,14 @@ class LotIndex():
 
 		# Our index is logically a dict mapping
 		#   (currency, Cost) to (ID number or None)
+		# where currency is the held asset.
+		#
+		# TODO: do we need the dict to actually be able to hold None, or is that
+		# just what we return when we don't find the key?
+		#
 		# We share lots IDs across accounts in order to refer to a lot id even
 		# if it's been transferred.
-		self._index = {}
+		self._index: Dict[Tuple[str, Cost], int | None] = {}
 
 		referenced_lots = set()
 		for e in disposals:
@@ -118,15 +123,14 @@ class LotIndex():
 			return self._get(currency, cost)
 		return None
 
-	def debug_str(self, currency=None) -> str:
-		result = ""
-		for (k, v) in self._index.items():
-			lotid = v[1]
+	def debug_str(self, select_currency=None) -> str:
+		result = "LotIndex contents:\n"
+		for ((currency, cost), lotid) in self._index.items():
 			if not lotid:
 				continue
-			if currency and k[1] != currency:
+			if select_currency and currency != select_currency:
 				continue
-			result += f"  ({k[0]:<15} {k[1]:>6}, {k[2].number:>16f} {k[2].currency:<6} {k[2].date}: {lotid} )\n"
+			result += f"  {currency:<15} {cost.number:>16f} {cost.currency:<6} {cost.date} -> #{lotid}\n"
 		return result
 
 class BookedDisposal():

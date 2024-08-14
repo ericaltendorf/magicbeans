@@ -1,6 +1,6 @@
 ##############################################################################
 #
-# This is an example run script for Magicbeans.  You will want to modify this
+# This is an example local config for Magicbeans.  You will want to modify this
 # for your own setup.  You probably want to copy it into a private repo so
 # that you can track changes and keep account info private.
 #

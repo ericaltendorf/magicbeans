@@ -1,4 +1,3 @@
-
 from typing import List
 from beangulp.importer import Importer
 from magicbeans import prices, transfers

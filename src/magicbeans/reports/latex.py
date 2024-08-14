@@ -1,9 +1,5 @@
-import datetime
-from decimal import Decimal
-import textwrap
 from typing import List
 from beancount.core.amount import Amount
-from beancount.core.data import Posting
 from beanquery.query_render import render_text
 from magicbeans import disposals
 from magicbeans.disposals import abbrv_disposal, format_money

@@ -1,10 +1,6 @@
-import calendar
 import datetime
 from decimal import Decimal
-import subprocess
 import sys
-from enum import Enum
-import textwrap
 from typing import List
 from beancount.core import amount
 from beancount.core.data import Transaction
@@ -15,13 +11,9 @@ from magicbeans.disposals import BookedDisposal, format_money, get_disposal_post
 from magicbeans.mining import MINING_BENEFICIARY_ACCOUNT, MINING_INCOME_ACCOUNT, MiningStats, is_mining_tx
 from magicbeans.reports.data import AcquisitionsReportRow, CoverPage, DisposalsReport, DisposalsReportRow, AccountInventoryReport, InventoryReport, MiningSummaryRow
 from magicbeans.reports.latex import LaTeXRenderer
-from magicbeans.reports.text import TextRenderer
 
 from beancount import loader
-from beancount.core.amount import Amount
-from beancount.parser import parser
 from beanquery.query import run_query
-from beanquery.query_render import render_text
 
 
 def beancount_quarter(ty: int, quarter_n: int):

@@ -1,15 +1,12 @@
 import copy
 import datetime
 from decimal import Decimal
-import re
 from typing import Callable, List, NamedTuple, Tuple
 import typing
 from beancount.core import position
-from beancount.core import data
 from beancount.core.data import Posting, Transaction
 import dateutil
 
-# This should be defined in beangulp, but it seems to not be.
 class ExtractionRecord(NamedTuple):
     """A record of extractions from a particular file by an importer.
     

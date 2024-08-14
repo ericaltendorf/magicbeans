@@ -4,12 +4,10 @@ from collections import namedtuple
 from typing import List
 
 import dateutil
-from click import Context
 import argparse
 
-import beangulp
 from beancount import parser
-from beangulp import exceptions, extract, identify, utils
+from beangulp import extract, identify, utils
 from magicbeans import prices
 from magicbeans.common import ExtractionRecord
 from magicbeans.config import Config

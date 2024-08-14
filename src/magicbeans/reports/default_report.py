@@ -1,23 +1,11 @@
 import datetime
-import subprocess
-import sys
-from enum import Enum
 from typing import List
-from beancount.core.data import Posting, Transaction
-from beancount.core.inventory import Inventory
-from beancount.ops.summarize import balance_by_account
-from magicbeans.config import Config
-from magicbeans.reports import driver
-
-from pyfiglet import Figlet
 from tabulate import tabulate
 
-from beancount import loader
-from beancount.core.amount import Amount
-from beancount.parser import parser
 from beanquery.query import run_query
 from beanquery.query_render import render_text
-from magicbeans import disposals, queries
+from magicbeans import queries
+from magicbeans.reports import driver
 
 #
 # Default report generator.  Creates a report with

@@ -13,9 +13,6 @@ __copyright__ = "Copyright (C) 2023  Eric Altendorf"
 __license__ = "GNU GPLv2"
 
 import csv
-import datetime
-import json
-import os
 import re
 from itertools import groupby
 from os import path

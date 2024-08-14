@@ -7,19 +7,13 @@
 ##############################################################################
 
 import datetime
-import os
-import sys
+import dateutil
 from decimal import Decimal
 from typing import List
 from beancount.core.amount import Amount
 
-import dateutil
-
 import magicbeans
-from magicbeans.prices import PriceFetcher
-import magicbeans.__main__
-from beancount.core import account
-from beancount.core.data import Posting, Transaction, create_simple_posting
+from beancount.core.data import Transaction, create_simple_posting
 from beangulp.importer import Importer
 from magicbeans import common, transfers
 from magicbeans.importers.chiawallet import ChiaWalletImporter

@@ -1,8 +1,4 @@
-import copy
-from datetime import datetime
-import sys
-from typing import List, Tuple
-import beancount
+from typing import List
 
 from beancount.core import amount, data
 from beancount.core.number import D
@@ -13,8 +9,6 @@ from beancount.parser import printer
 from beancount.core.data import Transaction
 import dateutil.parser
 import pytest
-
-from magicbeans.transfers import Network, Link
 
 def mk_tx(rem: str) -> Transaction:
     entries, errors, options = parser.parse_string(f"""

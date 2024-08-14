@@ -40,12 +40,6 @@ def build_argparser():
         type=str,
     )
     parser.add_argument(
-        "--prices",
-        default="build/prices.csv",
-        help="Path to prices cache file (read/write)",
-        type=str,
-    )
-    parser.add_argument(
         "--run-import",
         default=True,
         action="store_true",
@@ -114,7 +108,8 @@ def run():
 
     input_dir = args.input_dir
     working_dir = args.output_dir
-    price_fetcher = PriceFetcher(prices.Resolution.DAY, args.prices)
+    prices_path = os.path.join(working_dir, "prices.csv")
+    price_fetcher = PriceFetcher(prices.Resolution.DAY, prices_path)
 
     config = load_config(args.config_py)
 
@@ -167,7 +162,7 @@ def run():
                     out.write(infile.read())
 
         # Save prices
-        print(f"==== Saving prices to {args.prices}...")
+        print(f"==== Saving prices...")
         price_fetcher.write_cache_file()
 
         print(f"==== Imported transactions to {path_final}.")

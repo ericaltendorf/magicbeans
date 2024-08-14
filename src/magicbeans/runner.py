@@ -171,7 +171,7 @@ def run():
         price_fetcher.write_cache_file()
 
         print(f"==== Imported transactions to {path_final}.")
-    
+
     if args.run_report:
         # Run the report
         print(f"==== Running report...")
@@ -179,11 +179,13 @@ def run():
         numeraire = "USD"  # Should be : config.get_numeraire() ?
         tax_years = range(args.ty_start, args.ty_end + 1)
 
-        default_report.run(tax_years,
-                       numeraire,
-                       config.get_covered_currencies(),
-                       path_final,
-                       path_report)
+        default_report.generate(
+            tax_years,
+            numeraire,
+            config.get_covered_currencies(),
+            path_final,
+            path_report,
+        )
 
         print(f"==== Report complete.")
 

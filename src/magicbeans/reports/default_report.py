@@ -20,7 +20,8 @@ from beanquery.query_render import render_text
 from magicbeans import disposals, queries
 
 #
-# Report generation helpers
+# Default report generator.  Creates a report with
+# a cover page, tax year summaries, and detailed disposals reports.
 #
 
 def quarter_start(year: int, quarter_n: int) -> datetime.date:
@@ -58,7 +59,7 @@ def quarter_report(year: int, quarter_n: int, currencies: List[str], db):
 		f"Mining summary for {quarter}",
 		queries.mining_summary(quarter, currency_re))
 
-def run(tax_years: List[int], numeraire: str, currencies: List[str], ledger_path: str, out_path: str):
+def generate(tax_years: List[int], numeraire: str, currencies: List[str], ledger_path: str, out_path: str):
 	print(f"Generating report for beancount file {ledger_path} "
           f"and writing to {out_path}")
 

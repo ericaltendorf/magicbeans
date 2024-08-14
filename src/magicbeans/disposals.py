@@ -72,11 +72,6 @@ class LotIndex():
 		all_lots = set()
 		indexed_lots = set()
 
-		# Save the date range of txs from which this was built (for debugging)
-		all_tx = list(acquisitions) + list(disposals)
-		self.tx_earliest = min([tx.date for tx in all_tx], default=None)
-		self.tx_latest = max([tx.date for tx in all_tx], default=None)
-
 		for (currency, account, positions) in inventory_blocks:
 			for position in positions:
 				assert_valid_position(position)
@@ -98,20 +93,23 @@ class LotIndex():
 		# 	self._set(currency, cost, None)
 
 		missing_lots = referenced_lots - indexed_lots
-		for (currency, cost) in missing_lots:
-			print(f"WARNING: missing lot for {currency} {{{cost.number} {cost.currency} {cost.date}}}")
 		if missing_lots:
-			nl = "\n"
-			print('Referenced lots:')
-			for (currency, cost) in referenced_lots:
-				print(f"  {self.render_lot(currency, cost)}")
-			print(f'Indexed lots:')
-			print(self.debug_str())
+			print("\nWARNING: LotIndex had no index for these lots:")
+			for (currency, cost) in missing_lots:
+				print(f"  {currency} {{{cost.number} {cost.currency} {cost.date}}}")
+			# print('Referenced lots:')
+			# for (currency, cost) in referenced_lots:
+			# 	print(f"  {self.render_lot(currency, cost)}")
+			all_tx = list(acquisitions) + list(disposals)
+			tx_earliest = min([tx.date for tx in all_tx], default=None)
+			tx_latest = max([tx.date for tx in all_tx], default=None)
+			print(f'Indexed lots (inc. tx between {tx_earliest} and {tx_latest}:')
+			print(self.debug_str(), end="")
 
 
 	# For robustness, round Cost values.  TODO: determine if this is necessary
 	def _mk_key(self, currency: str, cost: Cost):
-		num = cost.number.quantize(Decimal("1.0000")).normalize()
+		num = cost.number.quantize(Decimal("1.00000000")).normalize()
 		return (currency, cost._replace(number=num))
 
 	def _get(self, currency: str, cost: Cost):
@@ -140,7 +138,7 @@ class LotIndex():
 		return f"{currency:<15} {cost.number:>16f} {cost.currency:<6} {cost.date}"
 
 	def debug_str(self, select_currency=None) -> str:
-		result = f"  For transactions between {self.tx_earliest} and {self.tx_latest}:\n"
+		result = ""
 		for ((currency, cost), lotid) in self._index.items():
 			if not lotid:
 				continue

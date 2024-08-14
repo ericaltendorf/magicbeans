@@ -26,7 +26,6 @@ def build_argparser():
     parser.add_argument(
         "-i",
         "--input_dir",
-        nargs="?",
         default="downloads",
         help="Directory containing crypto transaction files to import",
         type=str,
@@ -34,7 +33,6 @@ def build_argparser():
     parser.add_argument(
         "-o",
         "--output_dir",
-        nargs="?",
         default="build",
         help="Directory to write intermediate and output files to",
         type=str,

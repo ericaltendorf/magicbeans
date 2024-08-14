@@ -38,8 +38,11 @@ class LotIndex():
 
 	def __init__(self, inventory_blocks: Sequence[InventoryBlock], acquisitions:
 	Sequence[Transaction], disposals: Sequence[Transaction], numeraire: str):
-		"""Initialize the index by adding lots from all inventories, and
-		from the augmentation legs of all transactions.
+		"""Initialize the index for a set of inventories and transactions.
+		
+		This will collect lots from inventories and the augmentation legs
+		of transactions, identify the relevant ones based on the disposals,
+		and index those for future reference.
 
 		Args:
 		- inventory_blocks: list of (currency, account, positions) tuples
@@ -66,46 +69,55 @@ class LotIndex():
 		# report.
 		self.next_id = 1
 
-		available_lots = set()
+		all_lots = set()
+		indexed_lots = set()
 		for (currency, account, positions) in inventory_blocks:
 			for position in positions:
 				assert_valid_position(position)
 				key = self._mk_key(position.units.currency, position.cost)
+				all_lots.add(key)
 				if key in referenced_lots:
-					available_lots.add(key)
+					indexed_lots.add(key)
 					self._assign_lotid(key[0], key[1])
 		for tx in acquisitions:
 			for posting in tx.postings:
 				if is_non_numeraire_proceeds_leg(posting, numeraire):
 					key = self._mk_key(posting.units.currency, posting.cost)
+					all_lots.add(key)
 					if key in referenced_lots:
-						available_lots.add(key)
+						indexed_lots.add(key)
 						self._assign_lotid(key[0], key[1])
 		
 		# for (currency, cost) in available_lots:
 		# 	self._set(currency, cost, None)
 
-		missing_lots = referenced_lots - available_lots
+		missing_lots = referenced_lots - indexed_lots
 		for (currency, cost) in missing_lots:
 			print(f"WARNING: missing lot for {currency} {{{cost.number} {cost.currency} {cost.date}}}")
 		if missing_lots:
 			nl = "\n"
 			print('Referenced lots:')
-			print(f'Available lots:\n{available_lots}')
+			for (currency, cost) in referenced_lots:
+				print(f"  {self.render_lot(currency, cost)}")
+			print(f'Indexed lots:')
+			print(self.debug_str())
+			print(f'All lots:')
+			for (currency, cost) in all_lots:
+				print(f"  {self.render_lot(currency, cost)}")
 
 
 	# For robustness, round Cost values.  TODO: determine if this is necessary
-	def _mk_key(self, currency, cost):
+	def _mk_key(self, currency: str, cost: Cost):
 		num = cost.number.quantize(Decimal("1.0000")).normalize()
 		return (currency, cost._replace(number=num))
 
-	def _get(self, currency, cost):
+	def _get(self, currency: str, cost: Cost):
 		return self._index[self._mk_key(currency, cost)]
 
-	def _has(self, currency, cost):
+	def _has(self, currency: str, cost: Cost):
 		return self._mk_key(currency, cost) in self._index
 
-	def _set(self, currency, cost, new_value):
+	def _set(self, currency: str, cost: Cost, new_value):
 		self._index[self._mk_key(currency, cost)] = new_value
 
 	def _assign_lotid(self, currency: str, cost: Cost) -> None:
@@ -120,14 +132,18 @@ class LotIndex():
 			return self._get(currency, cost)
 		return None
 
+	def render_lot(self, currency: str, cost: Cost) -> str:
+		"""Return a string representation of the lot"""
+		return f"{currency:<15} {cost.number:>16f} {cost.currency:<6} {cost.date}"
+
 	def debug_str(self, select_currency=None) -> str:
-		result = "LotIndex contents:\n"
+		result = ""
 		for ((currency, cost), lotid) in self._index.items():
 			if not lotid:
 				continue
 			if select_currency and currency != select_currency:
 				continue
-			result += f"  {currency:<15} {cost.number:>16f} {cost.currency:<6} {cost.date} -> #{lotid}\n"
+			result += f"  {self.render_lot(currency, cost)} -> #{lotid}\n"
 		return result
 
 class BookedDisposal():

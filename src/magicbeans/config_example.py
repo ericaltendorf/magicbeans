@@ -155,22 +155,16 @@ class LocalConfig(magicbeans.config.Config):
         return preamble
 
 #
-# Helper function for hooks.
-# TODO: Move this to the framework
+# Example hooks (ie Beangulp hooks).  These are for illustration purposes; you
+# should write your own to tweak your data as needed.
 #
-def _apply_filter(extracted, filter_fun):
-    """Apply the boolean filter to the entries in the extracted data"""
-    keep_fun = (lambda entry: not filter_fun(entry))
-    return [(filename, filter(keep_fun, entries), account, importer)
-            for (filename, entries, account, importer) in extracted]
-
-#
-# Example hooks.  These are for illustration purposes; you should
-# write your own to tweak your data as needed.
+# Hooks should take and return a List[common.ExtractionRecord].  They
+# also take an "existing entries" arg, but I forget what this is and
+# can't seem to find the Beangulp documentation for hooks.
 #
 
-def chiawallet_filter_change_coins_hook(extracted, _existing_entries= None):
-    return _apply_filter(extracted, chiawallet_filter_change_coins)
+def chiawallet_filter_change_coins_hook(extracted: List[common.ExtractionRecord], _existing_entries= None):
+    return common.filter_extractions(extracted, chiawallet_filter_change_coins)
 
 def chiawallet_filter_change_coins(entry: Transaction):
     """The chia wallet sometimes has trouble accurately reporting change from

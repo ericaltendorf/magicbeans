@@ -13,24 +13,26 @@ from magicbeans import prices
 from magicbeans.config import Config
 from magicbeans.prices import PriceFetcher
 
-
 def build_argparser():
     """Build an argument parser for the command line interface."""
     parser = argparse.ArgumentParser(description="Magicbeans Beancount crypto importer & reporter")
     parser.add_argument(
-        "config_py",
+        "-c",
+        "--config_py",
         help="Path to the Python file containing the configuration class",
         type=str,
     )
     parser.add_argument(
-        "input_dir",
+        "-i",
+        "--input_dir",
         nargs="?",
         default="downloads",
         help="Directory containing crypto transaction files to import",
         type=str,
     )
     parser.add_argument(
-        "output_dir",
+        "-o",
+        "--output_dir",
         nargs="?",
         default="build",
         help="Directory to write intermediate and output files to",
@@ -41,6 +43,18 @@ def build_argparser():
         default="build/prices.csv",
         help="Path to prices cache file (read/write)",
         type=str,
+    )
+    parser.add_argument(
+        "--run_import",
+        default=True,
+        help="Import and aggregate transactions from input_dir",
+        type=bool,
+    )
+    parser.add_argument(
+        "--run_report",
+        default=True,
+        help="Generate reports from imported transactions",
+        type=bool
     )
 
     return parser
@@ -81,56 +95,65 @@ def run():
 
     config = load_config(args.config_py)
 
-    config.set_price_fetcher(price_fetcher)
+    if args.run_import:
+        config.set_price_fetcher(price_fetcher)
 
-    # TODO: separate in phases, allow running of subphases
-    path_preamble   = os.path.join(working_dir, "00-preamble.beancount")
-    path_directives = os.path.join(working_dir, "01-directives.beancount")
-    path_extracted  = os.path.join(working_dir, "02-extracted.beancount")
-    path_sorted     = os.path.join(working_dir, "03-extracted-sorted.beancount")
-    path_final      = os.path.join(working_dir, "04-final.beancount")
+        # TODO: separate in phases, allow running of subphases
+        path_preamble   = os.path.join(working_dir, "00-preamble.beancount")
+        path_directives = os.path.join(working_dir, "01-directives.beancount")
+        path_extracted  = os.path.join(working_dir, "02-extracted.beancount")
+        path_sorted     = os.path.join(working_dir, "03-extracted-sorted.beancount")
+        path_final      = os.path.join(working_dir, "04-final.beancount")
 
-    network = config.get_network()
-    default_date = "2000-01-01"
+        network = config.get_network()
+        default_date = "2000-01-01"
 
-    # Preamble
-    print(f"==== Generating preamble to {path_preamble}...")
-    with open(path_preamble, "w") as out:
-        out.write(config.get_preamble())
+        # Preamble
+        print(f"==== Generating preamble to {path_preamble}...")
+        with open(path_preamble, "w") as out:
+            out.write(config.get_preamble())
 
-    # Directives
-    print(f"==== Generating directives to {path_directives}...")
-    with open(path_directives, "w") as out:
-        out.write(network.generate_account_directives(default_date))
+        # Directives
+        print(f"==== Generating directives to {path_directives}...")
+        with open(path_directives, "w") as out:
+            out.write(network.generate_account_directives(default_date))
 
-    # Extract
-    print(f"==== Extracting data to {path_extracted}...")
-    with open(path_extracted, "w") as out:
-        importers = config.get_importers()
-        hooks = config.get_hooks()
-        extract_all(utils.walk([input_dir]), out, importers, hooks)
+        # Extract
+        print(f"==== Extracting data to {path_extracted}...")
+        with open(path_extracted, "w") as out:
+            importers = config.get_importers()
+            hooks = config.get_hooks()
+            extract_all(utils.walk([input_dir]), out, importers, hooks)
 
-    # Sort
-    print(f"==== Sorting extracted data to {path_sorted}...")
-    def ts_key(entry):
-        return (entry.date, dateutil.parser.parse(entry.meta['timestamp']))
-    with open(path_sorted, "w") as out:
-        entries, errors, options = parser.parser.parse_file(path_extracted)
-        entries.sort(key=ts_key)
-        parser.printer.print_entries(entries, file=out)
+        # Sort
+        print(f"==== Sorting extracted data to {path_sorted}...")
+        def ts_key(entry):
+            return (entry.date, dateutil.parser.parse(entry.meta['timestamp']))
+        with open(path_sorted, "w") as out:
+            entries, errors, options = parser.parser.parse_file(path_extracted)
+            entries.sort(key=ts_key)
+            parser.printer.print_entries(entries, file=out)
 
-    # Join files
-    print(f"==== Joining directives and sorted data to {path_final}...")
-    with open(path_final, "w") as out:
-        for path in [path_preamble, path_directives, path_sorted]:
-            with open(path) as infile:
-                out.write(infile.read())
+        # Join files
+        print(f"==== Joining directives and sorted data to {path_final}...")
+        with open(path_final, "w") as out:
+            for path in [path_preamble, path_directives, path_sorted]:
+                with open(path) as infile:
+                    out.write(infile.read())
 
-    # Save prices
-    print(f"==== Saving prices to {args.prices}...")
-    price_fetcher.write_cache_file()
+        # Save prices
+        print(f"==== Saving prices to {args.prices}...")
+        price_fetcher.write_cache_file()
 
-    print(f"==== Done!  Final file is {path_final}.")
+        print(f"==== Imported transactions to {path_final}.")
+    
+    if args.run_report:
+        # Run the report
+        print(f"==== Running report...")
+
+        print("NOT YET IMPLEMENTED")
+
+        print(f"==== Report complete.")
 
 
 # Beangulp extract is designed to be called directly from the command

@@ -9,13 +9,14 @@
 import datetime
 import dateutil
 from decimal import Decimal
-from typing import List
+from typing import Callable, List
 from beancount.core.amount import Amount
 
 import magicbeans
 from beancount.core.data import Transaction, create_simple_posting
 from beangulp.importer import Importer
 from magicbeans import common, transfers
+from magicbeans.common import ExtractionRecord
 from magicbeans.importers.chiawallet import ChiaWalletImporter
 from magicbeans.importers.coinbase import CoinbaseImporter
 from magicbeans.importers.coinbasepro import CoinbaseProImporter
@@ -131,10 +132,12 @@ class LocalConfig(magicbeans.config.Config):
         return importers
 
     # Define the hooks that should be run on the transactions.
-    def get_hooks(self):
+    def get_hooks(self) -> List[Callable[
+            [List[ExtractionRecord], List[Transaction]],
+            List[ExtractionRecord]]]:
         return [chiawallet_filter_change_coins_hook,
                 cbp_tweak_xfer_timestamp_hook,
-                chiawallet_recharacterize_sale,
+                chiawallet_recharacterize_sale_hook,
                 ]
 
     def get_price_fetcher(self):
@@ -152,12 +155,17 @@ class LocalConfig(magicbeans.config.Config):
 # Example hooks (ie Beangulp hooks).  These are for illustration purposes; you
 # should write your own to tweak your data as needed.
 #
-# Hooks should take and return a List[common.ExtractionRecord].  They
-# also take an "existing entries" arg, but I forget what this is and
-# can't seem to find the Beangulp documentation for hooks.
+# Hooks should take arguments:
+#   extracted: List[common.ExtractionRecord]
+#   existing_entries: List[Transaction]
+# and return a new
+#   List[common.ExtractionRecord]
+#
+# Unfortunately these types are not really defined or documented; please refer
+# to the Beangulp source code for more information.
 #
 
-def chiawallet_filter_change_coins_hook(extracted: List[common.ExtractionRecord], _existing_entries= None):
+def chiawallet_filter_change_coins_hook(extracted: List[ExtractionRecord], _existing_entries: List[Transaction]) -> List[ExtractionRecord]:
     return common.filter_extractions(extracted, chiawallet_filter_change_coins)
 
 def chiawallet_filter_change_coins(entry: Transaction):
@@ -172,11 +180,11 @@ def chiawallet_filter_change_coins(entry: Transaction):
             (entry.meta['timestamp'], entry.postings[0].units.number) in to_filter)
 
 
-def cbp_tweak_xfer_timestamp_hook(extracted, _existing_entries= None):
-    return [(filename, map(cbp_tweak_xfer_timestamp, entries), account, importer)
+def cbp_tweak_xfer_timestamp_hook(extracted: List[ExtractionRecord], _existing_entries: List[Transaction]) -> List[ExtractionRecord]:
+    return [ExtractionRecord(filename, map(cbp_tweak_xfer_timestamp, entries), account, importer)
             for (filename, entries, account, importer) in extracted]
 
-def cbp_tweak_xfer_timestamp(tx: Transaction):
+def cbp_tweak_xfer_timestamp(tx: Transaction) -> Transaction:
     """Adjust timestamps on transactions, which were transfers of USDT from CBP
     to GateIO, but which show up in GateIO some minutes before CBP registers
     it, which throws off all the bookkeeping.  Tweak the timestamp to send
@@ -193,11 +201,11 @@ def cbp_tweak_xfer_timestamp(tx: Transaction):
     return tx   # So can be used in map()
 
 
-def chiawallet_recharacterize_sale(extracted, _existing_entries= None):
-    return [(filename, map(chiawallet_recharacterize_sale_entry, entries), account, importer)
+def chiawallet_recharacterize_sale_hook(extracted: List[ExtractionRecord], _existing_entries: List[Transaction]) -> List[ExtractionRecord]:
+    return [ExtractionRecord(filename, map(chiawallet_recharacterize_sale_entry, entries), account, importer)
             for (filename, entries, account, importer) in extracted]
 
-def chiawallet_recharacterize_sale_entry(entry):
+def chiawallet_recharacterize_sale_entry(entry: Transaction) -> Transaction:
     """Handle some transactions which appears to simply be a Send transaction,
     but which were actually transfers to a buyer, in exchange for USD.  Namely,
     recharacterize them as a sale instead of a Send."""

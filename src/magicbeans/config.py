@@ -1,6 +1,9 @@
-from typing import List
+from typing import Callable, List
 from beangulp.importer import Importer
 from magicbeans import prices, transfers
+
+from beancount.core.data import Transaction
+from magicbeans.common import ExtractionRecord
 
 class Config:
     """The API for magicbeans to access local configuration settings.
@@ -16,7 +19,9 @@ class Config:
         """Return the list of beancount importers to use."""
         raise NotImplementedError
 
-    def get_hooks(self):  # TODO: type hint
+    def get_hooks(self) -> List[Callable[
+            [List[ExtractionRecord], List[Transaction]],
+            List[ExtractionRecord]]]:
         """Return the list of hooks to use.
 
         Hooks are functions which take a list of extracted entries and

@@ -233,34 +233,12 @@ def is_non_numeraire_proceeds_leg(posting: Posting, numeraire: str) -> bool:
 		and posting.units.currency != numeraire
 		)
 
-# TODO: Consolidate these functions
-def disposal_inventory_desc(pos: Position, id: int) -> str:
-	result = (f"{pos.units.number:.8f} {pos.units.currency} "
-			  f"{{{pos.cost.number:0.4f} {pos.cost.date}}}")
-	if id:
-		result += f" (#{id})"
-	return result
-
-def disposal_inventory_ref(posting: Posting, id: int) -> str:
-	result = (f"{posting.units.number:.4f} {posting.units.currency} {{"
-	    	  + (f"#{id} " if id else "") +
-			  f"{posting.cost.number:.4f} {posting.cost.currency}"
-			  f" {posting.cost.date}}}")
-	return result
-
 def disposal_inventory_ref_neg(posting: Posting, id: int) -> str:
 	result = (f"{-posting.units.number:.4f} {posting.units.currency} {{"
 	    	  + (f"#{id} " if id else "") +
 			  f"{posting.cost.number:.4f} {posting.cost.currency}"
 			  f" {posting.cost.date}}}")
 	return result
-
-def render_disposal(disposal: Posting):
-	return (
-		f"{disposal.units} "
-		f"{{ {disposal.cost.number} {disposal.cost.currency}"
-		f" {disposal.cost.date} }}"
-		)
 
 def abbrv_disposal(disposal: Posting):
 	assert disposal.cost.currency == "USD"

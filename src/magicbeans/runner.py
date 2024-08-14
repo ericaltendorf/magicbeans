@@ -18,12 +18,14 @@ def build_argparser():
     parser = argparse.ArgumentParser(description="Magicbeans Beancount crypto importer & reporter")
     parser.add_argument(
         "input_dir",
+        nargs="?",
         default="downloads",
         help="Directory containing crypto transaction files to import",
         type=str,
     )
     parser.add_argument(
         "output_dir",
+        nargs="?",
         default="build",
         help="Directory to write intermediate and output files to",
         type=str,
@@ -47,7 +49,7 @@ def run(config: Config):
     """
 
     args = build_argparser().parse_args()
-    print(args)
+    print(f"Starting up, command line args are {args}")
 
     input_dir = args.input_dir
     working_dir = args.output_dir

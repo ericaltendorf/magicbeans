@@ -240,11 +240,3 @@ def chiawallet_recharacterize_sale_entry(entry):
         return new_entry   # So can be used in map()
     else:
         return entry
-
-#
-# The actual main().
-#
-
-if __name__ == '__main__':
-    config = LocalConfig()
-    magicbeans.runner.run(config)

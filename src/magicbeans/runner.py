@@ -1,3 +1,4 @@
+import importlib
 import os
 from collections import namedtuple
 
@@ -16,6 +17,11 @@ from magicbeans.prices import PriceFetcher
 def build_argparser():
     """Build an argument parser for the command line interface."""
     parser = argparse.ArgumentParser(description="Magicbeans Beancount crypto importer & reporter")
+    parser.add_argument(
+        "config_py",
+        help="Path to the Python file containing the configuration class",
+        type=str,
+    )
     parser.add_argument(
         "input_dir",
         nargs="?",
@@ -39,7 +45,25 @@ def build_argparser():
 
     return parser
 
-def run(config: Config):
+def load_config(config_py: str) -> Config:
+    """Load the configuration class from the given Python file."""
+    if not os.path.exists(config_py):
+        raise FileNotFoundError(f"Config file {config_py} does not exist")
+    if not os.path.isfile(config_py):
+        raise Exception(f"Config file {config_py} is not a file")
+    if not config_py.endswith(".py"):
+        raise Exception(f"Config file {config_py} is not a Python file")
+
+    spec = importlib.util.spec_from_file_location("local_config", config_py)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    if not hasattr(module, "LocalConfig"):
+        raise Exception(f"No LocalConfig subclass found in {config_py}")
+    else:
+        return module.LocalConfig()
+
+def run():
     """Main entry point to run beancount importing and processing.
 
     Usage: define your own settings and behavior in a subclass of Config.  Pass
@@ -54,6 +78,8 @@ def run(config: Config):
     input_dir = args.input_dir
     working_dir = args.output_dir
     price_fetcher = PriceFetcher(prices.Resolution.DAY, args.prices)
+
+    config = load_config(args.config_py)
 
     config.set_price_fetcher(price_fetcher)
 
@@ -133,3 +159,6 @@ def extract_all(input_filenames, out, importers, hooks):
 
     # Serialize entries.
     extract.print_extracted_entries(extracted, out)
+
+if __name__ == '__main__':
+    run()

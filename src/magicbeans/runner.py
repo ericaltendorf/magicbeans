@@ -3,14 +3,41 @@ from collections import namedtuple
 
 import dateutil
 from click import Context
+import argparse
 
 import beangulp
 from beancount import parser
 from beangulp import exceptions, extract, identify, utils
+from magicbeans import prices
 from magicbeans.config import Config
+from magicbeans.prices import PriceFetcher
 
 
-def run(config: Config, input_dir: str, working_dir: str):
+def build_argparser():
+    """Build an argument parser for the command line interface."""
+    parser = argparse.ArgumentParser(description="Magicbeans Beancount crypto importer & reporter")
+    parser.add_argument(
+        "input_dir",
+        default="downloads",
+        help="Directory containing crypto transaction files to import",
+        type=str,
+    )
+    parser.add_argument(
+        "output_dir",
+        default="build",
+        help="Directory to write intermediate and output files to",
+        type=str,
+    )
+    parser.add_argument(
+        "--prices",
+        default="build/prices.csv",
+        help="Path to prices cache file (read/write)",
+        type=str,
+    )
+
+    return parser
+
+def run(config: Config):
     """Main entry point to run beancount importing and processing.
 
     Usage: define your own settings and behavior in a subclass of Config.  Pass
@@ -18,6 +45,15 @@ def run(config: Config, input_dir: str, working_dir: str):
     directory containing the crypto transaction files to import, and the
     working directory in which to write intermediate and final output files.
     """
+
+    args = build_argparser().parse_args()
+    print(args)
+
+    input_dir = args.input_dir
+    working_dir = args.output_dir
+    price_fetcher = PriceFetcher(prices.Resolution.DAY, args.prices)
+
+    config.set_price_fetcher(price_fetcher)
 
     # TODO: separate in phases, allow running of subphases
     path_preamble   = os.path.join(working_dir, "00-preamble.beancount")
@@ -61,6 +97,10 @@ def run(config: Config, input_dir: str, working_dir: str):
         for path in [path_preamble, path_directives, path_sorted]:
             with open(path) as infile:
                 out.write(infile.read())
+
+    # Save prices
+    print(f"==== Saving prices to {args.prices}...")
+    price_fetcher.write_cache_file()
 
     print(f"==== Done!  Final file is {path_final}.")
 

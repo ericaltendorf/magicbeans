@@ -82,9 +82,8 @@ plugin "beancount_reds_plugins.capital_gains_classifier.long_short" "{
 
 class LocalConfig(magicbeans.config.Config):
 
-    def __init__(self, price_fetcher: PriceFetcher):
+    def __init__(self):
         super().__init__()
-        self.price_fetcher = price_fetcher
 
     # Set up the network defining how transfers happen for you.  See the
     # transfers.Network class for more details.
@@ -247,13 +246,5 @@ def chiawallet_recharacterize_sale_entry(entry):
 #
 
 if __name__ == '__main__':
-    input_dir = sys.argv[1]
-    build_dir = sys.argv[2]
-    prices_file = os.path.join(build_dir, "prices.csv")
-    print(f"Args: input: {input_dir} prices: {prices_file} build: {build_dir}")
-
-    price_fetcher = PriceFetcher(magicbeans.prices.Resolution.DAY, prices_file)
-    config = LocalConfig(price_fetcher = price_fetcher)
-    magicbeans.runner.run(config, input_dir, build_dir)
-
-    price_fetcher.write_cache_file()
+    config = LocalConfig()
+    magicbeans.runner.run(config)

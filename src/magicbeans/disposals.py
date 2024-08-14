@@ -3,7 +3,7 @@
 import datetime
 from decimal import Decimal
 from functools import partial
-from typing import List, NamedTuple
+from typing import List, NamedTuple, Sequence
 from beancount.core import amount
 from beancount.core.amount import Amount
 from beancount.core.data import Posting, Transaction
@@ -20,6 +20,11 @@ LTCG_ACCOUNT = "Income:CapGains:Long"
 def assert_valid_position(position):
 	assert(position.cost is not None), f"Position {position} has no cost"
 
+class InventoryBlock(NamedTuple):
+	currency: str
+	account: str
+	positions: List[Position]
+
 class LotIndex():
 	"""Tracks lots from inventories or acquisitions and enables ID assignment.
 
@@ -31,7 +36,8 @@ class LotIndex():
 
 	# TODO: filter out numeraire accounts
 
-	def __init__(self, inventory_blocks, acquisitions, disposals, numeraire):
+	def __init__(self, inventory_blocks: Sequence[InventoryBlock], acquisitions:
+	Sequence[Transaction], disposals: Sequence[Transaction], numeraire: str):
 		"""Initialize the index by adding lots from all inventories, and
 		from the augmentation legs of all transactions.
 
@@ -80,10 +86,10 @@ class LotIndex():
 		missing_lots = referenced_lots - available_lots
 		for (currency, cost) in missing_lots:
 			print(f"WARNING: missing lot for {currency} {{{cost.number} {cost.currency} {cost.date}}}")
-		# if missing_lots:
-		# 	nl = "\n"
-		# 	print(f'Referenced lots:\n{referenced_lots}')
-		# 	print(f'Available lots:\n{available_lots}')
+		if missing_lots:
+			nl = "\n"
+			print('Referenced lots:')
+			print(f'Available lots:\n{available_lots}')
 
 
 	# For robustness, round Cost values.  TODO: determine if this is necessary

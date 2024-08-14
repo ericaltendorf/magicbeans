@@ -3,7 +3,7 @@ from beancount.core.amount import Amount
 from beancount.core.data import Posting, Transaction
 from beancount.core.number import D
 from beancount.core.position import Cost, Position
-from magicbeans.disposals import LotIndex
+from magicbeans.disposals import InventoryBlock, LotIndex
 import pytest
 
 DAY1 = datetime.date(2015, 1, 1)
@@ -20,10 +20,10 @@ def nyd(year: int):
 
 def test_lotindex_from_inventories():
     inventory_blocks = [
-        ('BTC', 'Assets:MtGox', [
+        InventoryBlock('BTC', 'Assets:MtGox', [
             Position(Amount(D('1.8'), 'BTC'), Cost(D('1000.0'), 'USD', nyd(2015), None)),
             Position(Amount(D('1.2'), 'BTC'), Cost(D('2000.0'), 'USD', nyd(2016), None)), ]),
-        ('BTC', 'Assets:Coinbase', [
+        InventoryBlock('BTC', 'Assets:Coinbase', [
             Position(Amount(D('0.5'), 'BTC'), Cost(D('8000.0'), 'USD', nyd(2020), None)), ]),
     ]
 
@@ -49,3 +49,5 @@ def test_lotindex_from_inventories():
     # These should have been assigned IDs
     assert lotindex.get_lotid('BTC', usd_cost('2000.0', 2016)) == 1
     assert lotindex.get_lotid('BTC', usd_cost('8000.0', 2020)) == 2
+
+# def test_lotindex_from_acquisitions():

@@ -84,21 +84,20 @@ and a working directory for Magicbeans to write output (and temporary) files:
   # put stuff in downloads
 ```
 
-To run Magicbeans, you need a script that sets up your local configuration and
-calls the Magicbeans `run()` entry point.  The local run script allows you to
-define your own custom hooks as well as to initialize a price fetcher, and to
-persist its cache after running.
+Next you need to configure your workflow (your accounts, importers,
+transformations, hooks, etc.).  This is done with Python code which implements
+the Magicbeans `Config` class.  An example is provided in `config_example.py`.
+Since your config may end up including personal account information, you should
+copy the example script to a private repo to version-control it privately.
 
-An example such script is provided as `main_example.py`.  You may try running
-it, and pointing it at the directories you just set up, with:
+Now you should be ready to run Magicbeans.  To see the command line options:
+
 ```
-  python3 magicbeans/src/magicbeans/main_example.py downloads/ build/
+  python3 magicbeans/src/magicbeans/main.py -h
 ```
 
-You will need to modify that script to set it up for your own situation,
-accounts, and data issues.  To do so, you will probably want to copy the
-example script to a private repo, so that you can version-control it and keep
-acount information private.
+You will need to specify arguments to point Magicbeans to your config python
+code, your input and output directories, etc.
 
 
 ## TODO

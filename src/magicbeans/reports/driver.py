@@ -7,7 +7,7 @@ from beancount.core.data import Transaction
 from beancount.core.number import ZERO
 from beancount.ops import summarize
 from magicbeans import common
-from magicbeans.disposals import BookedDisposal, format_money, get_disposal_postings, is_disposal_tx, is_other_proceeds_leg, mk_disposal_summary, sum_amounts, LotIndex
+from magicbeans.disposals import BookedDisposal, format_money, get_disposal_postings, is_disposal_tx, is_non_numeraire_proceeds_leg, mk_disposal_summary, sum_amounts, LotIndex
 from magicbeans.mining import MINING_BENEFICIARY_ACCOUNT, MINING_INCOME_ACCOUNT, MiningStats, is_mining_tx
 from magicbeans.reports.data import AcquisitionsReportRow, CoverPage, DisposalsReport, DisposalsReportRow, AccountInventoryReport, InventoryReport, MiningSummaryRow
 from magicbeans.reports.latex import LaTeXRenderer
@@ -231,12 +231,12 @@ class ReportDriver:
 		for e in acquisitions:
 			# This should be safe, should have been checked by is_acquisition_tx()
 			try:
-				rcvd = next(filter(lambda p: is_other_proceeds_leg(p, self.numeraire), e.postings))
+				rcvd = next(filter(lambda p: is_non_numeraire_proceeds_leg(p, self.numeraire), e.postings))
 			except StopIteration:
 				# Debug
 				print(self.is_acquisition_tx(e, self.numeraire))
 				for p in e.postings:
-					print(f"-- {p.account} {p.units} || {is_other_proceeds_leg(p, self.numeraire)}")
+					print(f"-- {p.account} {p.units} || {is_non_numeraire_proceeds_leg(p, self.numeraire)}")
 				raise Exception(f"Expected one proceeds posting in {e.postings}")
 			acquisitions_report_rows.append(AcquisitionsReportRow(
 				e.date, e.narration, rcvd.units.number, rcvd.units.currency,

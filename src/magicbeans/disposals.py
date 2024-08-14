@@ -74,7 +74,7 @@ class LotIndex():
 					self._assign_lotid(key[0], key[1])
 		for tx in acquisitions:
 			for posting in tx.postings:
-				if is_other_proceeds_leg(posting, numeraire):
+				if is_non_numeraire_proceeds_leg(posting, numeraire):
 					key = self._mk_key(posting.units.currency, posting.cost)
 					if key in referenced_lots:
 						available_lots.add(key)
@@ -151,7 +151,7 @@ class BookedDisposal():
 		# TODO: expect that this is a complete nonoverlapping partition?
 		self.disposal_legs = self._filter_and_sort_legs(entry, is_disposal_leg)
 		self.numeraire_proceeds_legs = self._filter_and_sort_legs(entry, is_numeraire_proceeds_leg)
-		self.other_proceeds_legs = self._filter_and_sort_legs(entry, is_other_proceeds_leg)
+		self.other_proceeds_legs = self._filter_and_sort_legs(entry, is_non_numeraire_proceeds_leg)
 
 		# Sanity check that all disposals are of the same currency, and hang on to it.
 		disposed_currencies = set([d.units.currency for d in self.disposal_legs])
@@ -226,7 +226,7 @@ def is_numeraire_proceeds_leg(posting: Posting, numeraire: str) -> bool:
 		and posting.units.currency == numeraire
 		)
 
-def is_other_proceeds_leg(posting: Posting, numeraire: str) -> bool:
+def is_non_numeraire_proceeds_leg(posting: Posting, numeraire: str) -> bool:
 	return (posting.account.startswith(ASSETS_ACCOUNT)
 		and posting.units.number > 0
 		and posting.units.currency != numeraire

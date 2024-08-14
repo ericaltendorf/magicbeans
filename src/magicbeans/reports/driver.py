@@ -2,6 +2,7 @@ import datetime
 from decimal import Decimal
 import sys
 from typing import List, Sequence
+from beancount.parser.printer import format_entry
 from beancount.core import amount
 from beancount.core.data import Transaction
 from beancount.core.number import ZERO
@@ -145,11 +146,12 @@ class ReportDriver:
 
 	def partition_entries(self, entries, numeraire: str):
 		"""Return a tuple of entry lists, one for each type of entry:
-		disposals, non-mining acquisitions, and mining acquisitions."""
+		disposals, purchases (non-mining acquisitions), and mining
+		acquisitions."""
 		disposals = list(filter(is_disposal_tx, entries))
 		mining_awards = list(filter(is_mining_tx, entries))
-		acquisitions = list(filter(lambda e: self.is_acquisition_tx(e, numeraire), entries))
-		return (disposals, acquisitions, mining_awards)
+		purchases = list(filter(lambda e: self.is_acquisition_tx(e, numeraire), entries))
+		return (disposals, purchases, mining_awards)
 
 	#
 	# High level reporting functions
@@ -211,6 +213,7 @@ class ReportDriver:
 		for (cur, account, positions) in inventory_blocks:
 			# TODO: Hiding these for now to avoid taking up space, but we should really 
 			# track them down and figure out why there's assets remaining in these accounts.
+			# #POSSIBLE_BUG
 			if account.startswith("Assets:Xfer:"):
 				continue
 
@@ -304,7 +307,7 @@ class ReportDriver:
 		# simpler way to obtain them.)
 		(inventories_by_acct, all_entries) = self.get_inventory_and_entries(start, end)
 		all_txs = list(filter(lambda x: isinstance(x, Transaction), all_entries))
-		(disposals, acquisitions, mining_awards) = self.partition_entries(all_txs, self.numeraire)
+		(disposals, purchases, mining_awards) = self.partition_entries(all_txs, self.numeraire)
 		booked_disposals = [BookedDisposal(e, self.numeraire) for e in disposals]
 
 		disposed_assets = set([bd.disposed_asset() for bd in booked_disposals])
@@ -341,7 +344,7 @@ class ReportDriver:
 			   else max(tx_page[-1].date, pages[page_num + 1][0].date - datetime.timedelta(days=1)))
 
 			# Partition entries into disposals, acquisitions, and mining awards
-			(disposals, acquisitions, mining_awards) = self.partition_entries(tx_page, self.numeraire)
+			(disposals, purchases, mining_awards) = self.partition_entries(tx_page, self.numeraire)
 
 			# inventories_by_acct is a dict mapping account names to inventories, which
 			# in turn are dicts mapping currencies to lists of positions.
@@ -361,9 +364,10 @@ class ReportDriver:
 
 			# Collect inventory and acquisition reports
 			# Populate the lot index, and assign IDs to the interesting lots
-			lot_index = LotIndex(inventory_blocks, acquisitions, disposals, self.numeraire)
+			all_acquisitions = purchases + mining_awards
+			lot_index = LotIndex(inventory_blocks, all_acquisitions, disposals, self.numeraire)
 			inv_report = self.make_inventory_report(inventory_as_of_date, inventory_blocks, lot_index)
-			acquisitions_report_rows = self.make_acquisitions_report(acquisitions, mining_awards, lot_index)
+			acquisitions_report_rows = self.make_acquisitions_report(purchases, mining_awards, lot_index)
 
 			booked_disposals = [BookedDisposal(e, self.numeraire) for e in disposals]
 			disposals_report = self.make_disposals_report(booked_disposals, lot_index, page_start, page_end, True)

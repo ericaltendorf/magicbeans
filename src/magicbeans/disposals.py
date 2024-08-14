@@ -46,7 +46,7 @@ class LotIndex():
 
 		Args:
 		- inventory_blocks: list of (currency, account, positions) tuples
-		- acquisitions: acquisition transactions
+		- acquisitions: acquisition transactions (purchases and mining awards)
 		- disposals: disposal transactions
 		- numeraire: needed to ignore cash-proceeds augmentations
 		"""

@@ -9,7 +9,7 @@ import argparse
 import beangulp
 from beancount import parser
 from beangulp import exceptions, extract, identify, utils
-from magicbeans import prices
+from magicbeans import prices, run_report
 from magicbeans.config import Config
 from magicbeans.prices import PriceFetcher
 
@@ -45,16 +45,38 @@ def build_argparser():
         type=str,
     )
     parser.add_argument(
-        "--run_import",
+        "--run-import",
         default=True,
+        action="store_true",
         help="Import and aggregate transactions from input_dir",
-        type=bool,
     )
     parser.add_argument(
-        "--run_report",
+        "--no-run-import",
+        dest="run_import",
+        action="store_false",
+        help="Import and aggregate transactions from input_dir",
+    )
+    parser.add_argument(
+        "--run-report",
         default=True,
+        action="store_true",
         help="Generate reports from imported transactions",
-        type=bool
+    )
+    parser.add_argument(
+        "--no-run-report",
+        dest="run_report",
+        action="store_false",
+    )
+    parser.add_argument(
+        "--ty-start",
+        default=2018,
+        help="Tax year to start reporting (inclusive)",
+        type=int
+    )
+    parser.add_argument(
+        "--ty-end",
+        default=2023,
+        help="Tax year to end reporting (inclusive)",
     )
 
     return parser
@@ -95,15 +117,17 @@ def run():
 
     config = load_config(args.config_py)
 
+    # Consider separating into phases to allow running of subphases?
+    path_preamble   = os.path.join(working_dir, "00-preamble.beancount")
+    path_directives = os.path.join(working_dir, "01-directives.beancount")
+    path_extracted  = os.path.join(working_dir, "02-extracted.beancount")
+    path_sorted     = os.path.join(working_dir, "03-extracted-sorted.beancount")
+    path_final      = os.path.join(working_dir, "04-final.beancount")
+    path_report     = os.path.join(working_dir, "05-report.csv")
+
+    print(args.run_import)
     if args.run_import:
         config.set_price_fetcher(price_fetcher)
-
-        # TODO: separate in phases, allow running of subphases
-        path_preamble   = os.path.join(working_dir, "00-preamble.beancount")
-        path_directives = os.path.join(working_dir, "01-directives.beancount")
-        path_extracted  = os.path.join(working_dir, "02-extracted.beancount")
-        path_sorted     = os.path.join(working_dir, "03-extracted-sorted.beancount")
-        path_final      = os.path.join(working_dir, "04-final.beancount")
 
         network = config.get_network()
         default_date = "2000-01-01"
@@ -151,7 +175,14 @@ def run():
         # Run the report
         print(f"==== Running report...")
 
-        print("NOT YET IMPLEMENTED")
+        numeraire = "USD"  # Should be : config.get_numeraire() ?
+        tax_years = range(args.ty_start, args.ty_end + 1)
+
+        run_report.run(tax_years,
+                       numeraire,
+                       config.get_covered_currencies(),
+                       path_final,
+                       path_report)
 
         print(f"==== Report complete.")
 

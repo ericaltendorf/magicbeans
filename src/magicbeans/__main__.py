@@ -70,6 +70,7 @@ def build_argparser():
         "--ty-end",
         default=2023,
         help="Tax year to end reporting (inclusive)",
+        type=int
     )
 
     return parser

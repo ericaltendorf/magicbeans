@@ -1,13 +1,13 @@
 import datetime
 from decimal import Decimal
 import sys
-from typing import List
+from typing import List, Sequence
 from beancount.core import amount
 from beancount.core.data import Transaction
 from beancount.core.number import ZERO
 from beancount.ops import summarize
 from magicbeans import common
-from magicbeans.disposals import BookedDisposal, format_money, get_disposal_postings, is_disposal_tx, is_non_numeraire_proceeds_leg, sum_amounts, LotIndex
+from magicbeans.disposals import BookedDisposal, InventoryBlock, format_money, get_disposal_postings, is_disposal_tx, is_non_numeraire_proceeds_leg, sum_amounts, LotIndex
 from magicbeans.mining import MINING_BENEFICIARY_ACCOUNT, MINING_INCOME_ACCOUNT, MiningStats, is_mining_tx
 from magicbeans.reports.data import AcquisitionsReportRow, CoverPage, DisposalsReport, DisposalsReportRow, AccountInventoryReport, InventoryReport, MiningSummaryRow
 from magicbeans.reports.latex import LaTeXRenderer
@@ -350,11 +350,13 @@ class ReportDriver:
 
 			# First organize inventories by currency, and sort, so that we can
 			# assign lot IDs in order.
-			inventory_blocks = []  # (currency, account, positions) tuples
+			inventory_blocks: List[InventoryBlock] = []
 			for acct in inventories_by_acct.keys():
 				for (cur, positions) in inventories_by_acct[acct].split().items():
-					inventory_blocks.append((cur, acct,
-							  sorted(positions, key=lambda x: -abs(x.units.number))))
+					inventory_blocks.append(
+						InventoryBlock(
+							cur, acct,
+							sorted(positions, key=lambda x: -abs(x.units.number))))
 			inventory_blocks.sort()
 
 			# Collect inventory and acquisition reports

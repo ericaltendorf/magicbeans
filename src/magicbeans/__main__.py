@@ -1,6 +1,7 @@
 import importlib
 import os
 from collections import namedtuple
+from typing import List
 
 import dateutil
 from click import Context
@@ -10,6 +11,7 @@ import beangulp
 from beancount import parser
 from beangulp import exceptions, extract, identify, utils
 from magicbeans import prices
+from magicbeans.common import ExtractionRecord
 from magicbeans.config import Config
 from magicbeans.prices import PriceFetcher
 from magicbeans.reports import default_report
@@ -182,20 +184,19 @@ def run():
 
         print(f"==== Report complete.")
 
-
 # Beangulp extract is designed to be called directly from the command
 # and has no exposed API.  It's hard to call through all the Click abstractions
 # and magic, so instead we just reimplement a very stripped down importer here.
 def extract_all(input_filenames, out, importers, hooks):
     existing_entries = []  # Start from scratch each run
-    extracted = []
+    extracted: List[ExtractionRecord] = []
     for filename in input_filenames:
         importer = identify.identify(importers, filename)
         if importer:
             print(f'  {importer.name()} importer processing {filename}')
             entries = extract.extract_from_file(importer, filename, [])
             account = importer.account(filename)
-            extracted.append((filename, entries, account, importer))
+            extracted.append(ExtractionRecord(filename, entries, account, importer))
 
     # Sort and dedup.
     extract.sort_extracted_entries(extracted)

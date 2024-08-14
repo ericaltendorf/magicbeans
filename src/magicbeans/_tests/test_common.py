@@ -1,11 +1,13 @@
 import copy
 from datetime import datetime
 import sys
+from typing import List, Tuple
 import beancount
 
 from beancount.core import amount, data
 from beancount.core.number import D
 from magicbeans import common
+from magicbeans.common import ExtractionRecord
 from beancount.parser import parser
 from beancount.parser import printer
 from beancount.core.data import Transaction
@@ -14,6 +16,32 @@ import pytest
 
 from magicbeans.transfers import Network, Link
 
+def mk_tx(rem: str) -> Transaction:
+    entries, errors, options = parser.parse_string(f"""
+    2020-01-05 * "CBP: Buy 1.10 BTC"                       
+      remark: "{rem}"                    
+      Assets:Coinbase:BTC           1.1 BTC {{1000.00 USD}}
+      Assets:Coinbase:USD       -1105.0 USD               
+      Expenses:Financial:Fees       5.0 USD               
+    """)
+    return entries[0]
+
+def test_filter_extractions() -> None:
+    extractions: List[ExtractionRecord] = [
+        ExtractionRecord("file1", [mk_tx("alice"), mk_tx("bob")], "acct1", "imp1"),
+        ExtractionRecord("file2", [mk_tx("charlie"), mk_tx("bob"), mk_tx("diane")], "acct2", "imp2"),
+        ExtractionRecord("file3", [mk_tx("earl"), mk_tx("francis")], "acct3", "imp3"),
+    ]
+
+    def filter_fn(tx: Transaction) -> bool:
+        return tx.meta["remark"] == "bob"
+    
+    filtered = common.filter_extractions(extractions, filter_fn)
+
+    assert len(filtered) == 3
+    assert len(filtered[0].entries) == 1
+    assert len(filtered[1].entries) == 2
+    assert len(filtered[2].entries) == 2
 
 def test_rounded_amt() -> None:
     assert (common.rounded_amt(D("7.123456789"), "USD", 2)

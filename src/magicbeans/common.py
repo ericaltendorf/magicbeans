@@ -2,11 +2,37 @@ import copy
 import datetime
 from decimal import Decimal
 import re
-from typing import Tuple
+from typing import Callable, List, NamedTuple, Tuple
+import typing
 from beancount.core import position
 from beancount.core import data
 from beancount.core.data import Posting, Transaction
 import dateutil
+
+# This should be defined in beangulp, but it seems to not be.
+class ExtractionRecord(NamedTuple):
+    """A record of extractions from a particular file by an importer.
+    
+    This is a data structure Beangulp produces internally in its _extract()
+    method, and which is passed to importer hooks.  We work with it because
+    we imitate the importer process, and also the hooks mechanism because
+    we allow users to define custom hooks to tweak their source data upon
+    import.  Beangulp simply uses an untyped tuple, but we define it here with
+    types so we can do typechecking.
+    """
+    filename: str
+    entries: List[Transaction]
+    account: str
+    importer: str
+
+def filter_extractions(
+        extracted: typing.List[ExtractionRecord],
+        filter_fn: Callable[[Transaction], bool]) -> typing.List[ExtractionRecord]:
+    """Return a list of ExtractionRecords that omit transactions for which the
+    provided predicate function returns True."""
+    keep_fun = (lambda entry: not filter_fn(entry))
+    return [ExtractionRecord(filename, list(filter(keep_fun, entries)), account, importer)
+            for (filename, entries, account, importer) in extracted]
 
 def file_begins_with(filepath: str, expected: str) -> bool:
     """Return True if the provided file begins with the provided string."""

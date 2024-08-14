@@ -17,7 +17,7 @@ import dateutil
 
 import magicbeans
 from magicbeans.prices import PriceFetcher
-import magicbeans.main
+import magicbeans.__main__
 from beancount.core import account
 from beancount.core.data import Posting, Transaction, create_simple_posting
 from beangulp.importer import Importer

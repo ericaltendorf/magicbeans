@@ -93,7 +93,7 @@ copy the example script to a private repo to version-control it privately.
 Now you should be ready to run Magicbeans.  To see the command line options:
 
 ```
-  python3 magicbeans/src/magicbeans/main.py -h
+  python3 -m magicbeans -h
 ```
 
 You will need to specify arguments to point Magicbeans to your config python

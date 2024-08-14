@@ -44,7 +44,8 @@ def test_lotindex_from_inventories():
 
     lotindex = LotIndex(inventory_blocks, [], disposals, "USD")
 
-    # These should have been assigned IDs
+    # These should have been assigned IDs (always in sequential order starting
+    # from 1)
     assert lotindex.get_lotid('BTC', usd_cost('2000.0', 2016)) == 1
     assert lotindex.get_lotid('BTC', usd_cost('8000.0', 2020)) == 2
 
@@ -79,10 +80,9 @@ def test_lotindex_from_acquisitions():
 
     lotindex = LotIndex([], acquisitions, disposals, "USD")
 
-    print(lotindex.debug_str())
-
-    # This should have been assigned an ID
-    assert lotindex.get_lotid('BTC', usd_cost('2000.0', 2016)) == 2
+    # This should have been assigned an ID (always in sequential order starting
+    # from 1)
+    assert lotindex.get_lotid('BTC', usd_cost('2000.0', 2016)) == 1
  
 
 

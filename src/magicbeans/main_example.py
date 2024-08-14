@@ -17,7 +17,7 @@ import dateutil
 
 import magicbeans
 from magicbeans.prices import PriceFetcher
-import magicbeans.runner
+import magicbeans.main
 from beancount.core import account
 from beancount.core.data import Posting, Transaction, create_simple_posting
 from beangulp.importer import Importer
@@ -145,6 +145,11 @@ class LocalConfig(magicbeans.config.Config):
 
     def get_price_fetcher(self):
         return self.price_fetcher
+
+    # This is a little weird; the price fetcher is now created and set by the
+    # framework main run routine, but still accessed via the local Config.
+    def set_price_fetcher(self, price_fetcher):
+        self.price_fetcher = price_fetcher
 
     def get_preamble(self):
         return preamble

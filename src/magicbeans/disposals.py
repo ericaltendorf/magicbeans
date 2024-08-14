@@ -58,7 +58,7 @@ class LotIndex():
 
 		referenced_lots = set()
 		for e in disposals:
-			for p in get_disposal_postings(e):
+			for p in get_disposal_postings(e, numeraire):
 				referenced_lots.add(self._mk_key(p.units.currency, p.cost))
 
 		# Use user-visible index IDs starting from 1, and in the order that lots
@@ -274,40 +274,6 @@ def abbrv_disposal(disposal: Posting):
 		f"{{${disposal.cost.number:.4f} {disposal.cost.date}}}"
 		)
 
-# TODO: remove, this should be obsoleted by BookedDisposal
-class DisposalSummary(NamedTuple):
-	date: datetime.date
-	narration: str
-	proceeds: Decimal
-	short_term: Posting
-	long_term: Posting
-	lots: List[Posting]
-
-	def stcg(self) -> Decimal:
-		if self.short_term:
-			return - self.short_term.units.number
-		else:
-			return Decimal(0)
-
-	def ltcg(self) -> Decimal:
-		if self.long_term:
-			return - self.long_term.units.number
-		else:
-			return Decimal(0)
-
-def is_proceeds_posting(posting: Posting):
-	return (posting.account.startswith("Assets:")
-		and posting.units.number > 0
-		and posting.units.currency == "USD"
-   		)
-
-# TODO: remove, replaced by is_disposal_leg() above
-def is_disposal_posting(posting: Posting):
-	return (posting.account.startswith("Assets:")
-		and posting.units.number < 0
-		and posting.units.currency != "USD"
-   		)
-
 def sum_amounts(cur: str, amounts: List[Amount]) -> Amount:
 	"""Add up a list of amounts, all of which must be in the same currency
 	For some reason, sum() doesn't work for Amounts."""
@@ -361,24 +327,8 @@ def get_capgains_postings(entry: Transaction):
 		assert lt[0].units.currency == "USD"
 	return (st[0] if st else None, lt[0] if lt else None)
 
-def get_disposal_postings(entry: Transaction):
-	return [p for p in entry.postings if is_disposal_posting(p)]
-
-def mk_disposal_summary(entry: Transaction):
-	(st, lt) = get_capgains_postings(entry)
-	disposal_postings = get_disposal_postings(entry)
-
-	if st: assert st.units.currency == "USD"
-	if lt: assert lt.units.currency == "USD" 
-
-	total_proceeds = Decimal(0)
-	for p in entry.postings:
-		if is_proceeds_posting(p):
-			assert p.units.currency == "USD"
-			total_proceeds += p.units.number
-
-	return DisposalSummary(entry.date, entry.narration, total_proceeds,
-						   st, lt, disposal_postings)
+def get_disposal_postings(entry: Transaction, numeraire: str):
+	return [p for p in entry.postings if is_disposal_leg(p, numeraire)]
 
 # TODO: check logic.  check against red's plugin logic
 def is_disposal_tx(entry: Transaction):

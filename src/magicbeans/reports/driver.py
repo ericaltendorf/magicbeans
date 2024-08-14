@@ -7,7 +7,7 @@ from beancount.core.data import Transaction
 from beancount.core.number import ZERO
 from beancount.ops import summarize
 from magicbeans import common
-from magicbeans.disposals import BookedDisposal, format_money, get_disposal_postings, is_disposal_tx, is_non_numeraire_proceeds_leg, mk_disposal_summary, sum_amounts, LotIndex
+from magicbeans.disposals import BookedDisposal, format_money, get_disposal_postings, is_disposal_tx, is_non_numeraire_proceeds_leg, sum_amounts, LotIndex
 from magicbeans.mining import MINING_BENEFICIARY_ACCOUNT, MINING_INCOME_ACCOUNT, MiningStats, is_mining_tx
 from magicbeans.reports.data import AcquisitionsReportRow, CoverPage, DisposalsReport, DisposalsReportRow, AccountInventoryReport, InventoryReport, MiningSummaryRow
 from magicbeans.reports.latex import LaTeXRenderer

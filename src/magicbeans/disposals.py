@@ -71,6 +71,12 @@ class LotIndex():
 
 		all_lots = set()
 		indexed_lots = set()
+
+		# Save the date range of txs from which this was built (for debugging)
+		all_tx = list(acquisitions) + list(disposals)
+		self.tx_earliest = min([tx.date for tx in all_tx], default=None)
+		self.tx_latest = max([tx.date for tx in all_tx], default=None)
+
 		for (currency, account, positions) in inventory_blocks:
 			for position in positions:
 				assert_valid_position(position)
@@ -101,9 +107,6 @@ class LotIndex():
 				print(f"  {self.render_lot(currency, cost)}")
 			print(f'Indexed lots:')
 			print(self.debug_str())
-			print(f'All lots:')
-			for (currency, cost) in all_lots:
-				print(f"  {self.render_lot(currency, cost)}")
 
 
 	# For robustness, round Cost values.  TODO: determine if this is necessary
@@ -137,7 +140,7 @@ class LotIndex():
 		return f"{currency:<15} {cost.number:>16f} {cost.currency:<6} {cost.date}"
 
 	def debug_str(self, select_currency=None) -> str:
-		result = ""
+		result = f"  For transactions between {self.tx_earliest} and {self.tx_latest}:\n"
 		for ((currency, cost), lotid) in self._index.items():
 			if not lotid:
 				continue

@@ -9,9 +9,10 @@ import argparse
 import beangulp
 from beancount import parser
 from beangulp import exceptions, extract, identify, utils
-from magicbeans import prices, run_report
+from magicbeans import prices
 from magicbeans.config import Config
 from magicbeans.prices import PriceFetcher
+from magicbeans.reports import default_report
 
 def build_argparser():
     """Build an argument parser for the command line interface."""
@@ -178,7 +179,7 @@ def run():
         numeraire = "USD"  # Should be : config.get_numeraire() ?
         tax_years = range(args.ty_start, args.ty_end + 1)
 
-        run_report.run(tax_years,
+        default_report.run(tax_years,
                        numeraire,
                        config.get_covered_currencies(),
                        path_final,

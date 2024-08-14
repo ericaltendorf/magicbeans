@@ -21,21 +21,21 @@ def nyd(year: int):
 def test_lotindex_from_inventories():
     inventory_blocks = [
         InventoryBlock('BTC', 'Assets:MtGox', [
-            Position(Amount(D('1.8'), 'BTC'), Cost(D('1000.0'), 'USD', nyd(2015), None)),
-            Position(Amount(D('1.2'), 'BTC'), Cost(D('2000.0'), 'USD', nyd(2016), None)), ]),
+            Position(Amount(D('1.8'), 'BTC'), usd_cost('1000.0', 2015)),
+            Position(Amount(D('1.2'), 'BTC'), usd_cost('2000.0', 2016)), ]),
         InventoryBlock('BTC', 'Assets:Coinbase', [
-            Position(Amount(D('0.5'), 'BTC'), Cost(D('8000.0'), 'USD', nyd(2020), None)), ]),
+            Position(Amount(D('0.5'), 'BTC'), usd_cost('8000.0', 2020)), ]),
     ]
 
     disposals = [
-        Transaction({}, datetime.date(2022, 1, 1), None, None, None, None, None, [
+        Transaction({}, nyd(2022), None, None, None, None, None, [
             Posting('Assets:MtGox',
                     Amount(D('-0.2'), 'BTC'),
                     Cost(D('2000.0'), 'USD', nyd(2016), None),
                     None, None, None),
             Posting('Assets:Bank', Amount(D('6000'), 'USD'), None, None, None, None),
         ]),
-        Transaction({}, datetime.date(2022, 1, 1), None, None, None, None, None, [
+        Transaction({}, nyd(2022), None, None, None, None, None, [
             Posting('Assets:Coinbase',
                     Amount(D('-0.2'), 'BTC'),
                     Cost(D('8000.0'), 'USD', nyd(2020), None),
@@ -50,4 +50,3 @@ def test_lotindex_from_inventories():
     assert lotindex.get_lotid('BTC', usd_cost('2000.0', 2016)) == 1
     assert lotindex.get_lotid('BTC', usd_cost('8000.0', 2020)) == 2
 
-# def test_lotindex_from_acquisitions():

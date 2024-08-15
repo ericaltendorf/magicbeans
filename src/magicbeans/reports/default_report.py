@@ -76,7 +76,7 @@ def generate(tax_years: List[int], numeraire: str, currencies: List[str], ledger
 	for ty in tax_years:
 		start = datetime.date(ty, 1, 1)
 		end = datetime.date(ty+1, 1, 1)
-		print(f"  {ty} ", end="", flush=True)
+		print(f"  {ty}", flush=True)
 		db.run_detailed_log(start, end)
 
 	print()

@@ -1,7 +1,10 @@
 import datetime
 from decimal import Decimal
 import sys
-from typing import List, Sequence
+from typing import Iterator, List, NamedTuple, Sequence
+
+import dateutil
+import dateutil.parser
 from beancount.parser.printer import format_entry
 from beancount.core import amount
 from beancount.core.data import Transaction
@@ -58,7 +61,7 @@ contains a complete history of all mining rewards, for reference.
 """
 
 class ReportDriver:
-	"""Wraps a beancount file and facilitates reporting with BQL queries.
+	"""Wraps a beancount file and facilitates building reports off of it.
 
 	Initialize the driver with the path to the beancount file and the path to
 	the output report file.  Then call the other methods to run queries and
@@ -165,30 +168,24 @@ class ReportDriver:
 	# New report methods, using direct analysis of the entries
 	#
 
-	def get_inventory_for_first_disposal(self, start: datetime.date, end: datetime.date):
-		"""Get the inventory at the time of the first disposal in the period"""
+	def get_inventory_at_ts(self, ts: datetime):
+		"""Get the inventory as of the given timestamp."""
 
-		# Find the first disposal in the period
-		first_disposal = None
-		for e in self.entries:
-			if e.date >= start and e.date < end and is_disposal_tx(e):
-				first_disposal = e
-				break
-
-		if first_disposal is not None:
-			inventory_as_of_date = first_disposal.date
-		else:
-			inventory_as_of_date = start
+		def ts_cutoff_fn(entry):
+			if 'timestamp' in entry.meta:
+				tx_ts = dateutil.parser.parse(entry.meta['timestamp'])
+				return tx_ts >= ts
+			return False
 
 		(inventories_by_acct, _) = summarize.balance_by_account(
-			self.entries, inventory_as_of_date)
+			self.entries, stop_fn=ts_cutoff_fn)
 
 		# Remove numeraire-only accounts; we don't need to track those
 		for (account, inventory) in list(inventories_by_acct.items()):
 			if all([p.units.currency == self.numeraire for p in inventory]):
 				inventories_by_acct.pop(account)
 
-		return (inventories_by_acct, inventory_as_of_date)
+		return inventories_by_acct
 
 	def get_inventory_and_entries(self, start: datetime.date, end: datetime.date):
 		"""For a time period, get the inventory at the start and all entries in the period"""
@@ -211,11 +208,15 @@ class ReportDriver:
 		"""Construct an inventory report object."""
 		account_inventory_reports = [] 
 		for (cur, account, positions) in inventory_blocks:
-			# TODO: Hiding these for now to avoid taking up space, but we should really 
-			# track them down and figure out why there's assets remaining in these accounts.
-			# #POSSIBLE_BUG
-			if account.startswith("Assets:Xfer:"):
-				continue
+			# It seems common that transfers lose some value in the transfer process, e.g.
+			#
+			#   Assets:Coinbase:USDT              -105.719800 USDT {}
+			#   Assets:Xfer:Coinbase-GateIO:USDT   105.719800 USDT {}
+			#   Assets:Xfer:Coinbase-GateIO:USDT  -100.0000000000000000 USDT {}
+			#   Assets:GateIO:USDT                 100.0000000000000000 USDT {}
+			#
+			# This leaves residual lost amounts in the Xfer accounts.  TODO:
+			# account for these.
 
 			total = sum_amounts(cur, [pos.units for pos in positions])
 
@@ -241,8 +242,12 @@ class ReportDriver:
 				for p in e.postings:
 					print(f"-- {p.account} {p.units} || {is_non_numeraire_proceeds_leg(p, self.numeraire)}")
 				raise Exception(f"Expected one proceeds posting in {e.postings}")
+			timestamp = dateutil.parser.parse(e.meta['timestamp'])
+			time_of_day_utc = timestamp.strftime("%H:%M:%SUTC")
 			acquisitions_report_rows.append(AcquisitionsReportRow(
-				e.date, e.narration, rcvd.units.number, rcvd.units.currency,
+				e.date,
+				f"{e.narration} {time_of_day_utc}",
+				rcvd.units.number, rcvd.units.currency,
 				rcvd.cost.number, rcvd.cost.number * rcvd.units.number,
 				lot_index.get_lotid(rcvd.units.currency, rcvd.cost)
 			))
@@ -260,7 +265,7 @@ class ReportDriver:
 				period_mining_stats.total_fmv, None))
 		return acquisitions_report_rows
 
-	def make_disposals_report(self, booked_disposals, lot_index, start, end, show_legs):
+	def make_disposals_report(self, booked_disposals, lot_index, show_legs):
 		# Collect disposal transactions referencing IDs
 		cumulative_stcg = Decimal("0")
 		cumulative_ltcg = Decimal("0")
@@ -283,9 +288,12 @@ class ReportDriver:
 				disposal_legs_and_ids = disposal_legs_and_ids[:MAX_DISPOSAL_LEGS]
 				num_legs_omitted = n_legs - len(disposal_legs_and_ids)
 
+			time_of_day_utc = bd.timestamp().strftime("%H:%M:%SUTC")
+
 			disposals_report_rows.append(DisposalsReportRow(
 				bd.tx.date, bd.acquisition_date(),
-				bd.tx.narration, numer_proc, other_proc, disposed_cost, gain,
+				f"{bd.tx.narration} {time_of_day_utc}",
+				numer_proc, other_proc, disposed_cost, gain,
 				bd.stcg(), cumulative_stcg, bd.ltcg(), cumulative_ltcg,
 				bd.disposed_currency,
 				bd.disposed_amount(),
@@ -294,7 +302,8 @@ class ReportDriver:
 				disposal_legs_and_ids,
 				num_legs_omitted))
 		
-		return DisposalsReport(start, end, self.numeraire,
+		# return DisposalsReport(start, end, self.numeraire,
+		return DisposalsReport(self.numeraire,
 				disposals_report_rows, cumulative_stcg, cumulative_ltcg, show_legs)
 	
 	def run_disposals_summary(self, ty: int):
@@ -319,7 +328,7 @@ class ReportDriver:
 
 		for asset in disposed_assets:
 			disposals_for_asset = [bd for bd in booked_disposals if bd.disposed_asset() == asset]
-			disposals_report = self.make_disposals_report(disposals_for_asset, None, start, end, False)
+			disposals_report = self.make_disposals_report(disposals_for_asset, None, False)
 			self.renderer.disposals(f"{asset} Disposals", disposals_report)
 
 	def run_detailed_log(self, start: datetime.date, end: datetime.date):
@@ -336,20 +345,45 @@ class ReportDriver:
 		(_, all_entries) = self.get_inventory_and_entries(start, end)
 		all_txs = list(filter(lambda x: isinstance(x, Transaction), all_entries))
 
-		pages = list(paginate_entries(all_txs, 40))
+		pages: List[List[Transaction]] = list(paginate_entries(all_txs, 40))
 		for page_num in range(len(pages)):
-			tx_page = pages[page_num]
-			page_start = (start if page_num == 0 else tx_page[0].date)
-			page_end = (inclusive_end if page_num == len(pages) - 1
+			# The transactions on this page
+			tx_page: List[Transaction] = list(pages[page_num])
+			
+			# Get the timestamp window of these transactions
+			page_date_start: datetime.date = (start if page_num == 0 else tx_page[0].date)
+			page_ts_start: datetime.datetime = datetime.datetime.combine(page_date_start, datetime.time.min)
+			for e in tx_page:
+				if 'timestamp' in e.meta:
+					page_ts_start = dateutil.parser.parse(e.meta['timestamp'])
+					break
+
+			page_date_end: datetime.date = (inclusive_end if page_num == len(pages) - 1
 			   else max(tx_page[-1].date, pages[page_num + 1][0].date - datetime.timedelta(days=1)))
+			page_ts_end: datetime.datetime = datetime.datetime.combine(page_date_end, datetime.time.max)
+			for e in reversed(tx_page):
+				if 'timestamp' in e.meta:
+					page_ts_end = dateutil.parser.parse(e.meta['timestamp'])
+					break
+
+			# Progress; also, context in case of error later
+			print(f"    page {page_num}, {page_ts_start} -- {page_ts_end}")
 
 			# Partition entries into disposals, acquisitions, and mining awards
 			(disposals, purchases, mining_awards) = self.partition_entries(tx_page, self.numeraire)
 
 			# inventories_by_acct is a dict mapping account names to inventories, which
 			# in turn are dicts mapping currencies to lists of positions.
-			(inventories_by_acct, inventory_as_of_date) = (
-				self.get_inventory_for_first_disposal(page_start, page_end))
+			inventories_by_acct = self.get_inventory_at_ts(page_ts_start)
+
+			# print(f"In run_detailed_log, examining inventories we got (at {page_ts_start}):")
+			# for inventory in inventories_by_acct.values():
+			# 	for (cur, positions) in inventory.split().items():
+			# 		for p in positions:
+			# 			if p.cost is None:
+			# 				print(f"  Weird position with no cost: {p}")
+			# 			elif p.cost.date == datetime.date(2021, 9, 3):
+			# 				print(f"  {cur:<15} {p.cost.number:>16f} {p.cost.currency:<6} {p.cost.date}")
 
 			# First organize inventories by currency, and sort, so that we can
 			# assign lot IDs in order.
@@ -366,17 +400,17 @@ class ReportDriver:
 			# Populate the lot index, and assign IDs to the interesting lots
 			all_acquisitions = purchases + mining_awards
 			lot_index = LotIndex(inventory_blocks, all_acquisitions, disposals, self.numeraire)
-			inv_report = self.make_inventory_report(inventory_as_of_date, inventory_blocks, lot_index)
+			inv_report = self.make_inventory_report(page_ts_start, inventory_blocks, lot_index)
 			acquisitions_report_rows = self.make_acquisitions_report(purchases, mining_awards, lot_index)
 
 			booked_disposals = [BookedDisposal(e, self.numeraire) for e in disposals]
-			disposals_report = self.make_disposals_report(booked_disposals, lot_index, page_start, page_end, True)
+			disposals_report = self.make_disposals_report(booked_disposals, lot_index, True)
 		
 			# Render.
 			n_pages = len(pages)
 			self.renderer.header(
 				f"{ty} Detailed Activity Log ({page_num+1}/{n_pages}) "
-				+ f"{page_start.strftime('%m-%d')}--{page_end.strftime('%m-%d')}")
+				+ f"{page_ts_start.strftime('%m-%d %H:%M:%S UTC')} -- {page_ts_end.strftime('%m-%d %H:%M:%S UTC')}")
 			self.renderer.details_page(inv_report, acquisitions_report_rows, disposals_report)
 
 	def run_mining_summary(self, title: str, ty: int):
@@ -421,7 +455,7 @@ class ReportDriver:
 		
 		self.renderer.mining_summary(rows)
 
-def paginate_entries(entries, page_size: int):
+def paginate_entries(entries, page_size: int) -> Iterator[List[Transaction]]:
 	"""Yield lists of entries which fit on one page."""
 	page_start_index = 0
 	vweight = 0  # Roughly, number of table lines used.

@@ -19,7 +19,7 @@ class AccountInventoryReport(NamedTuple):
     positions_and_ids: List[Tuple[Position, int]]
 
 class InventoryReport(NamedTuple):
-    date: datetime.date
+    ts: datetime.datetime
     accounts: List[AccountInventoryReport]
 
 class AcquisitionsReportRow(NamedTuple):
@@ -51,8 +51,8 @@ class DisposalsReportRow(NamedTuple):
     num_legs_omitted: int
 
 class DisposalsReport(NamedTuple):
-    start: datetime.date
-    end: datetime.date
+    # start: datetime.date
+    # end: datetime.date
     numeraire: str
     rows: List[DisposalsReportRow]
     cumulative_stcg: Decimal

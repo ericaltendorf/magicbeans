@@ -202,8 +202,9 @@ class LaTeXRenderer():
 	def inventory(self, inventory_report: InventoryReport):
 		# with self.doc.create(Tblr("|r r r X|", 4, width=r"0.95\linewidth" )) as table:
 		with self.doc.create(Tabularx("|r r X r|", width_argument=NoEscape(r"0.95\linewidth") )) as table:
+			timestamp_str = inventory_report.ts.strftime("%Y-%m-%d %H:%M:%S UTC")
 			table.add_row((MultiColumn(4, align="c",
-				data=table_text(f"Inventory {inventory_report.date}")), ))
+				data=table_text(f"Inventory {timestamp_str}")), ))
 			if not inventory_report.accounts:
 				table.add_hline()
 				table.add_row((MultiColumn(4, data="No inventory to report"),))
@@ -211,7 +212,7 @@ class LaTeXRenderer():
 				table.add_row(("", "", "", ""))  # Needed to force the X cell to expand the row
 			else:
 				table.add_hline()
-
+#
 			for acct in inventory_report.accounts:
 				table.add_row((MultiColumn(4, data=bold(acct.account)),))
 				table.add_hline()

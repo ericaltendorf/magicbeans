@@ -4,6 +4,10 @@ import datetime
 from decimal import Decimal
 from functools import partial
 from typing import Dict, List, NamedTuple, Sequence, Tuple
+
+import dateutil
+from beancount.parser.printer import format_entry
+from beancount.parser.printer import print_entry
 from beancount.core import amount
 from beancount.core.amount import Amount
 from beancount.core.data import Posting, Transaction
@@ -61,22 +65,22 @@ class LotIndex():
 
 		referenced_lots = set()
 		for e in disposals:
-			for p in get_disposal_postings(e, numeraire):
-				referenced_lots.add(self._mk_key(p.units.currency, p.cost))
+			for a in get_disposal_postings(e, numeraire):
+				key = self._mk_key(a.units.currency, a.cost)
+				referenced_lots.add(key)
+
 
 		# Use user-visible index IDs starting from 1, and in the order that lots
 		# appear in inventory and acquisitions, so they're easy to find in the
 		# report.
 		self.next_id = 1
 
-		all_lots = set()
 		indexed_lots = set()
 
 		for (currency, account, positions) in inventory_blocks:
 			for position in positions:
 				assert_valid_position(position)
 				key = self._mk_key(position.units.currency, position.cost)
-				all_lots.add(key)
 				if key in referenced_lots:
 					indexed_lots.add(key)
 					self._assign_lotid(key[0], key[1])
@@ -84,7 +88,6 @@ class LotIndex():
 			for posting in tx.postings:
 				if is_non_numeraire_proceeds_leg(posting, numeraire):
 					key = self._mk_key(posting.units.currency, posting.cost)
-					all_lots.add(key)
 					if key in referenced_lots:
 						indexed_lots.add(key)
 						self._assign_lotid(key[0], key[1])
@@ -94,17 +97,15 @@ class LotIndex():
 
 		missing_lots = referenced_lots - indexed_lots
 		if missing_lots:
-			print("\nWARNING: LotIndex had no index for these lots:")
+			print("\n!!! Warning: LotIndex had no index for these referenced lots:")
 			for (currency, cost) in missing_lots:
-				print(f"  {currency} {{{cost.number} {cost.currency} {cost.date}}}")
-			# print('Referenced lots:')
-			# for (currency, cost) in referenced_lots:
-			# 	print(f"  {self.render_lot(currency, cost)}")
+				print(f"!!!   {currency} {{{cost.number} {cost.currency} {cost.date}}}")
 			all_tx = list(acquisitions) + list(disposals)
 			tx_earliest = min([tx.date for tx in all_tx], default=None)
 			tx_latest = max([tx.date for tx in all_tx], default=None)
-			print(f'Indexed lots (inc. tx between {tx_earliest} and {tx_latest}:')
-			print(self.debug_str(), end="")
+			print(f'!!! Indexed lots (inc. tx between {tx_earliest} and {tx_latest}:')
+			for line in self.debug_str():
+				print(f"!!!   {line}")
 
 
 	# For robustness, round Cost values.  TODO: determine if this is necessary
@@ -137,14 +138,14 @@ class LotIndex():
 		"""Return a string representation of the lot"""
 		return f"{currency:<15} {cost.number:>16f} {cost.currency:<6} {cost.date}"
 
-	def debug_str(self, select_currency=None) -> str:
-		result = ""
+	def debug_str(self, select_currency=None) -> List[str]:
+		result = []
 		for ((currency, cost), lotid) in self._index.items():
 			if not lotid:
 				continue
 			if select_currency and currency != select_currency:
 				continue
-			result += f"  {self.render_lot(currency, cost)} -> #{lotid}\n"
+			result.append(f"  {self.render_lot(currency, cost)} -> #{lotid}")
 		return result
 
 class BookedDisposal():
@@ -184,6 +185,10 @@ class BookedDisposal():
 		filter_pred_w_numeraire = partial(filter_pred, numeraire=self.numeraire)
 		return sorted(filter(filter_pred_w_numeraire, tx.postings),
 				key=lambda p: p.units.number)
+
+	def timestamp(self) -> datetime.datetime:
+		"""Return the timestamp of the transaction"""
+		return dateutil.parser.parse(self.tx.meta["timestamp"])
 
 	def acquisition_date(self) -> datetime.date:
 		"""Return the date of the acquisition legs, if unique, otherwise "Various"."""

@@ -136,6 +136,9 @@ class LaTeXRenderer():
 	def write_text(self, text: str):
 		self.doc.append(text)
 
+	def newpage(self):
+		self.doc.append(NewPage())
+
 	def header(self, title: str):
 		self.doc.append(NewPage())
 		self.doc.append(Section(NoEscape(title), numbering=True))

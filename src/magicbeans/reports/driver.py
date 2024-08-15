@@ -161,7 +161,10 @@ class ReportDriver:
 	#
 	def tax_year_summary(self, ty: int):
 		self.renderer.header(f"{ty} Tax Summary")
+
+		self.renderer.subheader(f"{ty} Disposals and Gain/Loss")
 		self.run_disposals_summary(ty)
+
 		self.run_mining_summary(f"{ty} Mining Operations and Income", ty)
 
 	#
@@ -321,7 +324,6 @@ class ReportDriver:
 
 		disposed_assets = set([bd.disposed_asset() for bd in booked_disposals])
 
-		self.renderer.subheader(f"{ty} Disposals and Gain/Loss")
 		if not disposed_assets:
 			self.renderer.write_text("(No disposals in this period.)")
 			return	
@@ -345,7 +347,12 @@ class ReportDriver:
 		(_, all_entries) = self.get_inventory_and_entries(start, end)
 		all_txs = list(filter(lambda x: isinstance(x, Transaction), all_entries))
 
+		self.renderer.header(f"{ty} Detailed Activity Log")
+		self.renderer.subheader(f"Disposals and Gain/Loss (repeated)")
+		self.run_disposals_summary(ty)
+
 		pages: List[List[Transaction]] = list(paginate_entries(all_txs, 40))
+		n_pages = len(pages)
 		for page_num in range(len(pages)):
 			# The transactions on this page
 			tx_page: List[Transaction] = list(pages[page_num])
@@ -407,9 +414,9 @@ class ReportDriver:
 			disposals_report = self.make_disposals_report(booked_disposals, lot_index, True)
 		
 			# Render.
-			n_pages = len(pages)
-			self.renderer.header(
-				f"{ty} Detailed Activity Log ({page_num+1}/{n_pages}) "
+			self.renderer.newpage()
+			self.renderer.subheader(
+				f"{ty} Log ({page_num+1}/{n_pages}): "
 				+ f"{page_ts_start.strftime('%m-%d %H:%M:%S UTC')} -- {page_ts_end.strftime('%m-%d %H:%M:%S UTC')}")
 			self.renderer.details_page(inv_report, acquisitions_report_rows, disposals_report)
 

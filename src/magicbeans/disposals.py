@@ -63,6 +63,7 @@ class LotIndex():
 		# if it's been transferred.
 		self._index: Dict[Tuple[str, Cost], int] = {}
 
+		# Collect all lots that are referenced in disposals
 		referenced_lots = set()
 		for e in disposals:
 			for a in get_disposal_postings(e, numeraire):
@@ -75,8 +76,8 @@ class LotIndex():
 		# report.
 		self.next_id = 1
 
+		# Index all lots from inventories and acquisitions
 		indexed_lots = set()
-
 		for (currency, account, positions) in inventory_blocks:
 			for position in positions:
 				assert_valid_position(position)
@@ -84,7 +85,7 @@ class LotIndex():
 				if key in referenced_lots:
 					indexed_lots.add(key)
 					self._assign_lotid(key[0], key[1])
-		for tx in acquisitions:
+		for tx in list(acquisitions) + list(disposals):
 			for posting in tx.postings:
 				if is_non_numeraire_proceeds_leg(posting, numeraire):
 					key = self._mk_key(posting.units.currency, posting.cost)

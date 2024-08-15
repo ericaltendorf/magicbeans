@@ -118,7 +118,7 @@ def run():
     path_extracted  = os.path.join(working_dir, "02-extracted.beancount")
     path_sorted     = os.path.join(working_dir, "03-extracted-sorted.beancount")
     path_final      = os.path.join(working_dir, "04-final.beancount")
-    path_report     = os.path.join(working_dir, "05-report.csv")
+    path_report     = os.path.join(working_dir, "05-report")  # .pdf will be appended
 
     print(args.run_import)
     if args.run_import:

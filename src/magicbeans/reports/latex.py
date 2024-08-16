@@ -228,7 +228,7 @@ class LaTeXRenderer():
 		
 		# Set the max number of unindexed lots to show by brute force
 		max_unindexed_per = max(n_unindexed_by_acct.values()) if n_unindexed_by_acct.values() else 100
-		max_rows = 60
+		max_rows = 56
 		while count_rows(n_indexed_by_acct, n_unindexed_by_acct, max_unindexed_per) > max_rows:
 			max_unindexed_per -= 1
 

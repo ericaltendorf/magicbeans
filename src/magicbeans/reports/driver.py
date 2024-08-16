@@ -356,7 +356,7 @@ class ReportDriver:
 		all_txs = list(filter(lambda x: isinstance(x, Transaction), all_entries))
 
 		self.renderer.header(f"{ty} Detailed Activity Log")
-		self.renderer.subheader(f"Disposals and Gain/Loss (repeated)")
+		self.renderer.subheader(f"Disposals and Gain/Loss summary (repeated)")
 		self.run_disposals_summary(ty)
 
 		pages: List[List[Transaction]] = list(paginate_entries(all_txs, 80))
@@ -424,7 +424,7 @@ class ReportDriver:
 			# Render.
 			self.renderer.newpage()
 			self.renderer.subheader(
-				f"{ty} Log ({page_num+1}/{n_pages}): "
+				f"{ty} Detailed Activity Log ({page_num+1}/{n_pages}): "
 				+ f"{page_ts_start.strftime('%m-%d %H:%M:%S UTC')} -- {page_ts_end.strftime('%m-%d %H:%M:%S UTC')}")
 			self.renderer.details_page(inv_report, acquisitions_report_rows, disposals_report)
 

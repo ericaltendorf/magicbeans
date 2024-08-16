@@ -351,7 +351,7 @@ class ReportDriver:
 		self.renderer.subheader(f"Disposals and Gain/Loss (repeated)")
 		self.run_disposals_summary(ty)
 
-		pages: List[List[Transaction]] = list(paginate_entries(all_txs, 40))
+		pages: List[List[Transaction]] = list(paginate_entries(all_txs, 80))
 		n_pages = len(pages)
 		for page_num in range(len(pages)):
 			# The transactions on this page
@@ -469,9 +469,9 @@ def paginate_entries(entries, page_size: int) -> Iterator[List[Transaction]]:
 	for i in range(0, len(entries)):
 		row_weight = 0
 		if not is_mining_tx(entries[i]):
-			row_weight += 1
-		if is_disposal_tx(entries[i]):
-			row_weight += len(entries[i].postings)
+			row_weight += 2
+			if is_disposal_tx(entries[i]):
+				row_weight += len(entries[i].postings)
 
 		if vweight + row_weight > page_size:
 			if i == page_start_index:

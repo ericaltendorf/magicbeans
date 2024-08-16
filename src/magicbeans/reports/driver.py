@@ -228,6 +228,7 @@ class ReportDriver:
 				lotid = lot_index.get_lotid(pos.units.currency, pos.cost)
 				acct_inv_rep.positions_and_ids.append((pos, lotid))
 			account_inventory_reports.append(acct_inv_rep)
+
 		return InventoryReport(start, account_inventory_reports)
 
 	def make_acquisitions_report(self, acquisitions, mining_awards, lot_index):

@@ -329,10 +329,17 @@ class ReportDriver:
 			self.renderer.write_text("(No disposals in this period.)")
 			return	
 
+		# Super dumb we have to manually paginate.  We need to have a better
+		# general solution to long tables.
+		used_rows = 0
 		for asset in disposed_assets:
 			disposals_for_asset = [bd for bd in booked_disposals if bd.disposed_asset() == asset]
+			if used_rows + len(disposals_for_asset) > 80:
+				self.renderer.newpage()
+				used_rows = 0
 			disposals_report = self.make_disposals_report(disposals_for_asset, None, False)
 			self.renderer.disposals(f"{asset} Disposals", disposals_report)
+			used_rows += len(disposals_for_asset)
 
 	def run_detailed_log(self, start: datetime.date, end: datetime.date):
 		"""Generate a detailed log report of activity during the period."""

@@ -229,7 +229,7 @@ class LaTeXRenderer():
 		# Set the max number of unindexed lots to show by brute force
 		max_unindexed_per = max(n_unindexed_by_acct.values()) if n_unindexed_by_acct.values() else 100
 		max_rows = 56
-		while count_rows(n_indexed_by_acct, n_unindexed_by_acct, max_unindexed_per) > max_rows:
+		while max_unindexed_per >= 0 and count_rows(n_indexed_by_acct, n_unindexed_by_acct, max_unindexed_per) > max_rows:
 			max_unindexed_per -= 1
 
 		# Build the report
@@ -258,6 +258,10 @@ class LaTeXRenderer():
 					"ID",
 					))
 				table.add_hline()
+
+				# If we have nothing to show here, don't even render the table.
+				if max_unindexed_per <= 0 and n_indexed_by_acct[a.account] == 0:
+					continue
 
 				last_line_added = 0
 				total_lines_added = 0

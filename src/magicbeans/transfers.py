@@ -1,6 +1,6 @@
 """Utilities for managing transfers among a network of accounts."""
 
-from typing import List, NamedTuple, Set
+from typing import List, NamedTuple
 
 from beancount.core import account
 

@@ -1,8 +1,6 @@
 from decimal import Decimal
 
 from beancount.core.number import D
-from magicbeans import common
-
 
 def is_integral(n: Decimal) -> bool:
     return n == n.to_integral_value()

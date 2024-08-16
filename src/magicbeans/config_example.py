@@ -1,27 +1,22 @@
 ##############################################################################
 #
-# This is an example run script for Magicbeans.  You will want to modify this
+# This is an example local config for Magicbeans.  You will want to modify this
 # for your own setup.  You probably want to copy it into a private repo so
 # that you can track changes and keep account info private.
 #
 ##############################################################################
 
 import datetime
-import os
-import sys
+import dateutil
 from decimal import Decimal
-from typing import List
+from typing import Callable, List, Sequence
 from beancount.core.amount import Amount
 
-import dateutil
-
 import magicbeans
-from magicbeans.prices import PriceFetcher
-import magicbeans.runner
-from beancount.core import account
-from beancount.core.data import Posting, Transaction, create_simple_posting
+from beancount.core.data import Transaction, create_simple_posting
 from beangulp.importer import Importer
 from magicbeans import common, transfers
+from magicbeans.common import ExtractionRecord
 from magicbeans.importers.chiawallet import ChiaWalletImporter
 from magicbeans.importers.coinbase import CoinbaseImporter
 from magicbeans.importers.coinbasepro import CoinbaseProImporter
@@ -82,9 +77,8 @@ plugin "beancount_reds_plugins.capital_gains_classifier.long_short" "{
 
 class LocalConfig(magicbeans.config.Config):
 
-    def __init__(self, price_fetcher: PriceFetcher):
+    def __init__(self):
         super().__init__()
-        self.price_fetcher = price_fetcher
 
     # Set up the network defining how transfers happen for you.  See the
     # transfers.Network class for more details.
@@ -138,35 +132,41 @@ class LocalConfig(magicbeans.config.Config):
         return importers
 
     # Define the hooks that should be run on the transactions.
-    def get_hooks(self):
+    def get_hooks(self) -> Sequence[Callable[
+            [Sequence[ExtractionRecord], Sequence[Transaction]],
+            Sequence[ExtractionRecord]]]:
         return [chiawallet_filter_change_coins_hook,
                 cbp_tweak_xfer_timestamp_hook,
-                chiawallet_recharacterize_sale,
+                chiawallet_recharacterize_sale_hook,
                 ]
 
     def get_price_fetcher(self):
         return self.price_fetcher
 
+    # This is a little weird; the price fetcher is now created and set by the
+    # framework main run routine, but still accessed via the local Config.
+    def set_price_fetcher(self, price_fetcher):
+        self.price_fetcher = price_fetcher
+
     def get_preamble(self):
         return preamble
 
 #
-# Helper function for hooks.
-# TODO: Move this to the framework
+# Example hooks (ie Beangulp hooks).  These are for illustration purposes; you
+# should write your own to tweak your data as needed.
 #
-def _apply_filter(extracted, filter_fun):
-    """Apply the boolean filter to the entries in the extracted data"""
-    keep_fun = (lambda entry: not filter_fun(entry))
-    return [(filename, filter(keep_fun, entries), account, importer)
-            for (filename, entries, account, importer) in extracted]
+# Hooks should take arguments:
+#   extracted: Sequence[common.ExtractionRecord]
+#   existing_entries: Sequence[Transaction]
+# and return a new
+#   Sequence[common.ExtractionRecord]
+#
+# Unfortunately these types are not really defined or documented; please refer
+# to the Beangulp source code for more information.
+#
 
-#
-# Example hooks.  These are for illustration purposes; you should
-# write your own to tweak your data as needed.
-#
-
-def chiawallet_filter_change_coins_hook(extracted, _existing_entries= None):
-    return _apply_filter(extracted, chiawallet_filter_change_coins)
+def chiawallet_filter_change_coins_hook(extracted: Sequence[ExtractionRecord], _existing_entries: Sequence[Transaction]) -> Sequence[ExtractionRecord]:
+    return common.filter_extractions(extracted, chiawallet_filter_change_coins)
 
 def chiawallet_filter_change_coins(entry: Transaction):
     """The chia wallet sometimes has trouble accurately reporting change from
@@ -180,11 +180,11 @@ def chiawallet_filter_change_coins(entry: Transaction):
             (entry.meta['timestamp'], entry.postings[0].units.number) in to_filter)
 
 
-def cbp_tweak_xfer_timestamp_hook(extracted, _existing_entries= None):
-    return [(filename, map(cbp_tweak_xfer_timestamp, entries), account, importer)
+def cbp_tweak_xfer_timestamp_hook(extracted: Sequence[ExtractionRecord], _existing_entries: Sequence[Transaction]) -> Sequence[ExtractionRecord]:
+    return [ExtractionRecord(filename, list(map(cbp_tweak_xfer_timestamp, entries)), account, importer)
             for (filename, entries, account, importer) in extracted]
 
-def cbp_tweak_xfer_timestamp(tx: Transaction):
+def cbp_tweak_xfer_timestamp(tx: Transaction) -> Transaction:
     """Adjust timestamps on transactions, which were transfers of USDT from CBP
     to GateIO, but which show up in GateIO some minutes before CBP registers
     it, which throws off all the bookkeeping.  Tweak the timestamp to send
@@ -201,11 +201,11 @@ def cbp_tweak_xfer_timestamp(tx: Transaction):
     return tx   # So can be used in map()
 
 
-def chiawallet_recharacterize_sale(extracted, _existing_entries= None):
-    return [(filename, map(chiawallet_recharacterize_sale_entry, entries), account, importer)
+def chiawallet_recharacterize_sale_hook(extracted: Sequence[ExtractionRecord], _existing_entries: Sequence[Transaction]) -> Sequence[ExtractionRecord]:
+    return [ExtractionRecord(filename, list(map(chiawallet_recharacterize_sale_entry, entries)), account, importer)
             for (filename, entries, account, importer) in extracted]
 
-def chiawallet_recharacterize_sale_entry(entry):
+def chiawallet_recharacterize_sale_entry(entry: Transaction) -> Transaction:
     """Handle some transactions which appears to simply be a Send transaction,
     but which were actually transfers to a buyer, in exchange for USD.  Namely,
     recharacterize them as a sale instead of a Send."""
@@ -241,19 +241,3 @@ def chiawallet_recharacterize_sale_entry(entry):
         return new_entry   # So can be used in map()
     else:
         return entry
-
-#
-# The actual main().
-#
-
-if __name__ == '__main__':
-    input_dir = sys.argv[1]
-    build_dir = sys.argv[2]
-    prices_file = os.path.join(build_dir, "prices.csv")
-    print(f"Args: input: {input_dir} prices: {prices_file} build: {build_dir}")
-
-    price_fetcher = PriceFetcher(magicbeans.prices.Resolution.DAY, prices_file)
-    config = LocalConfig(price_fetcher = price_fetcher)
-    magicbeans.runner.run(config, input_dir, build_dir)
-
-    price_fetcher.write_cache_file()

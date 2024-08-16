@@ -72,6 +72,11 @@ Create and enter a venv, and install (in -e "editable" mode, so you can tweak):
   venv-magicbeans/bin/pip install -e magicbeans
 ```
 
+Install system utilities/libraries:
+```
+  sudo apt install latexmk texlive texlive-latex-extra
+```
+
 Create directories for your input files (e.g. csv files of transactions)
 and a working directory for Magicbeans to write output (and temporary) files:
 ```
@@ -79,28 +84,26 @@ and a working directory for Magicbeans to write output (and temporary) files:
   # put stuff in downloads
 ```
 
-To run Magicbeans, you need a script that sets up your local configuration and
-calls the Magicbeans `run()` entry point.  The local run script allows you to
-define your own custom hooks as well as to initialize a price fetcher, and to
-persist its cache after running.
+Next you need to configure your workflow (your accounts, importers,
+transformations, hooks, etc.).  This is done with Python code which implements
+the Magicbeans `Config` class.  An example is provided in `config_example.py`.
+Since your config may end up including personal account information, you should
+copy the example script to a private repo to version-control it privately.
 
-An example such script is provided as `main_example.py`.  You may try running
-it, and pointing it at the directories you just set up, with:
+Now you should be ready to run Magicbeans.  To see the command line options:
+
 ```
-  python3 magicbeans/src/magicbeans/main_example.py downloads/ build/
+  python3 -m magicbeans -h
 ```
 
-You will need to modify that script to set it up for your own situation,
-accounts, and data issues.  To do so, you will probably want to copy the
-example script to a private repo, so that you can version-control it and keep
-acount information private.
+You will need to specify arguments to point Magicbeans to your config python
+code, your input and output directories, etc.
 
 
 ## TODO
 
 ### Enable collaborators & alpha testers
-- Write some introductory documentation
-- Document requirements (pip packages, and beancount plugins)
+- Document how to run report generator (see also cleanup task below)
 - Write some more detailed documentation with tips, tricks, gotchas, examples, and war stories of real-life data
 
 ### Necessary and missing functionality
@@ -111,6 +114,7 @@ acount information private.
 - Figure out plan for saving booking decisions and applying in the future
 
 ### Cleanup
+- Integrate runner.py and run_report.py into one script
 - Existing price fetcher isn't ideal, see if we can get higher-resolution historical data, and 
   corroborate across multiple sources
 - Set up continuous integration w/ typechecking and unit tests

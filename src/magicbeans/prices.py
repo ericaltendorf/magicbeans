@@ -20,7 +20,6 @@ import csv
 import datetime
 from decimal import Decimal
 from enum import Enum
-from string import Template
 import time
 from typing import NamedTuple
 import pytz

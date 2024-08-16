@@ -1,6 +1,5 @@
 """For mining, staking, farming, etc."""
 
-from collections import defaultdict
 from decimal import Decimal
 from beancount.core.data import Transaction
 

@@ -10,7 +10,8 @@ from beancount.core import data
 from beancount.core.data import Posting, Transaction, create_simple_posting
 from beancount.core.position import Cost
 from beancount.parser import printer, parser
-from magicbeans import mining, prices, run_report
+from magicbeans import mining, prices
+from magicbeans.reports import default_report
 import pytz
 
 # N.b.: There are a few places here where it would feel natural to use set()
@@ -201,5 +202,5 @@ if __name__ == '__main__':
         parser.printer.print_entries(entries, file=out)
 
     # Now generate the report
-    run_report.run(range(START_YEAR, END_YEAR), "USD", CURRENCIES,
+    default_report.run(range(START_YEAR, END_YEAR), "USD", CURRENCIES,
                    beancount_path, report_path)

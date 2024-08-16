@@ -30,31 +30,31 @@ def assert_pgs_equal(actual, expected):
     assert to_narrations(actual) == to_narrations(expected)
 
 def test_paginate__1():
-    tx1 = buy_tx(day=0)  # Line 1, page 1
-    tx2 = buy_tx(day=1)  # Line 2, page 1
-    tx3 = buy_tx(day=2)  # Line 3, page 1
-    tx4 = buy_tx(day=3)  # Line 1, page 2
-    tx5 = buy_tx(day=4)  # Line 2, page 2
+    tx1 = buy_tx(day=0)  # Lines 1-2, page 1
+    tx2 = buy_tx(day=1)  # Lines 3-4, page 1
+    tx3 = buy_tx(day=2)  # Lines 5-6, page 1
+    tx4 = buy_tx(day=3)  # Lines 1-2, page 2
+    tx5 = buy_tx(day=4)  # Lines 3-4, page 2
 
     all_entries = [ tx1, tx2, tx3, tx4, tx5 ]
-    pages = list(driver.paginate_entries(all_entries, 3))
+    pages = list(driver.paginate_entries(all_entries, 6))
 
     assert_pgs_equal(pages, [ [ tx1, tx2, tx3 ], [ tx4, tx5 ] ])
 
 def test_paginate__2():
-    tx1 = buy_tx(day=0)             # Line 1, page 1
-    tx2 = buy_tx(day=1)             # Line 2, page 1
-    tx3 = buy_tx(day=2)             # Line 3, page 1
-    tx4 = sell_tx(day=3, n_lots=2)  # Lines 1-3, page 2
+    tx1 = buy_tx(day=0)             # Lines 1-2, page 1
+    tx2 = buy_tx(day=1)             # Lines 3-4, page 1
+    tx3 = buy_tx(day=2)             # Lines 5-6, page 1
+    tx4 = sell_tx(day=3, n_lots=2)  # Lines 1-4, page 2
 
     all_entries = [ tx1, tx2, tx3, tx4 ]
-    pages = list(driver.paginate_entries(all_entries, 5))
+    pages = list(driver.paginate_entries(all_entries, 8))
 
     assert_pgs_equal(pages, [ [ tx1, tx2, tx3 ], [ tx4 ] ])
 
 def test_paginate__3():
-    tx1 = sell_tx(day=0, n_lots=10)  # Lines 1-11, page 1
-    tx2 = buy_tx(day=1)              # Line 1, page 2
+    tx1 = sell_tx(day=0, n_lots=10)  # Lines 1-12, page 1
+    tx2 = buy_tx(day=1)              # Lines 1-2, page 2
 
     all_entries = [ tx1, tx2 ]
     pages = list(driver.paginate_entries(all_entries, 5))
@@ -62,9 +62,9 @@ def test_paginate__3():
     assert_pgs_equal(pages, [ [ tx1 ], [ tx2 ] ])
 
 def test_paginate__4():
-    tx1 = sell_tx(day=0, n_lots=4)  # Lines 1-5, page 1
-    tx2 = buy_tx(day=1)             # Line 1, page 2
-    tx3 = buy_tx(day=2)             # Line 2, page 2
+    tx1 = sell_tx(day=0, n_lots=4)  # Lines 1-6, page 1
+    tx2 = buy_tx(day=1)             # Lines 1-2, page 2
+    tx3 = buy_tx(day=2)             # Lines 3-4, page 2
 
     all_entries = [ tx1, tx2, tx3 ]
     pages = list(driver.paginate_entries(all_entries, 5))

@@ -3,7 +3,11 @@
 import datetime
 from decimal import Decimal
 from functools import partial
-from typing import List, NamedTuple
+from typing import Dict, List, NamedTuple, Sequence, Tuple
+
+import dateutil
+from beancount.parser.printer import format_entry
+from beancount.parser.printer import print_entry
 from beancount.core import amount
 from beancount.core.amount import Amount
 from beancount.core.data import Posting, Transaction
@@ -17,6 +21,14 @@ CG_ACCOUNT = "Income:CapGains"
 STCG_ACCOUNT = "Income:CapGains:Short"
 LTCG_ACCOUNT = "Income:CapGains:Long"
 
+def assert_valid_position(position):
+	assert(position.cost is not None), f"Position {position} has no cost"
+
+class InventoryBlock(NamedTuple):
+	currency: str
+	account: str
+	positions: List[Position]
+
 class LotIndex():
 	"""Tracks lots from inventories or acquisitions and enables ID assignment.
 
@@ -28,68 +40,87 @@ class LotIndex():
 
 	# TODO: filter out numeraire accounts
 
-	def __init__(self, inventory_blocks, acquisitions, disposals, numeraire):
-		"""Initialize the index by adding lots from all inventories, and
-		from the augmentation legs of all transactions.
+	def __init__(self, inventory_blocks: Sequence[InventoryBlock], acquisitions:
+	Sequence[Transaction], disposals: Sequence[Transaction], numeraire: str):
+		"""Initialize the index for a set of inventories and transactions.
+		
+		This will collect lots from inventories and the augmentation legs
+		of transactions, identify the relevant ones based on the disposals,
+		and index those for future reference.
 
 		Args:
 		- inventory_blocks: list of (currency, account, positions) tuples
-		- acquisitions: acquisition transactions
+		- acquisitions: acquisition transactions (purchases and mining awards)
 		- disposals: disposal transactions
 		- numeraire: needed to ignore cash-proceeds augmentations
 		"""
 
 		# Our index is logically a dict mapping
 		#   (currency, Cost) to (ID number or None)
+		# where currency is the held asset.
+		#
 		# We share lots IDs across accounts in order to refer to a lot id even
 		# if it's been transferred.
-		self._index = {}
+		self._index: Dict[Tuple[str, Cost], int] = {}
 
+		# Collect all lots that are referenced in disposals
 		referenced_lots = set()
 		for e in disposals:
-			for p in get_disposal_postings(e):
-				referenced_lots.add(self._mk_key(p.units.currency, p.cost))
+			for a in get_disposal_postings(e, numeraire):
+				key = self._mk_key(a.units.currency, a.cost)
+				referenced_lots.add(key)
+
 
 		# Use user-visible index IDs starting from 1, and in the order that lots
 		# appear in inventory and acquisitions, so they're easy to find in the
 		# report.
 		self.next_id = 1
 
-		available_lots = set()
+		# Index all lots from inventories and acquisitions
+		indexed_lots = set()
 		for (currency, account, positions) in inventory_blocks:
 			for position in positions:
+				assert_valid_position(position)
 				key = self._mk_key(position.units.currency, position.cost)
 				if key in referenced_lots:
-					available_lots.add(key)
+					indexed_lots.add(key)
 					self._assign_lotid(key[0], key[1])
-		for tx in acquisitions:
+		for tx in list(acquisitions) + list(disposals):
 			for posting in tx.postings:
-				if is_other_proceeds_leg(posting, numeraire):
+				if is_non_numeraire_proceeds_leg(posting, numeraire):
 					key = self._mk_key(posting.units.currency, posting.cost)
 					if key in referenced_lots:
-						available_lots.add(key)
+						indexed_lots.add(key)
 						self._assign_lotid(key[0], key[1])
 		
 		# for (currency, cost) in available_lots:
 		# 	self._set(currency, cost, None)
 
-		missing_lots = referenced_lots - available_lots
-		for (currency, cost) in missing_lots:
-			print(f"WARNING: missing lot for {currency} {{{cost.number} {cost.date}}}")
+		missing_lots = referenced_lots - indexed_lots
+		if missing_lots:
+			print("\n!!! Warning: LotIndex had no index for these referenced lots:")
+			for (currency, cost) in missing_lots:
+				print(f"!!!   {currency} {{{cost.number} {cost.currency} {cost.date}}}")
+			all_tx = list(acquisitions) + list(disposals)
+			tx_earliest = min([tx.date for tx in all_tx], default=None)
+			tx_latest = max([tx.date for tx in all_tx], default=None)
+			print(f'!!! Indexed lots (inc. tx between {tx_earliest} and {tx_latest}:')
+			for line in self.debug_str():
+				print(f"!!!   {line}")
 
 
 	# For robustness, round Cost values.  TODO: determine if this is necessary
-	def _mk_key(self, currency, cost):
-		num = cost.number.quantize(Decimal("1.0000")).normalize()
+	def _mk_key(self, currency: str, cost: Cost):
+		num = cost.number.quantize(Decimal("1.00000000")).normalize()
 		return (currency, cost._replace(number=num))
 
-	def _get(self, currency, cost):
+	def _get(self, currency: str, cost: Cost):
 		return self._index[self._mk_key(currency, cost)]
 
-	def _has(self, currency, cost):
+	def _has(self, currency: str, cost: Cost):
 		return self._mk_key(currency, cost) in self._index
 
-	def _set(self, currency, cost, new_value):
+	def _set(self, currency: str, cost: Cost, new_value):
 		self._index[self._mk_key(currency, cost)] = new_value
 
 	def _assign_lotid(self, currency: str, cost: Cost) -> None:
@@ -98,21 +129,24 @@ class LotIndex():
 		self._set(currency, cost, self.next_id)
 		self.next_id += 1
 
-	def get_lotid(self, currency: str, cost: Cost) -> int:
+	def get_lotid(self, currency: str, cost: Cost) -> int | None:
 		"""If this lot has been indexed, return the index, otherwise None"""
 		if self._has(currency, cost):
 			return self._get(currency, cost)
 		return None
 
-	def debug_str(self, currency=None) -> str:
-		result = ""
-		for (k, v) in self._index.items():
-			lotid = v[1]
+	def render_lot(self, currency: str, cost: Cost) -> str:
+		"""Return a string representation of the lot"""
+		return f"{currency:<15} {cost.number:>16f} {cost.currency:<6} {cost.date}"
+
+	def debug_str(self, select_currency=None) -> List[str]:
+		result = []
+		for ((currency, cost), lotid) in self._index.items():
 			if not lotid:
 				continue
-			if currency and k[1] != currency:
+			if select_currency and currency != select_currency:
 				continue
-			result += f"  ({k[0]:<15} {k[1]:>6}, {k[2].number:>16f} {k[2].currency:<6} {k[2].date}: {lotid} )\n"
+			result.append(f"  {self.render_lot(currency, cost)} -> #{lotid}")
 		return result
 
 class BookedDisposal():
@@ -137,7 +171,7 @@ class BookedDisposal():
 		# TODO: expect that this is a complete nonoverlapping partition?
 		self.disposal_legs = self._filter_and_sort_legs(entry, is_disposal_leg)
 		self.numeraire_proceeds_legs = self._filter_and_sort_legs(entry, is_numeraire_proceeds_leg)
-		self.other_proceeds_legs = self._filter_and_sort_legs(entry, is_other_proceeds_leg)
+		self.other_proceeds_legs = self._filter_and_sort_legs(entry, is_non_numeraire_proceeds_leg)
 
 		# Sanity check that all disposals are of the same currency, and hang on to it.
 		disposed_currencies = set([d.units.currency for d in self.disposal_legs])
@@ -152,6 +186,10 @@ class BookedDisposal():
 		filter_pred_w_numeraire = partial(filter_pred, numeraire=self.numeraire)
 		return sorted(filter(filter_pred_w_numeraire, tx.postings),
 				key=lambda p: p.units.number)
+
+	def timestamp(self) -> datetime.datetime:
+		"""Return the timestamp of the transaction"""
+		return dateutil.parser.parse(self.tx.meta["timestamp"])
 
 	def acquisition_date(self) -> datetime.date:
 		"""Return the date of the acquisition legs, if unique, otherwise "Various"."""
@@ -212,26 +250,11 @@ def is_numeraire_proceeds_leg(posting: Posting, numeraire: str) -> bool:
 		and posting.units.currency == numeraire
 		)
 
-def is_other_proceeds_leg(posting: Posting, numeraire: str) -> bool:
+def is_non_numeraire_proceeds_leg(posting: Posting, numeraire: str) -> bool:
 	return (posting.account.startswith(ASSETS_ACCOUNT)
 		and posting.units.number > 0
 		and posting.units.currency != numeraire
 		)
-
-# TODO: Consolidate these functions
-def disposal_inventory_desc(pos: Position, id: int) -> str:
-	result = (f"{pos.units.number:.8f} {pos.units.currency} "
-			  f"{{{pos.cost.number:0.4f} {pos.cost.date}}}")
-	if id:
-		result += f" (#{id})"
-	return result
-
-def disposal_inventory_ref(posting: Posting, id: int) -> str:
-	result = (f"{posting.units.number:.4f} {posting.units.currency} {{"
-	    	  + (f"#{id} " if id else "") +
-			  f"{posting.cost.number:.4f} {posting.cost.currency}"
-			  f" {posting.cost.date}}}")
-	return result
 
 def disposal_inventory_ref_neg(posting: Posting, id: int) -> str:
 	result = (f"{-posting.units.number:.4f} {posting.units.currency} {{"
@@ -239,13 +262,6 @@ def disposal_inventory_ref_neg(posting: Posting, id: int) -> str:
 			  f"{posting.cost.number:.4f} {posting.cost.currency}"
 			  f" {posting.cost.date}}}")
 	return result
-
-def render_disposal(disposal: Posting):
-	return (
-		f"{disposal.units} "
-		f"{{ {disposal.cost.number} {disposal.cost.currency}"
-		f" {disposal.cost.date} }}"
-		)
 
 def abbrv_disposal(disposal: Posting):
 	assert disposal.cost.currency == "USD"
@@ -258,40 +274,6 @@ def abbrv_disposal(disposal: Posting):
 		f"{normalized_num} "
 		f"{{${disposal.cost.number:.4f} {disposal.cost.date}}}"
 		)
-
-# TODO: remove, this should be obsoleted by BookedDisposal
-class DisposalSummary(NamedTuple):
-	date: datetime.date
-	narration: str
-	proceeds: Decimal
-	short_term: Posting
-	long_term: Posting
-	lots: List[Posting]
-
-	def stcg(self) -> Decimal:
-		if self.short_term:
-			return - self.short_term.units.number
-		else:
-			return Decimal(0)
-
-	def ltcg(self) -> Decimal:
-		if self.long_term:
-			return - self.long_term.units.number
-		else:
-			return Decimal(0)
-
-def is_proceeds_posting(posting: Posting):
-	return (posting.account.startswith("Assets:")
-		and posting.units.number > 0
-		and posting.units.currency == "USD"
-   		)
-
-# TODO: remove, replaced by is_disposal_leg() above
-def is_disposal_posting(posting: Posting):
-	return (posting.account.startswith("Assets:")
-		and posting.units.number < 0
-		and posting.units.currency != "USD"
-   		)
 
 def sum_amounts(cur: str, amounts: List[Amount]) -> Amount:
 	"""Add up a list of amounts, all of which must be in the same currency
@@ -346,24 +328,8 @@ def get_capgains_postings(entry: Transaction):
 		assert lt[0].units.currency == "USD"
 	return (st[0] if st else None, lt[0] if lt else None)
 
-def get_disposal_postings(entry: Transaction):
-	return [p for p in entry.postings if is_disposal_posting(p)]
-
-def mk_disposal_summary(entry: Transaction):
-	(st, lt) = get_capgains_postings(entry)
-	disposal_postings = get_disposal_postings(entry)
-
-	if st: assert st.units.currency == "USD"
-	if lt: assert lt.units.currency == "USD" 
-
-	total_proceeds = Decimal(0)
-	for p in entry.postings:
-		if is_proceeds_posting(p):
-			assert p.units.currency == "USD"
-			total_proceeds += p.units.number
-
-	return DisposalSummary(entry.date, entry.narration, total_proceeds,
-						   st, lt, disposal_postings)
+def get_disposal_postings(entry: Transaction, numeraire: str):
+	return [p for p in entry.postings if is_disposal_leg(p, numeraire)]
 
 # TODO: check logic.  check against red's plugin logic
 def is_disposal_tx(entry: Transaction):

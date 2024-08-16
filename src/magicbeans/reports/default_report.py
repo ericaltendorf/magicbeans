@@ -1,26 +1,15 @@
 import datetime
-import subprocess
-import sys
-from enum import Enum
 from typing import List
-from beancount.core.data import Posting, Transaction
-from beancount.core.inventory import Inventory
-from beancount.ops.summarize import balance_by_account
-from magicbeans.config import Config
-from magicbeans.reports import driver
-
-from pyfiglet import Figlet
 from tabulate import tabulate
 
-from beancount import loader
-from beancount.core.amount import Amount
-from beancount.parser import parser
 from beanquery.query import run_query
 from beanquery.query_render import render_text
-from magicbeans import disposals, queries
+from magicbeans import queries
+from magicbeans.reports import driver
 
 #
-# Report generation helpers
+# Default report generator.  Creates a report with
+# a cover page, tax year summaries, and detailed disposals reports.
 #
 
 def quarter_start(year: int, quarter_n: int) -> datetime.date:
@@ -58,7 +47,7 @@ def quarter_report(year: int, quarter_n: int, currencies: List[str], db):
 		f"Mining summary for {quarter}",
 		queries.mining_summary(quarter, currency_re))
 
-def run(tax_years: List[int], numeraire: str, currencies: List[str], ledger_path: str, out_path: str):
+def generate(tax_years: List[int], numeraire: str, currencies: List[str], ledger_path: str, out_path: str):
 	print(f"Generating report for beancount file {ledger_path} "
           f"and writing to {out_path}")
 
@@ -87,7 +76,7 @@ def run(tax_years: List[int], numeraire: str, currencies: List[str], ledger_path
 	for ty in tax_years:
 		start = datetime.date(ty, 1, 1)
 		end = datetime.date(ty+1, 1, 1)
-		print(f"  {ty} ", end="", flush=True)
+		print(f"  {ty}", flush=True)
 		db.run_detailed_log(start, end)
 
 	print()
@@ -106,13 +95,3 @@ def run(tax_years: List[int], numeraire: str, currencies: List[str], ledger_path
 	# print()
 
 	db.close()
-
-if __name__ == '__main__':
-	ledger_path = sys.argv[1]   # "build/final.beancount"
-	out_path = sys.argv[2]   # "build/report.txt"
-	tax_years = range(2018, 2022 + 1)
-	config = Config()  # Report generation barely uses this, but it's probably OK since
-	                   # we'll combine this file with run.py at some point anyway.
-	currencies = config.get_covered_currencies()
-	numeraire = "USD"  # Should be : config.get_numeraire() ?
-	run(tax_years, numeraire, currencies, ledger_path, out_path)

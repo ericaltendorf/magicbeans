@@ -1,9 +1,5 @@
-import datetime
-from decimal import Decimal
-import textwrap
 from typing import List
 from beancount.core.amount import Amount
-from beancount.core.data import Posting
 from beanquery.query_render import render_text
 from magicbeans import disposals
 from magicbeans.disposals import abbrv_disposal, format_money
@@ -140,6 +136,9 @@ class LaTeXRenderer():
 	def write_text(self, text: str):
 		self.doc.append(text)
 
+	def newpage(self):
+		self.doc.append(NewPage())
+
 	def header(self, title: str):
 		self.doc.append(NewPage())
 		self.doc.append(Section(NoEscape(title), numbering=True))
@@ -204,10 +203,41 @@ class LaTeXRenderer():
 	#
 
 	def inventory(self, inventory_report: InventoryReport):
+		# Estimate how constrained for space we'll be, so we can selectively abbreviate
+		# the display of unindexed lots, which are not critical for the report.  This is
+		# some sophisticated logic that probably belongs in the driver.
+
+		# Count the number of indexed and unindexed lots per account
+		n_indexed_by_acct = {}
+		n_unindexed_by_acct = {}
+		for a in inventory_report.accounts:
+			n_indexed_lots = len([x for x in a.positions_and_ids if x[1]])
+			n_indexed_by_acct[a.account] = n_indexed_lots
+			n_unindexed_by_acct[a.account] = len(a.positions_and_ids) - n_indexed_lots
+			
+		# How many rows will we used with a particular max_unindexed_per account?
+		def count_rows(n_indexed_lots_by_acct, n_unindexed_lots_by_acct, max_unindexed_per):
+			total = 0
+			accts = n_indexed_lots_by_acct.keys()
+			assert(accts == n_unindexed_lots_by_acct.keys())
+			for acct in accts:
+				n_indexed = n_indexed_lots_by_acct[acct]
+				n_unindexed = n_unindexed_lots_by_acct[acct]
+				total += min(n_unindexed, max_unindexed_per) + n_indexed
+			return total
+		
+		# Set the max number of unindexed lots to show by brute force
+		max_unindexed_per = max(n_unindexed_by_acct.values()) if n_unindexed_by_acct.values() else 100
+		max_rows = 56
+		while count_rows(n_indexed_by_acct, n_unindexed_by_acct, max_unindexed_per) > max_rows:
+			max_unindexed_per -= 1
+
+		# Build the report
 		# with self.doc.create(Tblr("|r r r X|", 4, width=r"0.95\linewidth" )) as table:
 		with self.doc.create(Tabularx("|r r X r|", width_argument=NoEscape(r"0.95\linewidth") )) as table:
+			timestamp_str = inventory_report.ts.strftime("%Y-%m-%d %H:%M:%S UTC")
 			table.add_row((MultiColumn(4, align="c",
-				data=table_text(f"Inventory {inventory_report.date}")), ))
+				data=table_text(f"Inventory {timestamp_str}")), ))
 			if not inventory_report.accounts:
 				table.add_hline()
 				table.add_row((MultiColumn(4, data="No inventory to report"),))
@@ -215,15 +245,15 @@ class LaTeXRenderer():
 				table.add_row(("", "", "", ""))  # Needed to force the X cell to expand the row
 			else:
 				table.add_hline()
-
-			for acct in inventory_report.accounts:
-				table.add_row((MultiColumn(4, data=bold(acct.account)),))
+#
+			for a in inventory_report.accounts:
+				table.add_row((MultiColumn(4, data=bold(a.account)),))
 				table.add_hline()
 
-				n_lots = len(acct.positions_and_ids)
+				n_lots = len(a.positions_and_ids)
 
 				table.add_row((
-					dec6(acct.total.number),
+					dec6(a.total.number),
 					(MultiColumn(2, align="l", data=f"total in {n_lots} lot{'s' if n_lots > 1 else ''}")),
 					"ID",
 					))
@@ -232,9 +262,8 @@ class LaTeXRenderer():
 				last_line_added = 0
 				total_lines_added = 0
 				just_showed_ellipsis = False
-				for (line_no, (pos, lot_id)) in enumerate(acct.positions_and_ids):
-					if (line_no < DEFAULT_NUM_LOTS_PER_ACCT or 
-						(total_lines_added < MAX_DISPLAYED_LOTS_PER_ACCT and lot_id)):
+				for (line_no, (pos, lot_id)) in enumerate(a.positions_and_ids):
+					if (line_no < max_unindexed_per or lot_id):
 						table.add_row((
 							dec6(pos.units.number),
 							dec4(pos.cost.number),

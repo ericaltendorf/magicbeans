@@ -3,7 +3,7 @@ from beancount.core.amount import Amount
 from beanquery.query_render import render_text
 from magicbeans import disposals
 from magicbeans.disposals import abbrv_disposal, format_money
-from magicbeans.reports.data import AcquisitionsReportRow, CoverPage, DisposalsReport, DisposalsReportRow, InventoryReport, MiningSummaryRow
+from magicbeans.reports.data import AcquisitionsReportRow, CoverPage, DisposalsReport, DisposalsReportRow, InventoryReport, MiningSummaryRow, TaxReport
 
 from pylatex import Document, Table, Section, Subsection, Command, Center, MultiColumn, MiniPage, TextColor, Package, VerticalSpace, HFill, NewLine, Tabular, Tabularx, LongTable
 from pylatex.base_classes import Environment, Float
@@ -197,6 +197,51 @@ class LaTeXRenderer():
 			self.doc.append(VerticalSpace("8pt"))
 			self.doc.append(NewLine())
 			self.disposals("Disposals", disposals_report)
+
+	#
+	# Overall tax report
+	#
+
+	def tax_report(self, title: str, tax_report: TaxReport):
+		# This is a small table, can afford to have more legible text
+		with self.doc.create(SmallText()):
+			with self.doc.create(Tabularx("X r r r r r ", width_argument=NoEscape(r"0.95\linewidth" ))) as table:
+				table.add_row((MultiColumn(6, align="c", data=table_text(title)),))
+				table.add_hline()
+				table.add_row((
+					"Asset",
+					"Long term gains/losses",
+					"Short term gains/losses",
+					"LTCG Tax",
+					"STCG Tax",
+					"Total Tax",
+					))
+
+				for (rownum, row) in enumerate(tax_report.rows):
+					if rownum % 5 == 0:
+						table.add_hline()
+					
+					table.add_row((
+						row.asset,
+						dec2(row.ltcg),
+						dec2(row.stcg),
+						dec2(row.ltcg_tax),
+						dec2(row.stcg_tax),
+						dec2(row.total_tax),
+						))
+
+				table.add_hline()
+
+				table.add_row((
+					"Total",
+					"",
+					"",
+					"",
+					"",
+					dec2(tax_report.total_tax),
+					))
+			self.doc.append(NewLine())
+
 
 	#
 	# Inventory report

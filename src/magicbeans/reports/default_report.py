@@ -55,6 +55,16 @@ def generate(tax_years: List[int], numeraire: str, currencies: List[str], ledger
 
 	db.coverpage(datetime.datetime.now(), tax_years, currencies)
 
+	print()
+	db.renderer.newpage()
+
+	print("Generating tax liability reports:")
+	db.renderer.header("Tax Liabilities")
+	for ty in tax_years:
+		print(f"  {ty}", end="", flush=True)
+		db.renderer.subheader(f"{ty} Taxes")
+		db.run_tax_due_report(ty)
+
 	print("Generating tax summaries:")
 	for ty in tax_years:
 		print(f"  {ty}", end="", flush=True)

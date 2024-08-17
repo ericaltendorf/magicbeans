@@ -13,7 +13,7 @@ from beancount.ops import summarize
 from magicbeans import common
 from magicbeans.disposals import BookedDisposal, InventoryBlock, format_money, get_disposal_postings, is_disposal_tx, is_non_numeraire_proceeds_leg, sum_amounts, LotIndex
 from magicbeans.mining import MINING_BENEFICIARY_ACCOUNT, MINING_INCOME_ACCOUNT, MiningStats, is_mining_tx
-from magicbeans.reports.data import AcquisitionsReportRow, CoverPage, DisposalsReport, DisposalsReportRow, AccountInventoryReport, InventoryReport, MiningSummaryRow
+from magicbeans.reports.data import AcquisitionsReportRow, CoverPage, DisposalsReport, DisposalsReportRow, AccountInventoryReport, InventoryReport, MiningSummaryRow, TaxReport, TaxReportRow
 from magicbeans.reports.latex import LaTeXRenderer
 
 from beancount import loader
@@ -159,7 +159,10 @@ class ReportDriver:
 	#
 	# High level reporting functions
 	#
+
+	# TODO: rename to 8949?
 	def tax_year_summary(self, ty: int):
+		'''Generate a summary of tax-related information for the given year.'''
 		self.renderer.header(f"{ty} Tax Summary")
 
 		self.renderer.subheader(f"{ty} Disposals and Gain/Loss")
@@ -309,9 +312,41 @@ class ReportDriver:
 		# return DisposalsReport(start, end, self.numeraire,
 		return DisposalsReport(self.numeraire,
 				disposals_report_rows, cumulative_stcg, cumulative_ltcg, show_legs)
-	
-	def run_disposals_summary(self, ty: int):
-		"""Generate a summary of disposals for the period."""
+
+	def run_tax_due_report(self, ty: int):
+		"""Compute total gains/losses and tax."""
+
+		booked_disposals = self.get_booked_disposals(ty)
+		disposed_assets = set([bd.disposed_asset() for bd in booked_disposals])
+
+		if not disposed_assets:
+			self.renderer.write_text("(No disposals in this period.)")
+			return	
+
+		# Federal plus California.  TODO: Configure
+		st_rate = Decimal("0.37") + Decimal("0.133")
+		lt_rate = Decimal("0.20") + Decimal("0.133")
+
+		total_tax = Decimal("0")
+
+		rows: List[TaxReportRow] = []
+		for asset in disposed_assets:
+			disposals_for_asset = [bd for bd in booked_disposals if bd.disposed_asset() == asset]
+			stcg: Decimal = sum([bd.stcg() for bd in disposals_for_asset])
+			ltcg: Decimal = sum([bd.ltcg() for bd in disposals_for_asset])
+			ltcg_tax = ltcg * lt_rate
+			stcg_tax = stcg * st_rate
+			rows.append(TaxReportRow(asset, ltcg, stcg, ltcg_tax, stcg_tax, ltcg_tax + stcg_tax))
+
+			total_tax += ltcg_tax + stcg_tax
+		
+		report = TaxReport(rows, total_tax)
+
+		self.renderer.tax_report(f"Gains and tax liability", report)
+
+
+	def get_booked_disposals(self, ty: int):
+		"""Get the disposals for the given tax year"""
 		start = datetime.date(ty, 1, 1)
 		end = datetime.date(ty+1, 1, 1)
 		inclusive_end = end - datetime.timedelta(days=1)
@@ -323,6 +358,11 @@ class ReportDriver:
 		(disposals, purchases, mining_awards) = self.partition_entries(all_txs, self.numeraire)
 		booked_disposals = [BookedDisposal(e, self.numeraire) for e in disposals]
 
+		return booked_disposals
+	
+	def run_disposals_summary(self, ty: int):
+		"""Generate a summary of disposals for the period."""
+		booked_disposals = self.get_booked_disposals(ty)
 		disposed_assets = set([bd.disposed_asset() for bd in booked_disposals])
 
 		if not disposed_assets:
@@ -332,7 +372,7 @@ class ReportDriver:
 		# Super dumb we have to manually paginate.  We need to have a better
 		# general solution to long tables.
 		used_rows = 0
-		for asset in disposed_assets:
+		for asset in sorted(disposed_assets):
 			disposals_for_asset = [bd for bd in booked_disposals if bd.disposed_asset() == asset]
 			if used_rows + len(disposals_for_asset) > 80:
 				self.renderer.newpage()

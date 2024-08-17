@@ -13,6 +13,18 @@ class CoverPage(NamedTuple):
     summary_lines: List[str]
     text: str
 
+class TaxReportRow(NamedTuple):
+    asset: str
+    ltcg: Decimal
+    stcg: Decimal
+    ltcg_tax: Decimal
+    stcg_tax: Decimal
+    total_tax: Decimal
+
+class TaxReport(NamedTuple):
+    rows: List[TaxReportRow]
+    total_tax: Decimal
+
 class AccountInventoryReport(NamedTuple):
     account: str
     total: Amount

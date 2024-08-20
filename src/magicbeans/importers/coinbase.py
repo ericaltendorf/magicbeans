@@ -120,6 +120,10 @@ class CoinbaseImporter(beangulp.Importer):
                 account_inst = account.join(self.account_root, instrument)
 
                 desc = "CB: " + row["Notes"].replace("Bought", "Buy").replace("Sold", "Sell")
+                
+                # Excise the "on USD-ETH" or wahtever at the end
+                desc = re.sub(r" on [A-Z]+-[A-Z]+$", "", desc)
+
                 links = set()  # { "ut{0[REF #]}".format(row) }
 
                 # Map some synonyms

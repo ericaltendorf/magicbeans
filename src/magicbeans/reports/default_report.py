@@ -72,7 +72,7 @@ def generate(tax_years: List[int], numeraire: str, currencies: List[str], ledger
 		These estimates are simple multiplications of the gain/loss by the tax 
 		rate, using a marginal federal short-term capital gains tax rate of 
 		{fed_st_rate:.0%} and long-term rate of {fed_lt_rate:.0%}, and a state 
-		rate of {state_rate:.1%}.""")
+		rate of {state_rate:.1%}.""".replace("%", "\%"))
 
 	for ty in tax_years:
 		print(f"  {ty}", end="", flush=True)

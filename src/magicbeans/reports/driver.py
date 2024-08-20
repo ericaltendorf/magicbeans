@@ -330,7 +330,7 @@ class ReportDriver:
 		total_tax = Decimal("0")
 
 		rows: List[TaxReportRow] = []
-		for asset in disposed_assets:
+		for asset in sorted(disposed_assets):
 			disposals_for_asset = [bd for bd in booked_disposals if bd.disposed_asset() == asset]
 			stcg: Decimal = sum([bd.stcg() for bd in disposals_for_asset])
 			ltcg: Decimal = sum([bd.ltcg() for bd in disposals_for_asset])

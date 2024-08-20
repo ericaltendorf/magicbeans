@@ -1,4 +1,5 @@
 import datetime
+from decimal import Decimal
 from typing import List
 from tabulate import tabulate
 
@@ -59,16 +60,29 @@ def generate(tax_years: List[int], numeraire: str, currencies: List[str], ledger
 	db.renderer.newpage()
 
 	print("Generating tax liability reports:")
-	db.renderer.header("Tax Liabilities")
+	db.renderer.header("Capital Gains/Loss Tax Liability Estimates")
+
+	# Federal plus California.  TODO: Configure
+	fed_st_rate = Decimal("0.37")
+	fed_lt_rate = Decimal("0.20")
+	state_rate = Decimal("0.133")
+	db.renderer.write_paragraph(f"""
+		The following are rough estimates of the capital gains tax liability (or 
+		credit, shown as negative values, in the case of losses) for each year. 
+		These estimates are simple multiplications of the gain/loss by the tax 
+		rate, using a marginal federal short-term capital gains tax rate of 
+		{fed_st_rate:.0%} and long-term rate of {fed_lt_rate:.0%}, and a state 
+		rate of {state_rate:.1%}.""")
+
 	for ty in tax_years:
 		print(f"  {ty}", end="", flush=True)
 		db.renderer.subheader(f"{ty} Taxes")
-		db.run_tax_due_report(ty)
+		db.run_tax_estimate_report(ty, fed_st_rate + state_rate, fed_lt_rate + state_rate)
 
 	print("Generating tax summaries:")
 	for ty in tax_years:
 		print(f"  {ty}", end="", flush=True)
-		db.tax_year_summary(ty)
+		db.run_tax_reporting_summary(ty)
 
 	print()
 

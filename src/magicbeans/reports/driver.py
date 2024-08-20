@@ -160,15 +160,14 @@ class ReportDriver:
 	# High level reporting functions
 	#
 
-	# TODO: rename to 8949?
-	def tax_year_summary(self, ty: int):
+	def run_tax_reporting_summary(self, ty: int):
 		'''Generate a summary of tax-related information for the given year.'''
-		self.renderer.header(f"{ty} Tax Summary")
+		self.renderer.header(f"{ty} Tax Reporting Info")
 
-		self.renderer.subheader(f"{ty} Disposals and Gain/Loss")
-		self.run_disposals_summary(ty)
+		self.renderer.subheader(f"{ty} Disposals and Gain/Loss (for 8949)")
+		self.run_disposals_8949(ty)
 
-		self.run_mining_summary(f"{ty} Mining Operations and Income", ty)
+		self.run_mining_income_sched_c(f"{ty} Mining Income (for Sched. C)", ty)
 
 	#
 	# New report methods, using direct analysis of the entries
@@ -313,7 +312,7 @@ class ReportDriver:
 		return DisposalsReport(self.numeraire,
 				disposals_report_rows, cumulative_stcg, cumulative_ltcg, show_legs)
 
-	def run_tax_due_report(self, ty: int):
+	def run_tax_estimate_report(self, ty: int, st_rate: Decimal, lt_rate: Decimal):
 		"""Compute total gains/losses and tax."""
 
 		booked_disposals = self.get_booked_disposals(ty)
@@ -322,10 +321,6 @@ class ReportDriver:
 		if not disposed_assets:
 			self.renderer.write_text("(No disposals in this period.)")
 			return	
-
-		# Federal plus California.  TODO: Configure
-		st_rate = Decimal("0.37") + Decimal("0.133")
-		lt_rate = Decimal("0.20") + Decimal("0.133")
 
 		total_tax = Decimal("0")
 
@@ -360,7 +355,7 @@ class ReportDriver:
 
 		return booked_disposals
 	
-	def run_disposals_summary(self, ty: int):
+	def run_disposals_8949(self, ty: int):
 		"""Generate a summary of disposals for the period."""
 		booked_disposals = self.get_booked_disposals(ty)
 		disposed_assets = set([bd.disposed_asset() for bd in booked_disposals])
@@ -395,9 +390,9 @@ class ReportDriver:
 		(_, all_entries) = self.get_inventory_and_entries(start, end)
 		all_txs = list(filter(lambda x: isinstance(x, Transaction), all_entries))
 
-		self.renderer.header(f"{ty} Detailed Activity Log")
-		self.renderer.subheader(f"Disposals and Gain/Loss summary (repeated)")
-		self.run_disposals_summary(ty)
+		self.renderer.header(f"{ty} Transaction Log")
+		self.renderer.subheader(f"{ty} Disposals and Gain/Loss summary (repeated)")
+		self.run_disposals_8949(ty)
 
 		pages: List[List[Transaction]] = list(paginate_entries(all_txs, 80))
 		n_pages = len(pages)
@@ -468,14 +463,14 @@ class ReportDriver:
 				+ f"{page_ts_start.strftime('%m-%d %H:%M:%S UTC')} -- {page_ts_end.strftime('%m-%d %H:%M:%S UTC')}")
 			self.renderer.details_page(inv_report, acquisitions_report_rows, disposals_report)
 
-	def run_mining_summary(self, title: str, ty: int):
+	def run_mining_income_sched_c(self, title: str, ty: int):
 		self.renderer.subreport_header(title)
 
 		# see this: 
 		# def iter_entry_dates(entries, date_begin, date_end):
 		ty_entries = [e for e in self.entries if e.date.year == ty]
 
-		currency = "XCH"
+		currency = "XCH"  # TODO: generalize!
 		mining_stats_by_month = [MiningStats(currency) for _ in range(12)]
 
 		found_mining_tx = False

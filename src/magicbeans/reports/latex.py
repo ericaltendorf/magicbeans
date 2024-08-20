@@ -495,12 +495,13 @@ class LaTeXRenderer():
 
 	def mining_summary(self, rows: List[MiningSummaryRow]):
 		# with self.doc.create(Tblr("X X X X X X X X", 8)) as table:
-		with self.doc.create(Tabularx("X X X X X X X X")) as table:
+		with self.doc.create(Tabularx("X X X X X X X X X")) as table:
 			table.add_hline()
 			table.add_row((
 				"Month",
 				"#Awards",
 				"Amount mined",
+				"Asset",
 				"Avg award size",
 				"Cumulative total",
 				"Avg. cost",
@@ -514,6 +515,7 @@ class LaTeXRenderer():
 					row.month,
 					row.n_awards,
 					dec8(row.amount_mined),
+					row.currency,
 					dec8(row.avg_award_size),
 					dec4(row.cumul_total),
 					dec4(row.avg_cost),
@@ -524,6 +526,6 @@ class LaTeXRenderer():
 
 			table.add_hline()
 			table.add_row((
-				MultiColumn(5, align="r", data="Total cumulative fair market value of all mined tokens:"),
+				MultiColumn(6, align="r", data="Total cumulative fair market value of all mined tokens:"),
 				"", "", dec2(last_row.cumulative_fmv)
 			))

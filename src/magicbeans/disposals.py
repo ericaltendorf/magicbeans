@@ -159,6 +159,10 @@ class BookedDisposal():
 	One initialized, provides convenient accessors for explaining capital
 	gains (in terms of the provided numeraire)."""
 
+	disposal_legs: Sequence[Posting]
+	numeraire_proceeds_legs: Sequence[Posting]
+	other_proceeds_legs: Sequence[Posting]
+
 	def __init__(self, entry: Transaction, numeraire: str):
 		if not isinstance(entry, Transaction):
 			raise Exception(f"Expected a transaction, got: {entry}")
@@ -182,7 +186,7 @@ class BookedDisposal():
 		# TODO: verify these add up to the gains we compute ourselves?
 		(self.short_term, self.long_term) = get_capgains_postings(entry)
 
-	def _filter_and_sort_legs(self, tx: Transaction, filter_pred):
+	def _filter_and_sort_legs(self, tx: Transaction, filter_pred) -> Posting:
 		filter_pred_w_numeraire = partial(filter_pred, numeraire=self.numeraire)
 		return sorted(filter(filter_pred_w_numeraire, tx.postings),
 				key=lambda p: p.units.number)
@@ -191,7 +195,7 @@ class BookedDisposal():
 		"""Return the timestamp of the transaction"""
 		return dateutil.parser.parse(self.tx.meta["timestamp"])
 
-	def acquisition_date(self) -> datetime.date:
+	def acquisition_date(self) -> str:
 		"""Return the date of the acquisition legs, if unique, otherwise "Various"."""
 		dates = set([p.cost.date for p in self.disposal_legs])
 		if len(dates) > 1:
@@ -206,7 +210,7 @@ class BookedDisposal():
 			raise Exception(f"Expected one disposed asset, got: {all_disposed_assets}")
 		return all_disposed_assets.pop()
 
-	def disposed_amount(self) -> str:
+	def disposed_amount(self) -> Decimal:
 		"""Return the total amount disposed"""
 		amounts = [p.units.number for p in self.disposal_legs]
 		return -sum(amounts)  # Return a positive number
@@ -237,6 +241,62 @@ class BookedDisposal():
 			return - self.long_term.units.number
 		else:
 			return Decimal(0)
+
+class BDGroupKey(NamedTuple):
+	asset: str
+	acquired: str  # May be "Various"
+	disposed: datetime.date
+
+	@staticmethod
+	def new(bd: BookedDisposal):
+		return BDGroupKey(bd.disposed_asset(), bd.acquisition_date(), bd.timestamp().date())
+
+class BookedDisposalGroup():
+	"""Looks like a BookedDisposal for reporting, but actually a group of them."""
+	def __init__(self, bd: BookedDisposal):
+		self.numeraire = bd.numeraire
+		self.idx = BDGroupKey.new(bd)
+		self.disposals = [bd]
+
+	def add(self, bd: BookedDisposal):
+		if self.idx != BDGroupKey.new(bd):
+			raise Exception(f"Cannot add {bd} (key {BDGroupKey.new(bd)} to {self} (key {self.idx})")
+		if self.numeraire != bd.numeraire:
+			raise Exception(f"Cannot add {bd} (numeraire {bd.numeraire} to {self} (numeraire {self.numeraire})")
+		self.disposals.append(bd)
+
+	def zero(self) -> Amount:
+		return Amount(ZERO, self.disposals[0].numeraire)
+	
+	# BookedDisposal interface methods.  Note we tried  at first to make this 
+	# substitutable for BookedDisposal, but that didn't really work, so now
+	# we mostly have different caller code for the groups.
+
+	def acquisition_date(self) -> str:
+		return self.idx.acquired
+	
+	def disposed_asset(self) -> str:
+		return self.idx.asset
+
+	def disposed_amount(self) -> Decimal:
+		return sum([bd.disposed_amount() for bd in self.disposals], Decimal(0))
+	
+	def total_numeriare_proceeds(self) -> Amount:
+		return sum_amounts(self.numeraire, [bd.total_numeriare_proceeds() for bd in self.disposals])
+	
+	def total_other_proceeds_value(self) -> Amount:
+		return sum_amounts(self.numeraire, [bd.total_other_proceeds_value() for bd in self.disposals])
+	
+	def total_disposed_cost(self) -> Amount:
+		return sum_amounts(self.numeraire, [bd.total_disposed_cost() for bd in self.disposals])
+	
+	def stcg(self) -> Decimal:
+		return sum(([bd.stcg() for bd in self.disposals]), Decimal(0))
+	
+	def ltcg(self) -> Decimal:
+		result = sum(([bd.ltcg() for bd in self.disposals]), Decimal(0))
+		return result
+
 
 def is_disposal_leg(posting: Posting, numeraire: str) -> bool:
 	return (posting.account.startswith(ASSETS_ACCOUNT)

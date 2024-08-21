@@ -1,7 +1,7 @@
 import datetime
 from decimal import Decimal
 import sys
-from typing import Iterator, List, NamedTuple, Sequence
+from typing import Dict, Iterator, List, NamedTuple, Sequence
 
 import dateutil
 import dateutil.parser
@@ -11,7 +11,7 @@ from beancount.core.data import Transaction
 from beancount.core.number import ZERO
 from beancount.ops import summarize
 from magicbeans import common
-from magicbeans.disposals import BookedDisposal, InventoryBlock, format_money, get_disposal_postings, is_disposal_tx, is_non_numeraire_proceeds_leg, sum_amounts, LotIndex
+from magicbeans.disposals import BDGroupKey, BookedDisposal, BookedDisposalGroup, InventoryBlock, format_money, get_disposal_postings, is_disposal_tx, is_non_numeraire_proceeds_leg, sum_amounts, LotIndex
 from magicbeans.mining import MINING_BENEFICIARY_ACCOUNT, MINING_INCOME_ACCOUNT, MiningStats, is_mining_tx
 from magicbeans.reports.data import AcquisitionsReportRow, CoverPage, DisposalsReport, DisposalsReportRow, AccountInventoryReport, InventoryReport, MiningSummaryRow, TaxReport, TaxReportRow
 from magicbeans.reports.latex import LaTeXRenderer
@@ -164,8 +164,11 @@ class ReportDriver:
 		'''Generate a summary of tax-related information for the given year.'''
 		self.renderer.header(f"{ty} Tax Reporting Info")
 
-		self.renderer.subheader(f"{ty} Disposals and Gain/Loss (for 8949)")
-		self.run_disposals_8949(ty)
+		self.renderer.subheader(f"{ty} Disposals and Gain/Loss, Order-level (for 8949)")
+		self.run_disposals_8949(ty, consolidate=True)
+
+		self.renderer.subheader(f"{ty} Disposals and Gain/Loss, Execution-level (for 8949)")
+		self.run_disposals_8949(ty, consolidate=False)
 
 		self.run_mining_income_sched_c(f"{ty} Mining Income (for Sched. C)", ty)
 
@@ -271,7 +274,39 @@ class ReportDriver:
 				period_mining_stats.total_fmv, None))
 		return acquisitions_report_rows
 
-	def make_disposals_report(self, booked_disposals, lot_index, show_legs):
+	def make_grouped_disposals_report(self, bd_groups: Sequence[BookedDisposalGroup]):
+		"""Construct a disposals report object.
+		Used for the summarized/grouped 8949 report"""
+
+		# Collect disposal transactions referencing IDs
+		cumulative_stcg = Decimal("0")
+		cumulative_ltcg = Decimal("0")
+		disposals_report_rows = []
+		for bdg in bd_groups:
+			numer_proc = bdg.total_numeriare_proceeds()
+			other_proc = bdg.total_other_proceeds_value()
+			disposed_cost = bdg.total_disposed_cost()
+			gain = amount.sub(amount.add(numer_proc, other_proc), disposed_cost)
+			cumulative_stcg += bdg.stcg()
+			cumulative_ltcg += bdg.ltcg()
+
+			disposals_report_rows.append(DisposalsReportRow(
+				bdg.idx.disposed,
+				bdg.idx.acquired,
+				"",
+				numer_proc, other_proc, disposed_cost, gain,
+				bdg.stcg(), cumulative_stcg, bdg.ltcg(), cumulative_ltcg,
+				bdg.idx.asset,
+				bdg.disposed_amount(),
+				[], [], [], 0))
+		
+		# return DisposalsReport(start, end, self.numeraire,
+		return DisposalsReport(self.numeraire,
+				disposals_report_rows, cumulative_stcg, cumulative_ltcg, False)
+
+	def make_disposals_report(self, booked_disposals: Sequence[BookedDisposal], lot_index, show_legs):
+		"""Construct a disposals report object.
+		Used for the detailed 8949 and the transaction log reports"""
 		# Collect disposal transactions referencing IDs
 		cumulative_stcg = Decimal("0")
 		cumulative_ltcg = Decimal("0")
@@ -355,24 +390,49 @@ class ReportDriver:
 
 		return booked_disposals
 	
-	def run_disposals_8949(self, ty: int):
+	def run_disposals_8949(self, ty: int, consolidate: bool = False):
 		"""Generate a summary of disposals for the period."""
-		booked_disposals = self.get_booked_disposals(ty)
+		booked_disposals: Sequence[BookedDisposal] = self.get_booked_disposals(ty)
 		disposed_assets = set([bd.disposed_asset() for bd in booked_disposals])
 
 		if not disposed_assets:
 			self.renderer.write_text("(No disposals in this period.)")
 			return	
 
+		# Depending on whether we're consolidating
+		bd_items: Sequence[BookedDisposal] | Sequence[BookedDisposalGroup] = booked_disposals
+		if consolidate:
+			groups_dict: Dict[BDGroupKey, BookedDisposalGroup] = {}
+
+			for bd in booked_disposals:
+				key = BDGroupKey.new(bd)
+				if key not in groups_dict:
+					groups_dict[key] = BookedDisposalGroup(bd)
+				else:
+					groups_dict[key].add(bd)
+			
+			bd_items = [group for group in groups_dict.values()]
+
+			print(f"Num bd: {len(booked_disposals)}, Num groups: {len(bd_items)}, Total grouped bd: {sum([len(group.disposals) for group in bd_items])}")
+
+			stcg_ind = sum([bd.stcg() for bd in booked_disposals])
+			ltcg_ind = sum([bd.ltcg() for bd in booked_disposals])
+			stcg_grp = sum([group.stcg() for group in bd_items])
+			ltcg_grp = sum([group.ltcg() for group in bd_items])
+			print(f"Indiv: STCG {stcg_ind}, LTCG {ltcg_ind}, Grouped: STCG {stcg_grp}, LTCG {ltcg_grp}")
+
 		# Super dumb we have to manually paginate.  We need to have a better
 		# general solution to long tables.
 		used_rows = 0
 		for asset in sorted(disposed_assets):
-			disposals_for_asset = [bd for bd in booked_disposals if bd.disposed_asset() == asset]
+			disposals_for_asset = [bd for bd in bd_items if bd.disposed_asset() == asset]
 			if used_rows + len(disposals_for_asset) > 80:
 				self.renderer.newpage()
 				used_rows = 0
-			disposals_report = self.make_disposals_report(disposals_for_asset, None, False)
+			if consolidate:
+				disposals_report = self.make_grouped_disposals_report(disposals_for_asset)
+			else:
+				disposals_report = self.make_disposals_report(disposals_for_asset, None, False)
 			self.renderer.disposals(f"{asset} Disposals", disposals_report)
 			used_rows += len(disposals_for_asset)
 

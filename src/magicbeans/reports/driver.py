@@ -269,9 +269,55 @@ class ReportDriver:
 		return DisposalsReport(self.numeraire,
 				disposals_report_rows, cumulative_stcg, cumulative_ltcg, False)
 
-	def make_disposals_report(self, booked_disposals: Sequence[BookedDisposal], lot_index, show_legs):
+	def make_disposals_report_wo_legs(self, booked_disposals: Sequence[BookedDisposal], lot_index):
 		"""Construct a disposals report object.
 		Used for the detailed 8949 and the transaction log reports"""
+		show_legs = false
+		# Collect disposal transactions referencing IDs
+		cumulative_stcg = Decimal("0")
+		cumulative_ltcg = Decimal("0")
+		disposals_report_rows = []
+		for bd in booked_disposals:
+			numer_proc = bd.total_numeriare_proceeds()
+			other_proc = bd.total_other_proceeds_value()
+			disposed_cost = bd.total_disposed_cost()
+			gain = amount.sub(amount.add(numer_proc, other_proc), disposed_cost)
+			cumulative_stcg += bd.stcg()
+			cumulative_ltcg += bd.ltcg()
+
+			disposal_legs_and_ids = []
+			num_legs_omitted = 0
+			if show_legs:
+				disposal_legs_and_ids = [
+					(p, lot_index.get_lotid(p.units.currency, p.cost))
+					for p in bd.disposal_legs]
+				n_legs = len(disposal_legs_and_ids)
+				disposal_legs_and_ids = disposal_legs_and_ids[:MAX_DISPOSAL_LEGS]
+				num_legs_omitted = n_legs - len(disposal_legs_and_ids)
+
+			time_of_day_utc = bd.timestamp().strftime("%H:%M:%SUTC")
+
+			disposals_report_rows.append(DisposalsReportRow(
+				bd.tx.date, bd.acquisition_date(),
+				f"{bd.tx.narration} {time_of_day_utc}",
+				numer_proc, other_proc, disposed_cost, gain,
+				bd.stcg(), cumulative_stcg, bd.ltcg(), cumulative_ltcg,
+				bd.disposed_currency,
+				bd.disposed_amount(),
+				bd.numeraire_proceeds_legs,
+				bd.other_proceeds_legs,
+				disposal_legs_and_ids,
+				num_legs_omitted))
+		
+		# return DisposalsReport(start, end, self.numeraire,
+		return DisposalsReport(self.numeraire,
+				disposals_report_rows, cumulative_stcg, cumulative_ltcg, show_legs)
+
+	def make_disposals_report_w_legs(self, booked_disposals: Sequence[BookedDisposal], lot_index):
+		"""Construct a disposals report object.
+		Used for the detailed 8949 and the transaction log reports"""
+
+		show_legs = true
 		# Collect disposal transactions referencing IDs
 		cumulative_stcg = Decimal("0")
 		cumulative_ltcg = Decimal("0")
@@ -416,7 +462,7 @@ class ReportDriver:
 				if consolidate:
 					disposals_report = self.make_grouped_disposals_report(disposals)
 				else:
-					disposals_report = self.make_disposals_report(disposals, None, False)
+					disposals_report = self.make_disposals_report_wo_legs(disposals, None)
 				self.renderer.disposals(f"{asset} {group_name} Disposals", disposals_report)
 				used_rows += len(disposals)
 
@@ -489,7 +535,7 @@ class ReportDriver:
 			acquisitions_report_rows = self.make_acquisitions_report(purchases, mining_awards, lot_index)
 
 			booked_disposals = [BookedDisposal(e, self.numeraire) for e in disposals]
-			disposals_report = self.make_disposals_report(booked_disposals, lot_index, True)
+			disposals_report = self.make_disposals_report_w_legs(booked_disposals, lot_index)
 		
 			# Render.
 			self.renderer.newpage()

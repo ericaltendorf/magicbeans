@@ -372,7 +372,7 @@ class LaTeXRenderer():
 
 	def disposals(self, title: str, disposals_report: DisposalsReport):
 		if disposals_report.show_details:
-			self.disposals_detailed(title, disposals_report)
+			self.disposals_report_detailed(title, disposals_report)
 		else:
 			self.disposals_summary(title, disposals_report)
 
@@ -431,7 +431,7 @@ class LaTeXRenderer():
 				))
 		self.doc.append(NewLine())
 
-	def disposals_detailed(self, title: str, disposals_report: DisposalsReport):
+	def disposals_report_detailed(self, title: str, disposals_report: DisposalsReport):
 		# with self.doc.create(Tblr("r X[1,l] r r r r r r r", 9, width=r"0.95\linewidth" )) as table:
 		with self.doc.create(Tabularx("r X r r r r r r r", width_argument=NoEscape(r"0.95\linewidth" ))) as table:
 			table.add_row((MultiColumn(9, align="c", data=table_text(title)),))

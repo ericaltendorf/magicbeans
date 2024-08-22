@@ -167,9 +167,6 @@ class ReportDriver:
 		self.renderer.subheader(f"{ty} Disposals and Gain/Loss, Order-level (for 8949)")
 		self.run_disposals_8949(ty, consolidate=True)
 
-		self.renderer.subheader(f"{ty} Disposals and Gain/Loss, Execution-level (for 8949)")
-		self.run_disposals_8949(ty, consolidate=False)
-
 		self.run_mining_income_sched_c(f"{ty} Mining Income (for Sched. C)", ty)
 
 	#

@@ -497,8 +497,10 @@ class LaTeXRenderer():
 		self.doc.append(NewLine())
 
 	def mining_summary(self, rows: List[MiningSummaryRow]):
-		# with self.doc.create(Tblr("X X X X X X X X", 8)) as table:
-		with self.doc.create(Tabularx("X X X X X X X X X")) as table:
+		cwide = ">{\\raggedleft\\arraybackslash}p{2.4cm}"
+		cnarr = ">{\\raggedleft\\arraybackslash}p{1.0cm}"
+		cmid = ">{\\raggedleft\\arraybackslash}X"
+		with self.doc.create(Tabularx(f"{cnarr} {cnarr} {cwide} {cnarr} {cwide}" + f" {cmid}" * 4, width_argument=NoEscape(r"0.95\linewidth" ))) as table:
 			table.add_hline()
 			table.add_row((
 				"Month",

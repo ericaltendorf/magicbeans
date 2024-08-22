@@ -238,6 +238,63 @@ class ReportDriver:
 				period_mining_stats.avg_price(),
 				period_mining_stats.total_fmv, None))
 		return acquisitions_report_rows
+	
+	def run_disposals_8949(self, ty: int, consolidate: bool = False):
+		"""Generate a summary of disposals for the period."""
+		booked_disposals: Sequence[BookedDisposal] = self.get_booked_disposals(ty)
+		disposed_assets = set([bd.disposed_asset() for bd in booked_disposals])
+
+		if not disposed_assets:
+			self.renderer.write_text("(No disposals in this period.)")
+			return	
+
+		# Depending on whether we're consolidating
+		bd_items: Sequence[BookedDisposal] | Sequence[BookedDisposalGroup] = booked_disposals
+		if consolidate:
+			groups_dict: Dict[BDGroupKey, BookedDisposalGroup] = {}
+
+			for bd in booked_disposals:
+				key = BDGroupKey.new(bd)
+				if key not in groups_dict:
+					groups_dict[key] = BookedDisposalGroup(bd)
+				else:
+					groups_dict[key].add(bd)
+			
+			bd_items = [group for group in groups_dict.values()]
+
+			print(f"Num bd: {len(booked_disposals)}, Num groups: {len(bd_items)}, Total grouped bd: {sum([len(group.disposals) for group in bd_items])}")
+
+			stcg_ind = sum([bd.stcg() for bd in booked_disposals])
+			ltcg_ind = sum([bd.ltcg() for bd in booked_disposals])
+			stcg_grp = sum([group.stcg() for group in bd_items])
+			ltcg_grp = sum([group.ltcg() for group in bd_items])
+			print(f"Indiv: STCG {stcg_ind}, LTCG {ltcg_ind}, Grouped: STCG {stcg_grp}, LTCG {ltcg_grp}")
+
+		# Super dumb we have to manually paginate.  We need to have a better
+		# general solution to long tables.
+		used_rows = 0
+		for asset in sorted(disposed_assets):
+			disposals_for_asset = [bd for bd in bd_items if bd.disposed_asset() == asset]
+
+			st_disposals = [bd for bd in disposals_for_asset if bd.stcg() and not bd.ltcg()]
+			lt_disposals = [bd for bd in disposals_for_asset if bd.ltcg() and not bd.stcg()]
+			mixed_disposals = [bd for bd in disposals_for_asset if bd.stcg() and bd.ltcg()]
+
+			disposals_groups = [("Short Term", st_disposals), ("Long Term", lt_disposals), ("Mixed", mixed_disposals)]
+
+			for (group_name, disposals) in disposals_groups:
+				if not disposals:
+					continue
+
+				if used_rows + len(disposals) > 80:
+					self.renderer.newpage()
+					used_rows = 0
+				if consolidate:
+					disposals_report = self.make_grouped_disposals_report(disposals)
+				else:
+					disposals_report = self.make_disposals_report_wo_legs(disposals, None)
+				self.renderer.disposals(f"{asset} {group_name} Disposals", disposals_report)
+				used_rows += len(disposals)
 
 	def make_grouped_disposals_report(self, bd_groups: Sequence[BookedDisposalGroup]):
 		"""Construct a disposals report object.
@@ -408,63 +465,6 @@ class ReportDriver:
 		booked_disposals = [BookedDisposal(e, self.numeraire) for e in disposals]
 
 		return booked_disposals
-	
-	def run_disposals_8949(self, ty: int, consolidate: bool = False):
-		"""Generate a summary of disposals for the period."""
-		booked_disposals: Sequence[BookedDisposal] = self.get_booked_disposals(ty)
-		disposed_assets = set([bd.disposed_asset() for bd in booked_disposals])
-
-		if not disposed_assets:
-			self.renderer.write_text("(No disposals in this period.)")
-			return	
-
-		# Depending on whether we're consolidating
-		bd_items: Sequence[BookedDisposal] | Sequence[BookedDisposalGroup] = booked_disposals
-		if consolidate:
-			groups_dict: Dict[BDGroupKey, BookedDisposalGroup] = {}
-
-			for bd in booked_disposals:
-				key = BDGroupKey.new(bd)
-				if key not in groups_dict:
-					groups_dict[key] = BookedDisposalGroup(bd)
-				else:
-					groups_dict[key].add(bd)
-			
-			bd_items = [group for group in groups_dict.values()]
-
-			print(f"Num bd: {len(booked_disposals)}, Num groups: {len(bd_items)}, Total grouped bd: {sum([len(group.disposals) for group in bd_items])}")
-
-			stcg_ind = sum([bd.stcg() for bd in booked_disposals])
-			ltcg_ind = sum([bd.ltcg() for bd in booked_disposals])
-			stcg_grp = sum([group.stcg() for group in bd_items])
-			ltcg_grp = sum([group.ltcg() for group in bd_items])
-			print(f"Indiv: STCG {stcg_ind}, LTCG {ltcg_ind}, Grouped: STCG {stcg_grp}, LTCG {ltcg_grp}")
-
-		# Super dumb we have to manually paginate.  We need to have a better
-		# general solution to long tables.
-		used_rows = 0
-		for asset in sorted(disposed_assets):
-			disposals_for_asset = [bd for bd in bd_items if bd.disposed_asset() == asset]
-
-			st_disposals = [bd for bd in disposals_for_asset if bd.stcg() and not bd.ltcg()]
-			lt_disposals = [bd for bd in disposals_for_asset if bd.ltcg() and not bd.stcg()]
-			mixed_disposals = [bd for bd in disposals_for_asset if bd.stcg() and bd.ltcg()]
-
-			disposals_groups = [("Short Term", st_disposals), ("Long Term", lt_disposals), ("Mixed", mixed_disposals)]
-
-			for (group_name, disposals) in disposals_groups:
-				if not disposals:
-					continue
-
-				if used_rows + len(disposals) > 80:
-					self.renderer.newpage()
-					used_rows = 0
-				if consolidate:
-					disposals_report = self.make_grouped_disposals_report(disposals)
-				else:
-					disposals_report = self.make_disposals_report_wo_legs(disposals, None)
-				self.renderer.disposals(f"{asset} {group_name} Disposals", disposals_report)
-				used_rows += len(disposals)
 
 	def run_detailed_log(self, start: datetime.date, end: datetime.date):
 		"""Generate a detailed log report of activity during the period."""

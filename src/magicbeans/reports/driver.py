@@ -293,7 +293,7 @@ class ReportDriver:
 					disposals_report = self.make_disposals_summary_trade_level(disposals)
 				else:
 					disposals_report = self.make_disposals_summary_execution_level(disposals, None)
-				self.renderer.disposals(f"{asset} {group_name} Disposals", disposals_report)
+				self.renderer.disposals_summary(f"{asset} {group_name} Disposals", disposals_report)
 				used_rows += len(disposals)
 
 	def make_disposals_summary_trade_level(self, bd_groups: Sequence[BookedDisposalGroup]):

@@ -196,7 +196,7 @@ class LaTeXRenderer():
 			self.acquisitions(acquisitions_report_rows)
 			self.doc.append(VerticalSpace("8pt"))
 			self.doc.append(NewLine())
-			self.disposals("Disposals", disposals_report)
+			self.disposals_report_detailed("Disposals", disposals_report)
 
 	#
 	# Overall tax report
@@ -367,14 +367,8 @@ class LaTeXRenderer():
 			table.add_hline()
 
 	#
-	# Disposals report
+	# Disposals summary and detailed report
 	#
-
-	def disposals(self, title: str, disposals_report: DisposalsReport):
-		if disposals_report.show_details:
-			self.disposals_report_detailed(title, disposals_report)
-		else:
-			self.disposals_summary(title, disposals_report)
 
 	def disposals_summary(self, title: str, disposals_report: DisposalsReport):
 		# with self.doc.create(Tblr("r X[1,l] r r r r r r r", 9, width=r"0.95\linewidth" )) as table:

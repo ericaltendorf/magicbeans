@@ -458,15 +458,6 @@ class ReportDriver:
 			# in turn are dicts mapping currencies to lists of positions.
 			inventories_by_acct = self.get_inventory_at_ts(page_ts_start)
 
-			# print(f"In run_detailed_log, examining inventories we got (at {page_ts_start}):")
-			# for inventory in inventories_by_acct.values():
-			# 	for (cur, positions) in inventory.split().items():
-			# 		for p in positions:
-			# 			if p.cost is None:
-			# 				print(f"  Weird position with no cost: {p}")
-			# 			elif p.cost.date == datetime.date(2021, 9, 3):
-			# 				print(f"  {cur:<15} {p.cost.number:>16f} {p.cost.currency:<6} {p.cost.date}")
-
 			# First organize inventories by currency, and sort, so that we can
 			# assign lot IDs in order.
 			inventory_blocks: List[InventoryBlock] = []

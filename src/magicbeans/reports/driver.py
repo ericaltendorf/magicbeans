@@ -107,25 +107,6 @@ class ReportDriver:
 		self.renderer.coverpage(page)
 
 	#
-	# Old report methods, mostly for bean-query driven reports
-	#
-	
-	def query(self, query: str):
-		"""Run a bean-query query on the entries in this database.  Returns a
-		list of (name, dtype) tuples describing the results set table and a list
-		of ResultRow tuples with the data.item pairs."""
-		return run_query(self.entries, self.options, query)
-
-	def query_and_render(self, query: str, footer: str = None):
-		(rtypes, rrows) = self.query(query)
-		self.renderer.beanquery_table(rtypes, rrows, footer)
-
-	def run_subreport(self, title: str, query: str, footer: str = None):
-		self.renderer.subreport_header(title, query)
-		self.query_and_render(query, footer)
-
-
-	#
 	# Utilities for managing entries
 	#
 

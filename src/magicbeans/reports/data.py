@@ -23,7 +23,7 @@ class TaxReportRow(NamedTuple):
 
 class TaxReport(NamedTuple):
     rows: List[TaxReportRow]
-    total_tax: Decimal
+    total_row: TaxReportRow
 
 class AccountInventoryReport(NamedTuple):
     account: str

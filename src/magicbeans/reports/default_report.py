@@ -76,7 +76,7 @@ def generate(tax_years: List[int], numeraire: str, currencies: List[str], ledger
 
 	for ty in tax_years:
 		print(f"  {ty}", end="", flush=True)
-		db.renderer.subheader(f"{ty} Taxes")
+		db.renderer.subheader(f"{ty} Gain/Loss and Est. Tax Liability")
 		db.run_tax_estimate_report(ty, fed_st_rate + state_rate, fed_lt_rate + state_rate)
 
 	print("Generating tax summaries:")

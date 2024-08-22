@@ -358,6 +358,7 @@ class ReportDriver:
 			return	
 
 		total_tax = Decimal("0")
+		total_row = TaxReportRow("(total)", Decimal("0"), Decimal("0"), Decimal("0"), Decimal("0"), Decimal("0"))
 
 		rows: List[TaxReportRow] = []
 		for asset in sorted(disposed_assets):
@@ -369,10 +370,16 @@ class ReportDriver:
 			rows.append(TaxReportRow(asset, ltcg, stcg, ltcg_tax, stcg_tax, ltcg_tax + stcg_tax))
 
 			total_tax += ltcg_tax + stcg_tax
+			total_row = TaxReportRow("(total)",
+							total_row.ltcg + ltcg,
+							total_row.stcg + stcg,
+							total_row.ltcg_tax + ltcg_tax,
+							total_row.stcg_tax + stcg_tax,
+							total_row.total_tax + ltcg_tax + stcg_tax)
 		
-		report = TaxReport(rows, total_tax)
+		report = TaxReport(rows, total_row)
 
-		self.renderer.tax_report(f"Gains and tax liability", report)
+		self.renderer.tax_report(report)
 
 
 	def get_booked_disposals(self, ty: int):

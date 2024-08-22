@@ -202,16 +202,18 @@ class LaTeXRenderer():
 	# Overall tax report
 	#
 
-	def tax_report(self, title: str, tax_report: TaxReport):
+	def tax_report(self, tax_report: TaxReport):
 		# This is a small table, can afford to have more legible text
 		with self.doc.create(SmallText()):
-			with self.doc.create(Tabularx("X r r r r r ", width_argument=NoEscape(r"0.95\linewidth" ))) as table:
-				table.add_row((MultiColumn(6, align="c", data=table_text(title)),))
+			wide = ">{\\raggedleft\\arraybackslash}p{4cm}"
+			narrow = ">{\\raggedleft\\arraybackslash}p{2cm}"
+			with self.doc.create(Tabularx(f"X {wide} {wide} {narrow} {narrow} {narrow} ",
+								 width_argument=NoEscape(r"0.95\linewidth" ))) as table:
 				table.add_hline()
 				table.add_row((
 					"Asset",
-					"Long term gains/losses",
-					"Short term gains/losses",
+					"Long term gain/loss",
+					"Short term gain/loss",
 					"LTCG Tax",
 					"STCG Tax",
 					"Total Tax",
@@ -234,11 +236,11 @@ class LaTeXRenderer():
 
 				table.add_row((
 					"Total",
-					"",
-					"",
-					"",
-					"",
-					dec2(tax_report.total_tax),
+					dec2(tax_report.total_row.ltcg),
+					dec2(tax_report.total_row.stcg),
+					dec2(tax_report.total_row.ltcg_tax),
+					dec2(tax_report.total_row.stcg_tax),
+					dec2(tax_report.total_row.total_tax),
 					))
 			self.doc.append(NewLine())
 
@@ -376,7 +378,8 @@ class LaTeXRenderer():
 
 	def disposals_summary(self, title: str, disposals_report: DisposalsReport):
 		# with self.doc.create(Tblr("r X[1,l] r r r r r r r", 9, width=r"0.95\linewidth" )) as table:
-		with self.doc.create(Tabularx("r r r X p{2.0cm} p{1.4cm} p{1.4cm} p{1.4cm} p{1.4cm} p{1.4cm} p{1.4cm}", width_argument=NoEscape(r"0.95\linewidth" ))) as table:
+		cspec = ">{\\raggedleft\\arraybackslash}p{1.6cm}"
+		with self.doc.create(Tabularx("r r r X" + f" {cspec}" * 7, width_argument=NoEscape(r"0.95\linewidth" ))) as table:
 			table.add_row((MultiColumn(11, align="c", data=table_text(title)),))
 			table.add_hline()
 			table.add_row((

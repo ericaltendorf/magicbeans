@@ -157,19 +157,6 @@ class ReportDriver:
 		return (disposals, purchases, mining_awards)
 
 	#
-	# High level reporting functions
-	#
-
-	def run_tax_reporting_summary(self, ty: int):
-		'''Generate a summary of tax-related information for the given year.'''
-		self.renderer.header(f"{ty} Tax Reporting Info")
-
-		self.renderer.subheader(f"{ty} Disposals and Gain/Loss, Order-level (for 8949)")
-		self.run_disposals_8949(ty, consolidate=True)
-
-		self.run_mining_income_sched_c(f"{ty} Mining Income (for Sched. C)", ty)
-
-	#
 	# New report methods, using direct analysis of the entries
 	#
 

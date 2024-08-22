@@ -47,7 +47,13 @@ def generate(tax_years: List[int], numeraire: str, currencies: List[str], ledger
 	print("Generating tax summaries:")
 	for ty in tax_years:
 		print(f"  {ty}", end="", flush=True)
-		db.run_tax_reporting_summary(ty)
+
+		db.renderer.header(f"{ty} Tax Reporting Info")
+
+		db.renderer.subheader(f"{ty} Disposals and Gain/Loss, Order-level (for 8949)")
+		db.run_disposals_8949(ty, consolidate=True)
+
+		db.run_mining_income_sched_c(f"{ty} Mining Income (for Sched. C)", ty)
 
 	print()
 

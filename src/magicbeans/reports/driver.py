@@ -328,6 +328,7 @@ class ReportDriver:
 		rows: List[TaxReportRow] = []
 		for asset in sorted(disposed_assets):
 			disposals_for_asset = [bd for bd in booked_disposals if bd.disposed_asset() == asset]
+
 			stcg: Decimal = sum([bd.stcg() for bd in disposals_for_asset])
 			ltcg: Decimal = sum([bd.ltcg() for bd in disposals_for_asset])
 			ltcg_tax = ltcg * lt_rate
@@ -398,15 +399,26 @@ class ReportDriver:
 		used_rows = 0
 		for asset in sorted(disposed_assets):
 			disposals_for_asset = [bd for bd in bd_items if bd.disposed_asset() == asset]
-			if used_rows + len(disposals_for_asset) > 80:
-				self.renderer.newpage()
-				used_rows = 0
-			if consolidate:
-				disposals_report = self.make_grouped_disposals_report(disposals_for_asset)
-			else:
-				disposals_report = self.make_disposals_report(disposals_for_asset, None, False)
-			self.renderer.disposals(f"{asset} Disposals", disposals_report)
-			used_rows += len(disposals_for_asset)
+
+			st_disposals = [bd for bd in disposals_for_asset if bd.stcg() and not bd.ltcg()]
+			lt_disposals = [bd for bd in disposals_for_asset if bd.ltcg() and not bd.stcg()]
+			mixed_disposals = [bd for bd in disposals_for_asset if bd.stcg() and bd.ltcg()]
+
+			disposals_groups = [("Short Term", st_disposals), ("Long Term", lt_disposals), ("Mixed", mixed_disposals)]
+
+			for (group_name, disposals) in disposals_groups:
+				if not disposals:
+					continue
+
+				if used_rows + len(disposals) > 80:
+					self.renderer.newpage()
+					used_rows = 0
+				if consolidate:
+					disposals_report = self.make_grouped_disposals_report(disposals)
+				else:
+					disposals_report = self.make_disposals_report(disposals, None, False)
+				self.renderer.disposals(f"{asset} {group_name} Disposals", disposals_report)
+				used_rows += len(disposals)
 
 	def run_detailed_log(self, start: datetime.date, end: datetime.date):
 		"""Generate a detailed log report of activity during the period."""

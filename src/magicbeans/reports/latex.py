@@ -3,7 +3,7 @@ from beancount.core.amount import Amount
 from beanquery.query_render import render_text
 from magicbeans import disposals
 from magicbeans.disposals import abbrv_disposal, format_money
-from magicbeans.reports.data import AcquisitionsReportRow, CoverPage, DisposalsReport, DisposalsReportRow, InventoryReport, MiningSummaryRow, TaxReport
+from magicbeans.reports.data import AcquisitionsReportRow, CoverPage, DisposalsReport, DisposalsReportRow, DisposalsSummary, DisposalsSummaryRow, DisposalsSummaryTotalRow, InventoryReport, MiningSummaryRow, TaxReport
 
 from pylatex import Document, Table, Section, Subsection, Command, Center, MultiColumn, MiniPage, TextColor, Package, VerticalSpace, HFill, NewLine, Tabular, Tabularx, LongTable
 from pylatex.base_classes import Environment, Float
@@ -43,11 +43,33 @@ def table_text(text: str):
 def proceeds_text(row: DisposalsReportRow) -> str:
 	proceeds = ""
 	if row.numeraire_proceeds:
-		proceeds += dec2(row.numeraire_proceeds.number)
+		proceeds += dec2(row.numeraire_proceeds)
 	if row.other_proceeds:
 		if proceeds:
 			proceeds += " + "
-		proceeds += italic(dec2(row.other_proceeds.number), escape=False)
+		proceeds += italic(dec2(row.other_proceeds), escape=False)
+	return proceeds
+
+# TODO: get rid of these, don't use for summaries
+
+def proceeds_text(row: DisposalsSummaryRow) -> str:
+	proceeds = ""
+	if row.numeraire_proceeds:
+		proceeds += dec2(row.numeraire_proceeds)
+	if row.other_proceeds:
+		if proceeds:
+			proceeds += " + "
+		proceeds += italic(dec2(row.other_proceeds), escape=False)
+	return proceeds
+
+def proceeds_text(row: DisposalsSummaryTotalRow) -> str:
+	proceeds = ""
+	if row.numeraire_proceeds:
+		proceeds += dec2(row.numeraire_proceeds)
+	if row.other_proceeds:
+		if proceeds:
+			proceeds += " + "
+		proceeds += italic(dec2(row.other_proceeds), escape=False)
 	return proceeds
 
 
@@ -370,7 +392,7 @@ class LaTeXRenderer():
 	# Disposals summary and detailed report
 	#
 
-	def disposals_summary(self, title: str, disposals_report: DisposalsReport):
+	def disposals_summary(self, title: str, disposals_summary: DisposalsSummary):
 		# with self.doc.create(Tblr("r X[1,l] r r r r r r r", 9, width=r"0.95\linewidth" )) as table:
 		cspec = ">{\\raggedleft\\arraybackslash}p{1.6cm}"
 		with self.doc.create(Tabularx("r r r X" + f" {cspec}" * 7, width_argument=NoEscape(r"0.95\linewidth" ))) as table:
@@ -390,7 +412,7 @@ class LaTeXRenderer():
 				"(cumul)",
 				))
 
-			for (rownum, row) in enumerate(disposals_report.rows):
+			for (rownum, row) in enumerate(disposals_summary.rows):
 				if rownum % 5 == 0:
 					table.add_hline()
 				
@@ -399,7 +421,7 @@ class LaTeXRenderer():
 					row.acquisition_date,
 					row.date,
 					"", # filler
-					NoEscape(proceeds_text(row)),
+					dec2(row.numeraire_proceeds + row.other_proceeds),
 					dec2(row.disposed_cost),
 					dec2(row.gain),
 					dec2(row.stcg),
@@ -410,18 +432,17 @@ class LaTeXRenderer():
 
 			table.add_hline()
 
+			trow = disposals_summary.total_row
 			table.add_row((
-				"",
-				"",
-				"Total",
+				(MultiColumn(3, align="r", data=f"Total: {dec8(trow.disposed_amount)} ")),
 				"", # filler
+				dec2(trow.numeraire_proceeds + trow.other_proceeds),
+				dec2(trow.disposed_cost),
+				dec2(trow.gain),
+				dec2(trow.stcg),
 				"",
+				dec2(trow.ltcg),
 				"",
-				"",
-				"",
-				dec2(disposals_report.cumulative_stcg),
-				"",
-				dec2(disposals_report.cumulative_ltcg),
 				))
 		self.doc.append(NewLine())
 

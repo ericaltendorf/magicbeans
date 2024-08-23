@@ -5,6 +5,7 @@ from typing import Dict, Iterator, List, NamedTuple, Sequence
 
 import dateutil
 import dateutil.parser
+from beancount.core.amount import Amount
 from beancount.parser.printer import format_entry
 from beancount.core import amount
 from beancount.core.data import Transaction
@@ -13,7 +14,7 @@ from beancount.ops import summarize
 from magicbeans import common
 from magicbeans.disposals import BDGroupKey, BookedDisposal, BookedDisposalGroup, InventoryBlock, format_money, get_disposal_postings, is_disposal_tx, is_non_numeraire_proceeds_leg, sum_amounts, LotIndex
 from magicbeans.mining import MINING_BENEFICIARY_ACCOUNT, MINING_INCOME_ACCOUNT, MiningStats, is_mining_tx
-from magicbeans.reports.data import AcquisitionsReportRow, CoverPage, DisposalsReport, DisposalsReportRow, AccountInventoryReport, InventoryReport, MiningSummaryRow, TaxReport, TaxReportRow
+from magicbeans.reports.data import AcquisitionsReportRow, CoverPage, DisposalsReport, DisposalsReportRow, AccountInventoryReport, DisposalsSummary, DisposalsSummaryRow, DisposalsSummaryTotalRow, InventoryReport, MiningSummaryRow, TaxReport, TaxReportRow
 from magicbeans.reports.latex import LaTeXRenderer
 
 from beancount import loader
@@ -73,7 +74,7 @@ class ReportDriver:
 	def __init__(self, ledger_path: str, out_path: str, numeraire: str) -> None:
 		"""Load the beancount file at the given path and parse it for queries, 
 		and initialize the output report file."""
-		
+
 		# self.renderer = TextRenderer(out_path)
 		self.renderer = LaTeXRenderer(out_path)
 
@@ -88,11 +89,11 @@ class ReportDriver:
 		self.options = options
 
 		self.numeraire = numeraire
-	
+
 	def write_text(self, text: str):
 		"""Legacy function to allow caller to write direclty to underlying file"""
 		self.renderer.write_text(text)
-	
+
 	def close(self):
 		self.renderer.close()
 
@@ -225,7 +226,7 @@ class ReportDriver:
 				rcvd.cost.number, rcvd.cost.number * rcvd.units.number,
 				lot_index.get_lotid(rcvd.units.currency, rcvd.cost)
 			))
-		
+
 		for e in mining_awards:
 			accrue_mining_stats(e, period_mining_stats)
 
@@ -238,7 +239,7 @@ class ReportDriver:
 				period_mining_stats.avg_price(),
 				period_mining_stats.total_fmv, None))
 		return acquisitions_report_rows
-	
+
 	def run_disposals_summaries(self, ty: int, consolidate: bool = False):
 		"""Generate a summary of disposals for the period."""
 		booked_disposals: Sequence[BookedDisposal] = self.get_booked_disposals(ty)
@@ -259,7 +260,7 @@ class ReportDriver:
 					groups_dict[key] = BookedDisposalGroup(bd)
 				else:
 					groups_dict[key].add(bd)
-			
+
 			bd_items = [group for group in groups_dict.values()]
 
 			print(f"Num bd: {len(booked_disposals)}, Num groups: {len(bd_items)}, Total grouped bd: {sum([len(group.disposals) for group in bd_items])}")
@@ -280,93 +281,70 @@ class ReportDriver:
 			lt_disposals = [bd for bd in disposals_for_asset if bd.ltcg() and not bd.stcg()]
 			mixed_disposals = [bd for bd in disposals_for_asset if bd.stcg() and bd.ltcg()]
 
-			disposals_groups = [("Short Term", st_disposals), ("Long Term", lt_disposals), ("Mixed", mixed_disposals)]
+			disposals_by_termgroup = [("Short Term", st_disposals), ("Long Term", lt_disposals), ("Mixed", mixed_disposals)]
 
-			for (group_name, disposals) in disposals_groups:
+			for (termgroup_name, disposals) in disposals_by_termgroup:
 				if not disposals:
 					continue
 
 				if used_rows + len(disposals) > 80:
 					self.renderer.newpage()
 					used_rows = 0
-				if consolidate:
-					disposals_report = self.make_disposals_summary_trade_level(disposals)
-				else:
-					disposals_report = self.make_disposals_summary_execution_level(disposals, None)
-				self.renderer.disposals_summary(f"{asset} {group_name} Disposals", disposals_report)
+
+				# TODO: fix type hinting here
+				disposals_summary: DisposalsSummary = self.make_disposals_summary(disposals)
+				
+				self.renderer.disposals_summary(f"{asset} {termgroup_name} Disposals", disposals_summary)
 				used_rows += len(disposals)
 
-	def make_disposals_summary_trade_level(self, bd_groups: Sequence[BookedDisposalGroup]):
+	def make_disposals_summary(self, bd_items: Sequence[BookedDisposal | BookedDisposalGroup]) -> DisposalsSummary:
 		"""Construct a disposals report object with tx's grouped at the trade level."""
 
-		# Collect disposal transactions referencing IDs
 		cumulative_stcg = Decimal("0")
 		cumulative_ltcg = Decimal("0")
 		disposals_report_rows = []
-		for bdg in bd_groups:
-			numer_proc = bdg.total_numeriare_proceeds()
-			other_proc = bdg.total_other_proceeds_value()
-			disposed_cost = bdg.total_disposed_cost()
-			gain = amount.sub(amount.add(numer_proc, other_proc), disposed_cost)
-			cumulative_stcg += bdg.stcg()
-			cumulative_ltcg += bdg.ltcg()
+		total_row = DisposalsSummaryTotalRow( Decimal(0), Decimal(0), Decimal(0), Decimal(0), Decimal(0), Decimal(0), Decimal(0)) 
 
-			disposals_report_rows.append(DisposalsReportRow(
-				bdg.idx.disposed,
-				bdg.idx.acquired,
-				"",
-				numer_proc, other_proc, disposed_cost, gain,
-				bdg.stcg(), cumulative_stcg, bdg.ltcg(), cumulative_ltcg,
-				bdg.idx.asset,
-				bdg.disposed_amount(),
-				[], [], [], 0))
-		
-		# return DisposalsReport(start, end, self.numeraire,
-		return DisposalsReport(self.numeraire,
-				disposals_report_rows, cumulative_stcg, cumulative_ltcg, False)
-
-	def make_disposals_summary_execution_level(self, booked_disposals: Sequence[BookedDisposal], lot_index):
-		"""Construct a disposals report object, with raw tx granularity."""
-		show_legs = False
-		# Collect disposal transactions referencing IDs
-		cumulative_stcg = Decimal("0")
-		cumulative_ltcg = Decimal("0")
-		disposals_report_rows = []
-		for bd in booked_disposals:
-			numer_proc = bd.total_numeriare_proceeds()
-			other_proc = bd.total_other_proceeds_value()
-			disposed_cost = bd.total_disposed_cost()
-			gain = amount.sub(amount.add(numer_proc, other_proc), disposed_cost)
+		# May be a BookedDisposalGroup or a BookedDisposal
+		for bd in bd_items:
+			numer_proc = bd.total_numeriare_proceeds().number
+			other_proc = bd.total_other_proceeds_value().number
+			disposed_cost = bd.total_disposed_cost().number
+			# gain = amount.sub(amount.add(numer_proc, other_proc), disposed_cost)
+			gain = numer_proc + other_proc - disposed_cost
 			cumulative_stcg += bd.stcg()
 			cumulative_ltcg += bd.ltcg()
 
-			disposal_legs_and_ids = []
-			num_legs_omitted = 0
-			if show_legs:
-				disposal_legs_and_ids = [
-					(p, lot_index.get_lotid(p.units.currency, p.cost))
-					for p in bd.disposal_legs]
-				n_legs = len(disposal_legs_and_ids)
-				disposal_legs_and_ids = disposal_legs_and_ids[:MAX_DISPOSAL_LEGS]
-				num_legs_omitted = n_legs - len(disposal_legs_and_ids)
+			total_row = DisposalsSummaryTotalRow(
+				total_row.disposed_amount + bd.disposed_amount(),
+				total_row.numeraire_proceeds + numer_proc,
+				total_row.other_proceeds + other_proc,
+				total_row.disposed_cost + disposed_cost,
+				total_row.gain + gain,
+				total_row.stcg + bd.stcg(),
+				total_row.ltcg + bd.ltcg()
+			)
 
-			time_of_day_utc = bd.timestamp().strftime("%H:%M:%SUTC")
+			disposals_report_rows.append(
+				DisposalsSummaryRow(
+					bd.disposed_asset(),
+					bd.disposed_amount(),
+					bd.disposal_date(),
+					bd.acquisition_date(),
+					numer_proc,
+					other_proc,
+					disposed_cost,
+					gain,
+					bd.stcg(),
+					cumulative_stcg,
+					bd.ltcg(),
+					cumulative_ltcg,
+				)
+			)
 
-			disposals_report_rows.append(DisposalsReportRow(
-				bd.tx.date, bd.acquisition_date(),
-				f"{bd.tx.narration} {time_of_day_utc}",
-				numer_proc, other_proc, disposed_cost, gain,
-				bd.stcg(), cumulative_stcg, bd.ltcg(), cumulative_ltcg,
-				bd.disposed_currency,
-				bd.disposed_amount(),
-				bd.numeraire_proceeds_legs,
-				bd.other_proceeds_legs,
-				disposal_legs_and_ids,
-				num_legs_omitted))
-		
-		# return DisposalsReport(start, end, self.numeraire,
-		return DisposalsReport(self.numeraire,
-				disposals_report_rows, cumulative_stcg, cumulative_ltcg, show_legs)
+		# return DisposalsReport(self.numeraire,
+		# 		disposals_report_rows, cumulative_stcg, cumulative_ltcg, False)
+		return DisposalsSummary("<TITLE>", disposals_report_rows, total_row)
 
 	def make_disposals_report_detailed(self, booked_disposals: Sequence[BookedDisposal], lot_index):
 		"""Construct a disposals report object.
@@ -408,7 +386,7 @@ class ReportDriver:
 				bd.other_proceeds_legs,
 				disposal_legs_and_ids,
 				num_legs_omitted))
-		
+
 		# return DisposalsReport(start, end, self.numeraire,
 		return DisposalsReport(self.numeraire,
 				disposals_report_rows, cumulative_stcg, cumulative_ltcg, show_legs)
@@ -443,11 +421,10 @@ class ReportDriver:
 							total_row.ltcg_tax + ltcg_tax,
 							total_row.stcg_tax + stcg_tax,
 							total_row.total_tax + ltcg_tax + stcg_tax)
-		
+
 		report = TaxReport(rows, total_row)
 
 		self.renderer.tax_report(report)
-
 
 	def get_booked_disposals(self, ty: int):
 		"""Get the disposals for the given tax year"""
@@ -455,7 +432,7 @@ class ReportDriver:
 		end = datetime.date(ty+1, 1, 1)
 		inclusive_end = end - datetime.timedelta(days=1)
 
-		# Get the disposals to report.  (Given disposals are all we need, there might be a 
+		# Get the disposals to report.  (Given disposals are all we need, there might be a
 		# simpler way to obtain them.)
 		(inventories_by_acct, all_entries) = self.get_inventory_and_entries(start, end)
 		all_txs = list(filter(lambda x: isinstance(x, Transaction), all_entries))
@@ -487,7 +464,7 @@ class ReportDriver:
 		for page_num in range(len(pages)):
 			# The transactions on this page
 			tx_page: List[Transaction] = list(pages[page_num])
-			
+
 			# Get the timestamp window of these transactions
 			page_date_start: datetime.date = (start if page_num == 0 else tx_page[0].date)
 			page_ts_start: datetime.datetime = datetime.datetime.combine(page_date_start, datetime.time.min)
@@ -534,7 +511,7 @@ class ReportDriver:
 
 			booked_disposals = [BookedDisposal(e, self.numeraire) for e in disposals]
 			disposals_report = self.make_disposals_report_detailed(booked_disposals, lot_index)
-		
+
 			# Render.
 			self.renderer.newpage()
 			self.renderer.subheader(
@@ -545,7 +522,7 @@ class ReportDriver:
 	def run_mining_income_sched_c(self, title: str, ty: int):
 		self.renderer.subreport_header(title)
 
-		# see this: 
+		# see this:
 		# def iter_entry_dates(entries, date_begin, date_end):
 		ty_entries = [e for e in self.entries if e.date.year == ty]
 
@@ -581,7 +558,7 @@ class ReportDriver:
 				stats.avg_price(),
 				stats.total_fmv,
 				cumulative_fmv))
-		
+
 		self.renderer.mining_summary(rows)
 
 def paginate_entries(entries, page_size: int) -> Iterator[List[Transaction]]:

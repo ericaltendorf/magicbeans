@@ -215,6 +215,10 @@ class BookedDisposal():
 		amounts = [p.units.number for p in self.disposal_legs]
 		return -sum(amounts)  # Return a positive number
 
+	def disposal_date(self) -> datetime.date:
+		"""Return the date of the disposal"""
+		return self.tx.date
+
 	def total_numeriare_proceeds(self) -> Amount:
 		"""Return the total proceeds obtained natively in the numeraire"""
 		nums = [p.units for p in self.numeraire_proceeds_legs]
@@ -252,7 +256,8 @@ class BDGroupKey(NamedTuple):
 		return BDGroupKey(bd.disposed_asset(), bd.acquisition_date(), bd.timestamp().date())
 
 class BookedDisposalGroup():
-	"""Looks like a BookedDisposal for reporting, but actually a group of them."""
+	"""Looks like a BookedDisposal for reporting, but actually a group of them.
+	TODO: explicitly define the shared interface."""
 	def __init__(self, bd: BookedDisposal):
 		self.numeraire = bd.numeraire
 		self.idx = BDGroupKey.new(bd)
@@ -267,10 +272,6 @@ class BookedDisposalGroup():
 
 	def zero(self) -> Amount:
 		return Amount(ZERO, self.disposals[0].numeraire)
-	
-	# BookedDisposal interface methods.  Note we tried  at first to make this 
-	# substitutable for BookedDisposal, but that didn't really work, so now
-	# we mostly have different caller code for the groups.
 
 	def acquisition_date(self) -> str:
 		return self.idx.acquired
@@ -280,6 +281,9 @@ class BookedDisposalGroup():
 
 	def disposed_amount(self) -> Decimal:
 		return sum([bd.disposed_amount() for bd in self.disposals], Decimal(0))
+
+	def disposal_date(self) -> datetime.date:
+		return self.idx.disposed
 	
 	def total_numeriare_proceeds(self) -> Amount:
 		return sum_amounts(self.numeraire, [bd.total_numeriare_proceeds() for bd in self.disposals])

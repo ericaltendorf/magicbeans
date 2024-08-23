@@ -1,3 +1,4 @@
+from enum import Enum
 import importlib
 import os
 from collections import namedtuple
@@ -7,12 +8,15 @@ import dateutil
 import argparse
 
 from beancount import parser
+from beancount.core.data import Booking
+from beancount.parser import booking_method
 from beangulp import extract, identify, utils
 from magicbeans import prices
 from magicbeans.common import ExtractionRecord
 from magicbeans.config import Config
 from magicbeans.prices import PriceFetcher
 from magicbeans.reports import default_report
+from magicbeans import crypto_booking
 
 def build_argparser():
     """Build an argument parser for the command line interface."""
@@ -104,6 +108,11 @@ def run():
 
     args = build_argparser().parse_args()
     print(f"Starting up, command line args are {args}")
+
+    print("Registering custom booking method...")
+    booking_method._BOOKING_METHODS[Booking.MAGICBEANS] = (
+        crypto_booking.booking_method_MAGICBEANS
+    )
 
     input_dir = args.input_dir
     working_dir = args.output_dir

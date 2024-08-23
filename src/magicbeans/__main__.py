@@ -68,7 +68,7 @@ def build_argparser():
     )
     parser.add_argument(
         "--ty-end",
-        default=2023,
+        default=2024,
         help="Tax year to end reporting (inclusive)",
         type=int
     )

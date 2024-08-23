@@ -28,8 +28,14 @@ def coinbase_data_reader(reader):
     """A wrapper for a FileReader which will skip Coinbase CSV header cruft"""
     found_content = False
     for line in reader:
+        # pre 2024
         if line.startswith("Timestamp,Transaction Type,Asset,Quantity Transacted,"):
             found_content = True
+
+        # some time in 2024 they added "ID"
+        if line.startswith("ID,Timestamp,Transaction Type,Asset,Quantity Transacted,"):
+            found_content = True
+
         if found_content:
             yield line
 
@@ -78,6 +84,9 @@ class CoinbaseImporter(beangulp.Importer):
         with open(filepath) as infile:
             # TODO: this reader wrapper breaks the line numbers
             reader = coinbase_data_reader(infile)
+            if "2024" in filepath:
+                print(f"created reader for {filepath}")
+
             for index, row in enumerate(csv.DictReader(reader)):
                 meta = data.new_metadata(filepath, index)
 
@@ -89,10 +98,20 @@ class CoinbaseImporter(beangulp.Importer):
                 fees = row["Fees and/or Spread"]
                 asset_price_currency = next((row.get(k) for k in
                     ['Spot Price Currency', 'Price Currency'] if k in row), "")
-                reported_asset_price = D(next((row.get(k) for k in
-                    ['Spot Price at Transaction', 'Price at Transaction'] if k in row), ""))
-                subtotal = D(row['Subtotal'])
-                total = D(row["Total (inclusive of fees and/or spread)"])
+                reported_asset_price = next((row.get(k) for k in
+                    ['Spot Price at Transaction', 'Price at Transaction'] if k in row), "")
+                subtotal = row['Subtotal']
+                total = row["Total (inclusive of fees and/or spread)"]
+
+                # Starting some time around 2024, Coinbase started prepending
+                # dollar signs to numbers even when they're defined by
+                # "Price Currency".
+                def make_D(price_str: str):
+                    return D(price_str.lstrip("$").replace("-$", "-"))
+                reported_asset_price = make_D(reported_asset_price)
+                subtotal = make_D(subtotal)
+                total = make_D(total)
+                fees = make_D(fees)
 
                 total_amount = common.rounded_amt(total, asset_price_currency)
                 units = common.rounded_amt(quantity, instrument)
@@ -101,6 +120,10 @@ class CoinbaseImporter(beangulp.Importer):
                 account_inst = account.join(self.account_root, instrument)
 
                 desc = "CB: " + row["Notes"].replace("Bought", "Buy").replace("Sold", "Sell")
+                
+                # Excise the "on USD-ETH" or wahtever at the end
+                desc = re.sub(r" on [A-Z]+-[A-Z]+$", "", desc)
+
                 links = set()  # { "ut{0[REF #]}".format(row) }
 
                 # Map some synonyms
@@ -108,6 +131,8 @@ class CoinbaseImporter(beangulp.Importer):
                     rtype = "Send"
                 elif rtype == "Deposit":
                     rtype = "Receive"
+                elif rtype == "Advance Trade Sell":
+                    rtype = "Sell"
 
                 if rtype in ("Send", "Receive"):
                     assert fees.number == ZERO

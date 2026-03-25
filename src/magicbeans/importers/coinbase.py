@@ -1,6 +1,7 @@
 """Importer for Coinbase "TransactionHistoryReport" csv's.  Derived from
-   UTrade example by Martin Blais.
+UTrade example by Martin Blais.
 """
+
 __copyright__ = "Copyright (C) 2023  Eric Altendorf"
 __license__ = "GNU GPLv2"
 
@@ -39,6 +40,7 @@ def coinbase_data_reader(reader):
         if found_content:
             yield line
 
+
 class CoinbaseImporter(beangulp.Importer):
     """An importer for Coinbase CSV files."""
 
@@ -49,19 +51,21 @@ class CoinbaseImporter(beangulp.Importer):
         self.network = network
 
     def name(self) -> str:
-        return 'Coinbase'
+        return "Coinbase"
 
     def identify(self, filepath):
-        filename_re = r"^Coinbase-.*TransactionsHistoryReport-" \
-                      r"\d\d\d\d-\d\d-\d\d.*\.csv$"
+        filename_re = (
+            r"^Coinbase-.*TransactionsHistoryReport-"
+            r"\d\d\d\d-\d\d-\d\d.*\.csv$"
+        )
         if not re.match(filename_re, path.basename(filepath)):
             return False
-        
+
         # expected_header = '"You can use this transaction report to inform ' \
         #                   'your likely tax obligations.'
         # if not common.file_begins_with(filepath, expected_header):
         #     return False
-            
+
         return True
 
     def filename(self, filepath):
@@ -72,8 +76,10 @@ class CoinbaseImporter(beangulp.Importer):
 
     def date(self, filepath):
         # Extract the statement date from the filename.
-        date_re = r"Coinbase-.*TransactionsHistoryReport-" \
-                  r"(\d\d\d\d-\d\d-\d\d).*\.csv"
+        date_re = (
+            r"Coinbase-.*TransactionsHistoryReport-"
+            r"(\d\d\d\d-\d\d-\d\d).*\.csv"
+        )
         m = re.match(date_re, path.basename(filepath))
         return datetime.datetime.strptime(m.group(1), "%Y-%m-%d").date()
 
@@ -94,13 +100,28 @@ class CoinbaseImporter(beangulp.Importer):
                 date = timestamp.date()
                 rtype = row["Transaction Type"].lstrip("Advanced Trade ")
                 instrument = row["Asset"]
-                quantity = D(row["Quantity Transacted"])
+                # New Coinbase format (2024+) may include sign in quantity.
+                # Use abs() since sign is determined by transaction type.
+                quantity = abs(D(row["Quantity Transacted"]))
+
                 fees = row["Fees and/or Spread"]
-                asset_price_currency = next((row.get(k) for k in
-                    ['Spot Price Currency', 'Price Currency'] if k in row), "")
-                reported_asset_price = next((row.get(k) for k in
-                    ['Spot Price at Transaction', 'Price at Transaction'] if k in row), "")
-                subtotal = row['Subtotal']
+                asset_price_currency = next(
+                    (
+                        row.get(k)
+                        for k in ["Spot Price Currency", "Price Currency"]
+                        if k in row
+                    ),
+                    "",
+                )
+                reported_asset_price = next(
+                    (
+                        row.get(k)
+                        for k in ["Spot Price at Transaction", "Price at Transaction"]
+                        if k in row
+                    ),
+                    "",
+                )
+                subtotal = row["Subtotal"]
                 total = row["Total (inclusive of fees and/or spread)"]
 
                 # Starting some time around 2024, Coinbase started prepending
@@ -108,10 +129,11 @@ class CoinbaseImporter(beangulp.Importer):
                 # "Price Currency".
                 def make_D(price_str: str):
                     return D(price_str.lstrip("$").replace("-$", "-"))
+
                 reported_asset_price = make_D(reported_asset_price)
-                subtotal = make_D(subtotal)
-                total = make_D(total)
-                fees = make_D(fees)
+                subtotal = abs(make_D(subtotal))
+                total = abs(make_D(total))
+                fees = abs(make_D(fees))
 
                 total_amount = common.rounded_amt(total, asset_price_currency)
                 units = common.rounded_amt(quantity, instrument)
@@ -119,8 +141,10 @@ class CoinbaseImporter(beangulp.Importer):
                 account_cash = account.join(self.account_root, asset_price_currency)
                 account_inst = account.join(self.account_root, instrument)
 
-                desc = "CB: " + row["Notes"].replace("Bought", "Buy").replace("Sold", "Sell")
-                
+                desc = "CB: " + row["Notes"].replace("Bought", "Buy").replace(
+                    "Sold", "Sell"
+                )
+
                 # Excise the "on USD-ETH" or wahtever at the end
                 desc = re.sub(r" on [A-Z]+-[A-Z]+$", "", desc)
 
@@ -144,47 +168,90 @@ class CoinbaseImporter(beangulp.Importer):
                         account_external = self.network.source(account_inst, instrument)
 
                     sign = Decimal(1 if (rtype == "Receive") else -1)
-                    txn = data.Transaction(meta, date, flags.FLAG_OKAY,
-                                           None, desc, data.EMPTY_SET, links,
+                    txn = data.Transaction(
+                        meta,
+                        date,
+                        flags.FLAG_OKAY,
+                        None,
+                        desc,
+                        data.EMPTY_SET,
+                        links,
                         [
-                            data.Posting(account_inst, amount.mul(units, sign),
-                                         common.usd_cost_spec(instrument), None, None, None),
-                            data.Posting(account_external, amount.mul(units, -sign),
-                                         common.usd_cost_spec(instrument), None, None, None),
+                            data.Posting(
+                                account_inst,
+                                amount.mul(units, sign),
+                                common.usd_cost_spec(instrument),
+                                None,
+                                None,
+                                None,
+                            ),
+                            data.Posting(
+                                account_external,
+                                amount.mul(units, -sign),
+                                common.usd_cost_spec(instrument),
+                                None,
+                                None,
+                                None,
+                            ),
                         ],
                     )
 
                 elif rtype in ("Buy", "Sell"):
                     # Used as cost for buys, proceeds for sells.
                     fee_adjusted_value = total / quantity
-                    desc += f' (@{reported_asset_price}, ' \
-                            f"w fees ~{fee_adjusted_value:.4f})"
-                            
-                    meta['fee-info'] = f"(fees={fees}, total={total}, subtotal={subtotal}); "\
+                    desc += (
+                        f" (@{reported_asset_price}, w fees ~{fee_adjusted_value:.4f})"
+                    )
+
+                    meta["fee-info"] = (
+                        f"(fees={fees}, total={total}, subtotal={subtotal}); "
                         f"fee-adjusted per-unit value: {fee_adjusted_value} {asset_price_currency}"
+                    )
 
                     if rtype == "Buy":
                         postings = [
-                            data.Posting(account_inst, units,
-                                        Cost(fee_adjusted_value, asset_price_currency, None, None),
-                                        None, None, None),
-                            data.Posting(account_cash, -total_amount,
-                                         None, None, None, None),
+                            data.Posting(
+                                account_inst,
+                                units,
+                                Cost(
+                                    fee_adjusted_value, asset_price_currency, None, None
+                                ),
+                                None,
+                                None,
+                                None,
+                            ),
+                            data.Posting(
+                                account_cash, -total_amount, None, None, None, None
+                            ),
                         ]
                     else:
                         postings = [
-                            data.Posting(account_inst, -units,
-                                        Cost(None, None, None, None),
-                                        Amount(fee_adjusted_value, asset_price_currency),
-                                        None, None),
-                            data.Posting(account_cash, total_amount,
-                                        None, None, None, None),
-                            data.Posting(self.account_gains,
-                                         None, None, None, None, None),
+                            data.Posting(
+                                account_inst,
+                                -units,
+                                Cost(None, None, None, None),
+                                Amount(fee_adjusted_value, asset_price_currency),
+                                None,
+                                None,
+                            ),
+                            data.Posting(
+                                account_cash, total_amount, None, None, None, None
+                            ),
+                            data.Posting(
+                                self.account_gains, None, None, None, None, None
+                            ),
                         ]
 
-                    txn = data.Transaction(meta, date, flags.FLAG_OKAY, None,
-                                           desc, data.EMPTY_SET, links, postings)
+                    txn = data.Transaction(
+                        meta,
+                        date,
+                        flags.FLAG_OKAY,
+                        None,
+                        desc,
+                        data.EMPTY_SET,
+                        links,
+                        postings,
+                    )
 
                 else:
                     logging.error("Unknown row type: %s; skipping", rtype)
@@ -201,10 +268,12 @@ class CoinbaseImporter(beangulp.Importer):
             account_root="Assets:Coinbase",
             account_gains="Income:PnL",
             account_fees="Expenses:Financial:Fees",
-            network=Network([Link("Coinbase", "Bank", "USD"),
-                            Link("Coinbase", "Ledger", "BTC")],
-                            untracked_institutions=["Bank", "Ledger"])
+            network=Network(
+                [Link("Coinbase", "Bank", "USD"), Link("Coinbase", "Ledger", "BTC")],
+                untracked_institutions=["Bank", "Ledger"],
+            ),
         )
+
 
 if __name__ == "__main__":
     main(CoinbaseImporter.test_instance())
